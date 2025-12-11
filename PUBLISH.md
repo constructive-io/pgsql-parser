@@ -79,7 +79,7 @@ The `generate-packages` script (`scripts/generate-version-packages.ts`):
 #### Build and Publish Individual Versions
 ```bash
 # Navigate to a specific version directory
-cd packages/deparser/versions/17
+cd packages/deparser/versions/13
 
 # Build the package
 npm run build
@@ -88,8 +88,17 @@ npm run build
 cd dist/
 
 # Publish with the correct tag
-npm publish --tag pg17
+npm publish --tag pg13
 ```
+
+**I do 13,14,15,16... since 17 was already publish from the root `pnpm lerna publish`
+
+Now go to run, fetch fresh versions for config again:
+
+```
+pnpm bump-versions
+```
+
 
 #### Publish All Deparser Versions
 ```bash

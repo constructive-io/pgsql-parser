@@ -2,36 +2,36 @@
   "versions": {
     "13": {
       "libpg-query": "13.6.0",
-      "pgsql-parser": "13.19.0",
-      "pgsql-deparser": "13.19.0",
+      "pgsql-parser": "13.19.1",
+      "pgsql-deparser": "13.19.1",
       "@pgsql/types": "13.11.1",
       "npmTag": "pg13"
     },
     "14": {
       "libpg-query": "14.3.0",
-      "pgsql-parser": "14.1.0",
-      "pgsql-deparser": "14.1.0",
+      "pgsql-parser": "14.1.1",
+      "pgsql-deparser": "14.1.1",
       "@pgsql/types": "14.1.1",
       "npmTag": "pg14"
     },
     "15": {
       "libpg-query": "15.5.0",
-      "pgsql-parser": "15.1.0",
-      "pgsql-deparser": "15.1.0",
+      "pgsql-parser": "15.1.1",
+      "pgsql-deparser": "15.1.1",
       "@pgsql/types": "15.1.1",
       "npmTag": "pg15"
     },
     "16": {
       "libpg-query": "16.6.0",
-      "pgsql-parser": "16.1.0",
-      "pgsql-deparser": "16.1.0",
+      "pgsql-parser": "16.1.1",
+      "pgsql-deparser": "16.1.1",
       "@pgsql/types": "16.1.1",
       "npmTag": "pg16"
     },
     "17": {
       "libpg-query": "17.6.0",
-      "pgsql-parser": "17.8.2",
-      "pgsql-deparser": "17.11.1",
+      "pgsql-parser": "17.8.3",
+      "pgsql-deparser": "17.11.2",
       "@pgsql/types": "17.6.1",
       "npmTag": "pg17"
     }

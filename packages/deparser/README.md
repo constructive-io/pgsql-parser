@@ -131,7 +131,7 @@ const sql2 = deparse(selectAst, { pretty: true });
 //   active = true;
 ```
 
-For complete documentation and advanced options, see [DEPARSER_USAGE.md](../../DEPARSER_USAGE.md).
+For complete documentation and advanced options, see [DEPARSER_USAGE.md](https://github.com/constructive-io/pgsql-parser/tree/main/packages/deparser/DEPARSER_USAGE.md).
 
 ## Why Use `pgsql-deparser`?
 

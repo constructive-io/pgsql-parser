@@ -117,11 +117,11 @@ export * from '@pgsql/types';
   }, null, 2));
 
 
-  // Copy the README.md files
-  fs.copyFileSync(
-    path.join(__dirname, '../README.md'),
-    path.join(versionDir, 'README.md')
-  );
+  // Copy the README.md files with FOOTER.md appended
+  const readmeContent = fs.readFileSync(path.join(__dirname, '../README.md'), 'utf-8');
+  const footerContent = fs.readFileSync(path.join(__dirname, '../../../FOOTER.md'), 'utf-8');
+  const combinedReadme = readmeContent + '\n' + footerContent;
+  fs.writeFileSync(path.join(versionDir, 'README.md'), combinedReadme);
 
   console.log(`✓ Generated PG${pgVersion} with libpg-query@${libpgQueryVersion} and pgsql-parser@${pgsqlParserVersion}`);
 });

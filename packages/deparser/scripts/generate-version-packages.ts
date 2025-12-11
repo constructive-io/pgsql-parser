@@ -129,7 +129,14 @@ function generateVersionPackages(): void {
     fs.writeFileSync(tsConfigEsmPath, JSON.stringify(tsConfigEsm, null, 2));
     console.log(`  ✓ Created tsconfig.esm.json`);
     
-
+    // Copy README.md with FOOTER.md appended
+    const readmePath = path.join(process.cwd(), 'README.md');
+    const footerPath = path.join(__dirname, '../../../FOOTER.md');
+    const readmeContent = fs.readFileSync(readmePath, 'utf-8');
+    const footerContent = fs.readFileSync(footerPath, 'utf-8');
+    const combinedReadme = readmeContent + '\n' + footerContent;
+    fs.writeFileSync(path.join(versionDir, 'README.md'), combinedReadme);
+    console.log(`  ✓ Created README.md with footer`);
     
     console.log('');
   }

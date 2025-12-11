@@ -33,6 +33,8 @@
     "eslint-plugin-simple-import-sort": "^12.1.0",
     "eslint-plugin-unused-imports": "^4.0.0",
     "glob": "^11.0.0",
+    "copyfiles": "^2.4.1",
+    "rimraf": "^6.0.1",
     "jest": "^30.2.0",
     "jest-diff": "30.2.0",
     "lerna": "^8.2.4",
