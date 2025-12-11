@@ -53,10 +53,10 @@
     "database"
   ],
   "devDependencies": {
-    "libpg-query": "17.6.0",
-    "makage": "^0.1.3"
+    "libpg-query": "17.7.3",
+    "makage": "^0.1.8"
   },
   "dependencies": {
-    "@pgsql/types": "^17.6.1"
+    "@pgsql/types": "^17.6.2"
   }
 }

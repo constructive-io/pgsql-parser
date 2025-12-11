@@ -31,11 +31,11 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@pgsql/types": "^17.6.1",
+    "@pgsql/types": "^17.6.2",
     "pg-proto-parser": "workspace:*"
   },
   "devDependencies": {
-    "makage": "^0.1.3"
+    "makage": "^0.1.8"
   },
   "keywords": [
     "sql",

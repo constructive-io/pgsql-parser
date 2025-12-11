@@ -36,11 +36,11 @@
     "jest": "^30.2.0",
     "jest-diff": "30.2.0",
     "lerna": "^8.2.4",
-    "makage": "^0.1.3",
+    "makage": "^0.1.8",
     "prettier": "^3.0.2",
     "semver": "^7.7.2",
     "strip-ansi": "^6",
-    "ts-jest": "^29.1.1",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.1.6"
   }
