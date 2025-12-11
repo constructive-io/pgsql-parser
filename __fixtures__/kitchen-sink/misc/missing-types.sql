@@ -1,4 +1,4 @@
--- https://github.com/launchql/pgsql-parser/issues/219
+-- https://github.com/constructive-io/pgsql-parser/issues/219
 ALTER PUBLICATION "my_publication" OWNER TO "postgres";
 
 -- Missing ObjectType cases for AlterOwnerStmt testing

@@ -2,21 +2,21 @@
   "name": "@pgsql/cli",
   "version": "1.32.1",
   "description": "Unified CLI for PostgreSQL AST parsing, deparsing, and code generation",
-  "author": "Dan Lynch <pyramation@gmail.com>",
+  "author": "Constructive <developers@constructive.io>",
   "main": "index.js",
   "module": "esm/index.js",
   "types": "index.d.ts",
-  "homepage": "https://github.com/launchql/pgsql-parser/tree/master/packages/pgsql-cli#readme",
+  "homepage": "https://github.com/constructive-io/pgsql-parser/tree/master/packages/pgsql-cli#readme",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/launchql/pgsql-parser"
+    "url": "https://github.com/constructive-io/pgsql-parser"
   },
   "bugs": {
-    "url": "https://github.com/launchql/pgsql-parser/issues"
+    "url": "https://github.com/constructive-io/pgsql-parser/issues"
   },
   "bin": {
     "pgsql": "index.js"

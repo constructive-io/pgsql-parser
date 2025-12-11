@@ -1,12 +1,12 @@
 {
   "name": "pgsql-parser",
   "version": "{{PGSQL_PARSER_VERSION}}",
-  "author": "Dan Lynch <pyramation@gmail.com>",
+  "author": "Constructive <developers@constructive.io>",
   "description": "The real PostgreSQL query parser",
   "main": "index.js",
   "module": "esm/index.js",
   "types": "index.d.ts",
-  "homepage": "https://github.com/launchql/pgsql-parser",
+  "homepage": "https://github.com/constructive-io/pgsql-parser",
   "license": "MIT",
   "publishConfig": {
     "access": "public",
@@ -14,10 +14,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/launchql/pgsql-parser"
+    "url": "https://github.com/constructive-io/pgsql-parser"
   },
   "bugs": {
-    "url": "https://github.com/launchql/pgsql-parser/issues"
+    "url": "https://github.com/constructive-io/pgsql-parser/issues"
   },
   "scripts": {
     "copy": "copyfiles -f ../../../../LICENSE README.md package.json dist",

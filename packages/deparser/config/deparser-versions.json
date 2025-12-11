@@ -1,8 +1,8 @@
 {
   "packageName": "pgsql-deparser",
   "packageTemplate": {
-    "author": "Dan Lynch <pyramation@gmail.com>",
-    "homepage": "https://github.com/launchql/pgsql-parser",
+    "author": "Constructive <developers@constructive.io>",
+    "homepage": "https://github.com/constructive-io/pgsql-parser",
     "license": "MIT",
     "main": "index.js",
     "module": "esm/index.js",
@@ -20,10 +20,10 @@
     },
     "repository": {
       "type": "git",
-      "url": "https://github.com/launchql/pgsql-parser"
+      "url": "https://github.com/constructive-io/pgsql-parser"
     },
     "bugs": {
-      "url": "https://github.com/launchql/pgsql-parser/issues"
+      "url": "https://github.com/constructive-io/pgsql-parser/issues"
     },
     "keywords": [
       "sql",

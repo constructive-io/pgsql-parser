@@ -231,5 +231,5 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA dashboard_jobs
 GRANT EXECUTE ON FUNCTION dashboard_private.uuid_generate_seeded_uuid TO PUBLIC;
 
 
--- https://github.com/launchql/pgsql-parser/issues/217
+-- https://github.com/constructive-io/pgsql-parser/issues/217
 SELECT CAST(t.date AT TIME ZONE $$America/New_York$$ AS text)::date FROM tbl t;

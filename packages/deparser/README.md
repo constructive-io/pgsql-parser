@@ -1,20 +1,20 @@
 # pgsql-deparser 
 
 <p align="center" width="100%">
-  <img height="120" src="https://github.com/launchql/pgsql-parser/assets/545047/6440fa7d-918b-4a3b-8d1b-755d85de8bea" />
+  <img height="120" src="https://github.com/constructive-io/pgsql-parser/assets/545047/6440fa7d-918b-4a3b-8d1b-755d85de8bea" />
 </p>
 
 <p align="center" width="100%">
-  <a href="https://github.com/launchql/pgsql-parser/actions/workflows/run-tests.yaml">
-    <img height="20" src="https://github.com/launchql/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
+  <a href="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml">
+    <img height="20" src="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
   </a>
    <a href="https://www.npmjs.com/package/pgsql-deparser"><img height="20" src="https://img.shields.io/npm/dt/pgsql-deparser"></a>
    <a href="https://www.npmjs.com/package/pgsql-deparser"><img height="20" src="https://img.shields.io/npm/dw/pgsql-deparser"/></a>
-   <a href="https://github.com/launchql/pgsql-parser/blob/main/LICENSE-MIT"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
-   <a href="https://www.npmjs.com/package/pgsql-deparser"><img height="20" src="https://img.shields.io/github/package-json/v/launchql/pgsql-parser?filename=packages%2Fdeparser%2Fpackage.json"/></a>
+   <a href="https://github.com/constructive-io/pgsql-parser/blob/main/LICENSE-MIT"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
+   <a href="https://www.npmjs.com/package/pgsql-deparser"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/pgsql-parser?filename=packages%2Fdeparser%2Fpackage.json"/></a>
 </p>
 
-`pgsql-deparser` is the lightning-fast, pure TypeScript solution for converting PostgreSQL ASTs back into SQL queries. Perfect companion to [`pgsql-parser`](https://github.com/launchql/pgsql-parser), this focused tool delivers SQL generation without any native dependencies or WebAssembly overhead.
+`pgsql-deparser` is the lightning-fast, pure TypeScript solution for converting PostgreSQL ASTs back into SQL queries. Perfect companion to [`pgsql-parser`](https://github.com/constructive-io/pgsql-parser), this focused tool delivers SQL generation without any native dependencies or WebAssembly overhead.
 
 ## Installation
 
@@ -33,7 +33,7 @@ npm install pgsql-deparser
 
 The `pgsql-deparser` module serializes ASTs to SQL in pure TypeScript, avoiding the full parser's native dependencies. It's useful when only SQL string conversion from ASTs is needed, and is written in pure TypeScript for easy cross-environment deployment.
 
-Here's how you can use the deparser in your TypeScript code, using [`@pgsql/utils`](https://github.com/launchql/pgsql-parser/tree/main/packages/utils) to create an AST for `deparse`:
+Here's how you can use the deparser in your TypeScript code, using [`@pgsql/utils`](https://github.com/constructive-io/pgsql-parser/tree/main/packages/utils) to create an AST for `deparse`:
 
 ```ts
 import * as t from '@pgsql/utils';

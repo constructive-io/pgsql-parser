@@ -1,17 +1,17 @@
 # pg-proto-parser
 
 <p align="center" width="100%">
-  <img height="120" src="https://github.com/launchql/pgsql-parser/assets/545047/6440fa7d-918b-4a3b-8d1b-755d85de8bea" />
+  <img height="120" src="https://github.com/constructive-io/pgsql-parser/assets/545047/6440fa7d-918b-4a3b-8d1b-755d85de8bea" />
 </p>
 
 <p align="center" width="100%">
-  <a href="https://github.com/launchql/pgsql-parser/actions/workflows/run-tests.yaml">
-    <img height="20" src="https://github.com/launchql/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
+  <a href="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml">
+    <img height="20" src="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
   </a>
-   <a href="https://github.com/launchql/pgsql-parser/blob/main/LICENSE"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+   <a href="https://github.com/constructive-io/pgsql-parser/blob/main/LICENSE"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
 </p>
 
-`pg-proto-parser` is a TypeScript project that parses [pganalyze/libpg_query](https://github.com/pganalyze/libpg_query) PostgreSQL Protocol Buffers (protobuf) definitions and generates TypeScript interfaces, utility functions, and JSON mappings for the enums defined in the protobuf schema. Designed to work with [launchql/pgsql-parser](https://github.com/launchql/pgsql-parser) for maintainable upgrades.
+`pg-proto-parser` is a TypeScript project that parses [pganalyze/libpg_query](https://github.com/pganalyze/libpg_query) PostgreSQL Protocol Buffers (protobuf) definitions and generates TypeScript interfaces, utility functions, and JSON mappings for the enums defined in the protobuf schema. Designed to work with [launchql/pgsql-parser](https://github.com/constructive-io/pgsql-parser) for maintainable upgrades.
 
 ## Features
 
@@ -253,7 +253,7 @@ Each of these options can be set when initializing the `PgProtoParser` to custom
 
 `generateTsAstCodeFromPgAst` is a method that transforms a PostgreSQL Abstract Syntax Tree (AST) into TypeScript code capable of generating an equivalent AST. This function facilitates the dynamic creation of ASTs, allowing for programmable query construction and manipulation in TypeScript.
 
-It generates code with syntax for [@pgsql/utils](https://github.com/launchql/pgsql-parser/tree/main/packages/utils), using runtime schema information to determine whether nodes should be wrapped (`t.nodes.*`) or unwrapped (`t.ast.*`).
+It generates code with syntax for [@pgsql/utils](https://github.com/constructive-io/pgsql-parser/tree/main/packages/utils), using runtime schema information to determine whether nodes should be wrapped (`t.nodes.*`) or unwrapped (`t.ast.*`).
 
 ```ts
 import { generateTsAstCodeFromPgAst } from 'pg-proto-parser';

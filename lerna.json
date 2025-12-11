@@ -11,7 +11,7 @@
   "registry": "https://registry.npmjs.org",
   "command": {
     "create": {
-      "homepage": "https://github.com/launchql/pgsql-parser",
+      "homepage": "https://github.com/constructive-io/pgsql-parser",
       "license": "MIT",
       "access": "restricted"
     },

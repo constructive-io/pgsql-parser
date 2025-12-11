@@ -2,11 +2,11 @@
   "name": "pg-proto-parser",
   "version": "1.30.1",
   "description": "The LaunchQL Proto parser",
-  "author": "Dan Lynch <pyramation@gmail.com>",
+  "author": "Constructive <developers@constructive.io>",
   "main": "index.js",
   "module": "esm/index.js",
   "types": "index.d.ts",
-  "homepage": "https://github.com/launchql/pgsql-parser/tree/master/packages/proto-parser#readme",
+  "homepage": "https://github.com/constructive-io/pgsql-parser/tree/master/packages/proto-parser#readme",
   "license": "MIT",
   "publishConfig": {
     "access": "public",
@@ -14,10 +14,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/launchql/pgsql-parser"
+    "url": "https://github.com/constructive-io/pgsql-parser"
   },
   "bugs": {
-    "url": "https://github.com/launchql/pgsql-parser/issues"
+    "url": "https://github.com/constructive-io/pgsql-parser/issues"
   },
   "scripts": {
     "copy": "makage assets",

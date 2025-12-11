@@ -1,4 +1,4 @@
--- https://github.com/launchql/pgsql-parser/issues/131
+-- https://github.com/constructive-io/pgsql-parser/issues/131
 select from test_table WHERE status = 'complete'::text;
 select from test_table WHERE status = 'complete';
 
@@ -18,7 +18,7 @@ CREATE TABLE new_style (
 );
 ALTER TABLE new_style ADD CONSTRAINT uq_val1_val2_new UNIQUE NULLS NOT DISTINCT (val1, val2);
 
--- https://github.com/launchql/pgsql-parser/issues/128
+-- https://github.com/constructive-io/pgsql-parser/issues/128
 INSERT INTO
   public.people (id, name, epithet, is_great, gender, type_id, date_of_birth, date_of_death, place_of_birth, place_of_death, biography, canonical_status_id, image_url, source_url)
 VALUES
@@ -26,7 +26,7 @@ VALUES
   (2, 'Ausonius', NULL, FALSE, 'M', 1, '0310-01-01', '0395-01-01', 'Burdigala', NULL, NULL, NULL, NULL, NULL)
 ON CONFLICT DO NOTHING;
 
--- https://github.com/launchql/pgsql-parser/issues/52
+-- https://github.com/constructive-io/pgsql-parser/issues/52
 CREATE TABLE public.ci_builds_runner_session (
     id bigint NOT NULL,
     build_id integer NOT NULL,
@@ -35,10 +35,10 @@ CREATE TABLE public.ci_builds_runner_session (
     "authorization" character varying
 );
 
--- https://github.com/launchql/pgsql-parser/issues/50
+-- https://github.com/constructive-io/pgsql-parser/issues/50
 COMMENT ON COLUMN public.posts.reply_to_post_number IS 'If this post is a reply to another, this column is the post_number of the post it''s replying to. [FKEY posts.topic_id, posts.post_number]';
 
--- https://github.com/launchql/pgsql-parser/issues/48
+-- https://github.com/constructive-io/pgsql-parser/issues/48
 CREATE TABLE "Album"
 (
   "AlbumId" INT NOT NULL,
@@ -47,18 +47,18 @@ CREATE TABLE "Album"
   CONSTRAINT "PK_Album" PRIMARY KEY  ("AlbumId")
 );
 
--- https://github.com/launchql/pgsql-parser/issues/47
+-- https://github.com/constructive-io/pgsql-parser/issues/47
 CREATE INDEX "existing_undispatched_message" ON public.messages USING btree ("context_id", context_type, notification_name, "to", user_id);
 
--- https://github.com/launchql/pgsql-parser/issues/124
+-- https://github.com/constructive-io/pgsql-parser/issues/124
 COMMENT ON COLUMN "foo"."whatever" IS $$
 Something blah, this data may have chars like '\n' and '\r' in it.
 $$;
 
--- https://github.com/launchql/pgsql-parser/issues/127
+-- https://github.com/constructive-io/pgsql-parser/issues/127
 SELECT * from foo.bar.baz;
 
--- https://github.com/launchql/pgsql-parser/issues/123
+-- https://github.com/constructive-io/pgsql-parser/issues/123
 CREATE AGGREGATE json_agg_strict(anyelement)(
   SFUNC = json_agg_strict_sfunc,
   STYPE = jsonb,
@@ -66,12 +66,12 @@ CREATE AGGREGATE json_agg_strict(anyelement)(
   INITCOND = '[]'
 );
 
--- https://github.com/launchql/pgsql-parser/issues/62
+-- https://github.com/constructive-io/pgsql-parser/issues/62
 SELECT (1 IS NOT NULL) IS DISTINCT FROM (2 IS NOT NULL);
 
--- https://github.com/launchql/pgsql-parser/issues/101
+-- https://github.com/constructive-io/pgsql-parser/issues/101
 select "A" from "table_name";
 select "AA" from "table_name";
 
--- https://github.com/launchql/pgsql-parser/issues/217
+-- https://github.com/constructive-io/pgsql-parser/issues/217
 SELECT CAST(t.date AT TIME ZONE $$America/New_York$$ AS text)::date FROM tbl t;

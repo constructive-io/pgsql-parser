@@ -1,14 +1,14 @@
 # @pgsql/cli
 
 <p align="center" width="100%">
-  <img height="120" src="https://github.com/launchql/pgsql-parser/assets/545047/6440fa7d-918b-4a3b-8d1b-755d85de8bea" />
+  <img height="120" src="https://github.com/constructive-io/pgsql-parser/assets/545047/6440fa7d-918b-4a3b-8d1b-755d85de8bea" />
 </p>
 
 <p align="center" width="100%">
-  <a href="https://github.com/launchql/pgsql-parser/actions/workflows/run-tests.yaml">
-    <img height="20" src="https://github.com/launchql/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
+  <a href="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml">
+    <img height="20" src="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
   </a>
-   <a href="https://github.com/launchql/pgsql-parser/blob/main/LICENSE"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+   <a href="https://github.com/constructive-io/pgsql-parser/blob/main/LICENSE"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
 </p>
 
 `@pgsql/cli` is a unified command-line interface for PostgreSQL AST operations, including parsing SQL to AST, deparsing AST back to SQL, and generating TypeScript definitions from PostgreSQL protobufs. It consolidates functionality from multiple packages into a single, easy-to-use CLI tool.
