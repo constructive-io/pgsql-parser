@@ -136,7 +136,7 @@ This script (`scripts/prepare-versions.ts`):
 #### Build and Publish Individual Versions
 ```bash
 # Navigate to a specific version directory
-cd packages/parser/versions/17
+cd packages/parser/versions/13
 
 # Build the package
 npm run build
@@ -146,7 +146,7 @@ npm run build
 cd dist/
 
 # Publish with the correct tag
-npm publish --tag pg17
+npm publish --tag pg13
 ```
 
 #### Publish All Parser Versions
