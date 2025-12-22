@@ -2457,36 +2457,8 @@ export class Deparser implements DeparserVisitor {
     return output.join(' ');
   }
 
-  private static readonly RESERVED_WORDS = new Set([
-    'all', 'analyse', 'analyze', 'and', 'any', 'array', 'as', 'asc', 'asymmetric', 'both',
-    'case', 'cast', 'check', 'collate', 'column', 'constraint', 'create', 'current_catalog',
-    'current_date', 'current_role', 'current_time', 'current_timestamp', 'current_user',
-    'default', 'deferrable', 'desc', 'distinct', 'do', 'else', 'end', 'except', 'false',
-    'fetch', 'for', 'foreign', 'from', 'grant', 'group', 'having', 'in', 'initially',
-    'intersect', 'into', 'lateral', 'leading', 'limit', 'localtime', 'localtimestamp',
-    'not', 'null', 'offset', 'on', 'only', 'or', 'order', 'placing', 'primary',
-    'references', 'returning', 'select', 'session_user', 'some', 'symmetric', 'table',
-    'then', 'to', 'trailing', 'true', 'union', 'unique', 'user', 'using', 'variadic',
-    'when', 'where', 'window', 'with'
-  ]);
-
-  private static needsQuotes(value: string): boolean {
-    if (!value) return false;
-
-    const needsQuotesRegex = /[a-z]+[\W\w]*[A-Z]+|[A-Z]+[\W\w]*[a-z]+|\W/;
-
-    const isAllUppercase = /^[A-Z]+$/.test(value);
-
-    return needsQuotesRegex.test(value) ||
-           Deparser.RESERVED_WORDS.has(value.toLowerCase()) ||
-           isAllUppercase;
-  }
-
   quoteIfNeeded(value: string): string {
-    if (Deparser.needsQuotes(value)) {
-      return `"${value}"`;
-    }
-    return value;
+    return QuoteUtils.quoteString(value);
   }
 
   preserveOperatorDefElemCase(defName: string): string {
@@ -2528,7 +2500,7 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    return Deparser.needsQuotes(value) ? `"${value}"` : value;
+    return QuoteUtils.quoteString(value);
   }
 
   Integer(node: t.Integer, context: DeparserContext): string {
@@ -5715,7 +5687,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.role) {
-      const roleName = Deparser.needsQuotes(node.role) ? `"${node.role}"` : node.role;
+      const roleName = QuoteUtils.quoteString(node.role);
       output.push(roleName);
     }
 
@@ -5788,7 +5760,7 @@ export class Deparser implements DeparserVisitor {
             ? `'${argValue}'`
             : argValue;
 
-          const quotedDefname = node.defname.includes(' ') || node.defname.includes('-') || Deparser.needsQuotes(node.defname)
+          const quotedDefname = node.defname.includes(' ') || node.defname.includes('-') || QuoteUtils.needsQuotesForString(node.defname)
             ? `"${node.defname}"`
             : node.defname;
 
@@ -5968,7 +5940,7 @@ export class Deparser implements DeparserVisitor {
               if (this.getNodeType(item) === 'String') {
                 // Check if this identifier needs quotes to preserve case
                 const value = itemData.sval;
-                if (Deparser.needsQuotes(value)) {
+                if (QuoteUtils.needsQuotesForString(value)) {
                   return `"${value}"`;
                 }
                 return value;
@@ -6245,7 +6217,7 @@ export class Deparser implements DeparserVisitor {
         }
 
         // Handle CREATE AGGREGATE quoted identifiers - preserve quotes when needed
-        if (Deparser.needsQuotes(node.defname)) {
+        if (QuoteUtils.needsQuotesForString(node.defname)) {
           const quotedDefname = `"${node.defname}"`;
           if (node.arg) {
             if (this.getNodeType(node.arg) === 'String') {
@@ -9848,7 +9820,7 @@ export class Deparser implements DeparserVisitor {
 
               if (defName && defValue) {
                 let preservedDefName;
-                if (Deparser.needsQuotes(defName)) {
+                if (QuoteUtils.needsQuotesForString(defName)) {
                   preservedDefName = `"${defName}"`;
                 } else {
                   preservedDefName = this.preserveOperatorDefElemCase(defName);
@@ -10012,7 +9984,7 @@ export class Deparser implements DeparserVisitor {
 
               if (defName && defValue) {
                 let preservedDefName;
-                if (Deparser.needsQuotes(defName)) {
+                if (QuoteUtils.needsQuotesForString(defName)) {
                   preservedDefName = `"${defName}"`;
                 } else {
                   preservedDefName = defName;
