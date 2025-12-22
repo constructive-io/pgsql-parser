@@ -40,7 +40,8 @@
     "organize-transformers": "ts-node scripts/organize-transformers-by-version.ts",
     "generate-version-deparsers": "ts-node scripts/generate-version-deparsers.ts",
     "generate-packages": "ts-node scripts/generate-version-packages.ts",
-    "prepare-versions": "npm run strip-transformer-types && npm run strip-direct-transformer-types && npm run strip-deparser-types && npm run organize-transformers && npm run generate-version-deparsers && npm run generate-packages"
+    "prepare-versions": "npm run strip-transformer-types && npm run strip-direct-transformer-types && npm run strip-deparser-types && npm run organize-transformers && npm run generate-version-deparsers && npm run generate-packages",
+    "keywords": "ts-node scripts/keywords.ts"
   },
   "keywords": [
     "sql",
