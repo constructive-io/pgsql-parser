@@ -2022,7 +2022,7 @@ export class Deparser implements DeparserVisitor {
       }
       tableName += '.' + QuoteUtils.quoteIdentifier(node.relname);
     } else if (node.schemaname) {
-      tableName = QuoteUtils.quoteIdentifier(node.schemaname) + '.' + QuoteUtils.quoteIdentifier(node.relname);
+      tableName = QuoteUtils.quoteQualifiedIdentifier(node.schemaname, node.relname);
     } else {
       tableName = QuoteUtils.quoteIdentifier(node.relname);
     }
@@ -4563,7 +4563,7 @@ export class Deparser implements DeparserVisitor {
               const accessMethod = items[0];
               const schemaName = items[1];
               const objectName = items[2];
-              return `${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(objectName)} USING ${accessMethod}`;
+              return `${QuoteUtils.quoteQualifiedIdentifier(schemaName, objectName)} USING ${accessMethod}`;
             }
             return items.join('.');
           }
@@ -11217,7 +11217,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const domainName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(domainName)}`);
+          output.push(QuoteUtils.quoteQualifiedIdentifier(schemaName, domainName));
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11227,7 +11227,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const typeName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(typeName)}`);
+          output.push(QuoteUtils.quoteQualifiedIdentifier(schemaName, typeName));
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11237,7 +11237,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const conversionName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(conversionName)}`);
+          output.push(QuoteUtils.quoteQualifiedIdentifier(schemaName, conversionName));
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11247,7 +11247,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const parserName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(parserName)}`);
+          output.push(QuoteUtils.quoteQualifiedIdentifier(schemaName, parserName));
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11257,7 +11257,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const configName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(configName)}`);
+          output.push(QuoteUtils.quoteQualifiedIdentifier(schemaName, configName));
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11267,7 +11267,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const templateName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(templateName)}`);
+          output.push(QuoteUtils.quoteQualifiedIdentifier(schemaName, templateName));
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11277,7 +11277,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const dictionaryName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(dictionaryName)}`);
+          output.push(QuoteUtils.quoteQualifiedIdentifier(schemaName, dictionaryName));
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11292,7 +11292,7 @@ export class Deparser implements DeparserVisitor {
           const accessMethod = items[0].String?.sval || '';
           const schemaName = items[1].String?.sval || '';
           const opClassName = items[2].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(opClassName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteQualifiedIdentifier(schemaName, opClassName)} USING ${accessMethod}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11307,7 +11307,7 @@ export class Deparser implements DeparserVisitor {
           const accessMethod = items[0].String?.sval || '';
           const schemaName = items[1].String?.sval || '';
           const opFamilyName = items[2].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(opFamilyName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteQualifiedIdentifier(schemaName, opFamilyName)} USING ${accessMethod}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
