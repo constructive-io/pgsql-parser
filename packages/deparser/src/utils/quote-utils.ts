@@ -1,33 +1,6 @@
-import { RESERVED_KEYWORDS, TYPE_FUNC_NAME_KEYWORDS, UNRESERVED_KEYWORDS, keywordKindOf } from '../kwlist';
+import { RESERVED_KEYWORDS, TYPE_FUNC_NAME_KEYWORDS, keywordKindOf } from '../kwlist';
 
 export class QuoteUtils {
-  /**
-   * Checks if a value needs quoting for use in String nodes, DefElem, role names, etc.
-   * Uses a different algorithm than needsQuotes - checks for mixed case and special characters.
-   * This was previously Deparser.needsQuotes.
-   */
-  static needsQuotesForString(value: string): boolean {
-    if (!value) return false;
-
-    const needsQuotesRegex = /[a-z]+[\W\w]*[A-Z]+|[A-Z]+[\W\w]*[a-z]+|\W/;
-    const isAllUppercase = /^[A-Z]+$/.test(value);
-
-    return needsQuotesRegex.test(value) ||
-           RESERVED_KEYWORDS.has(value.toLowerCase()) ||
-           isAllUppercase;
-  }
-
-  /**
-   * Quotes a string value if it needs quoting for String nodes.
-   * Uses needsQuotesForString logic.
-   */
-  static quoteString(value: string): string {
-    if (QuoteUtils.needsQuotesForString(value)) {
-      return `"${value}"`;
-    }
-    return value;
-  }
-
   static needsQuotes(value: string): boolean {
     if (!value || typeof value !== 'string') {
       return false;
