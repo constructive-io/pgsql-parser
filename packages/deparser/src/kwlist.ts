@@ -522,10 +522,10 @@ export const kwlist = {
   ]
 } as const;
 
-export const RESERVED_KEYWORDS = new Set(kwlist.RESERVED_KEYWORD ?? []);
-export const UNRESERVED_KEYWORDS = new Set(kwlist.UNRESERVED_KEYWORD ?? []);
-export const COL_NAME_KEYWORDS = new Set(kwlist.COL_NAME_KEYWORD ?? []);
-export const TYPE_FUNC_NAME_KEYWORDS = new Set(kwlist.TYPE_FUNC_NAME_KEYWORD ?? []);
+export const RESERVED_KEYWORDS: Set<string> = new Set(kwlist.RESERVED_KEYWORD ?? []);
+export const UNRESERVED_KEYWORDS: Set<string> = new Set(kwlist.UNRESERVED_KEYWORD ?? []);
+export const COL_NAME_KEYWORDS: Set<string> = new Set(kwlist.COL_NAME_KEYWORD ?? []);
+export const TYPE_FUNC_NAME_KEYWORDS: Set<string> = new Set(kwlist.TYPE_FUNC_NAME_KEYWORD ?? []);
 
 export function keywordKindOf(word: string): KeywordKind {
   const w = word.toLowerCase();
