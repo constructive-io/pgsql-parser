@@ -1,20 +1,33 @@
-const RESERVED_WORDS = new Set([
-  'all', 'analyse', 'analyze', 'and', 'any', 'array', 'as', 'asc', 'asymmetric',
-  'authorization', 'binary', 'both', 'case', 'cast', 'check', 'collate', 'collation',
-  'column', 'concurrently', 'constraint', 'create', 'cross', 'current_catalog',
-  'current_date', 'current_role', 'current_schema', 'current_time', 'current_timestamp',
-  'current_user', 'default', 'deferrable', 'desc', 'distinct', 'do', 'else', 'end',
-  'except', 'false', 'fetch', 'for', 'foreign', 'freeze', 'from', 'full', 'grant',
-  'group', 'having', 'ilike', 'in', 'initially', 'inner', 'intersect', 'into', 'is',
-  'isnull', 'join', 'lateral', 'leading', 'left', 'like', 'limit', 'localtime',
-  'localtimestamp', 'natural', 'not', 'notnull', 'null', 'offset', 'on', 'only',
-  'or', 'order', 'outer', 'overlaps', 'placing', 'primary', 'references', 'returning',
-  'right', 'select', 'session_user', 'similar', 'some', 'symmetric', 'table', 'tablesample',
-  'then', 'to', 'trailing', 'true', 'union', 'unique', 'user', 'using', 'variadic',
-  'verbose', 'when', 'where', 'window', 'with'
-]);
+import { RESERVED_KEYWORDS, TYPE_FUNC_NAME_KEYWORDS } from '../kwlist';
 
 export class QuoteUtils {
+  /**
+   * Checks if a value needs quoting for use in String nodes, DefElem, role names, etc.
+   * Uses a different algorithm than needsQuotes - checks for mixed case and special characters.
+   * This was previously Deparser.needsQuotes.
+   */
+  static needsQuotesForString(value: string): boolean {
+    if (!value) return false;
+
+    const needsQuotesRegex = /[a-z]+[\W\w]*[A-Z]+|[A-Z]+[\W\w]*[a-z]+|\W/;
+    const isAllUppercase = /^[A-Z]+$/.test(value);
+
+    return needsQuotesRegex.test(value) ||
+           RESERVED_KEYWORDS.has(value.toLowerCase()) ||
+           isAllUppercase;
+  }
+
+  /**
+   * Quotes a string value if it needs quoting for String nodes.
+   * Uses needsQuotesForString logic.
+   */
+  static quoteString(value: string): string {
+    if (QuoteUtils.needsQuotesForString(value)) {
+      return `"${value}"`;
+    }
+    return value;
+  }
+
   static needsQuotes(value: string): boolean {
     if (!value || typeof value !== 'string') {
       return false;
@@ -22,7 +35,7 @@ export class QuoteUtils {
 
     const lowerValue = value.toLowerCase();
     
-    if (RESERVED_WORDS.has(lowerValue)) {
+    if (RESERVED_KEYWORDS.has(lowerValue) || TYPE_FUNC_NAME_KEYWORDS.has(lowerValue)) {
       return true;
     }
 
