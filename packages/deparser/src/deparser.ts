@@ -1311,13 +1311,13 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (context.update && node.name) {
-      output.push(QuoteUtils.quote(node.name));
+      output.push(QuoteUtils.quoteIdentifier(node.name));
 
       // Handle indirection (array indexing, field access, etc.)
       if (node.indirection && node.indirection.length > 0) {
         const indirectionStrs = ListUtils.unwrapList(node.indirection).map(item => {
           if (item.String) {
-            return `.${QuoteUtils.quote(item.String.sval || item.String.str)}`;
+            return `.${QuoteUtils.quoteIdentifier(item.String.sval || item.String.str)}`;
           }
           return this.visit(item, context);
         });
@@ -1329,13 +1329,13 @@ export class Deparser implements DeparserVisitor {
         output.push(this.deparse(node.val, context));
       }
     } else if (context.insertColumns && node.name) {
-      output.push(QuoteUtils.quote(node.name));
+      output.push(QuoteUtils.quoteIdentifier(node.name));
 
       // Handle indirection for INSERT column lists (e.g., q.c1.r)
       if (node.indirection && node.indirection.length > 0) {
         const indirectionStrs = ListUtils.unwrapList(node.indirection).map(item => {
           if (item.String) {
-            return `.${QuoteUtils.quote(item.String.sval || item.String.str)}`;
+            return `.${QuoteUtils.quoteIdentifier(item.String.sval || item.String.str)}`;
           }
           return this.visit(item, context);
         });
@@ -1348,7 +1348,7 @@ export class Deparser implements DeparserVisitor {
 
       if (node.name) {
         output.push('AS');
-        output.push(QuoteUtils.quote(node.name));
+        output.push(QuoteUtils.quoteIdentifier(node.name));
       }
     }
 
@@ -1364,7 +1364,7 @@ export class Deparser implements DeparserVisitor {
           if (this.getNodeType(item) === 'ResTarget') {
             const resTarget = this.getNodeData(item) as any;
             const val = resTarget.val ? this.visit(resTarget.val, context) : '';
-            const alias = resTarget.name ? ` AS ${QuoteUtils.quote(resTarget.name)}` : '';
+            const alias = resTarget.name ? ` AS ${QuoteUtils.quoteIdentifier(resTarget.name)}` : '';
             return val + alias;
           } else {
             const val = this.visit(item, context);
@@ -1798,7 +1798,7 @@ export class Deparser implements DeparserVisitor {
     const fields = ListUtils.unwrapList(node.fields);
     return fields.map(field => {
       if (field.String) {
-        return QuoteUtils.quote(field.String.sval || field.String.str);
+        return QuoteUtils.quoteIdentifier(field.String.sval || field.String.str);
       } else if (field.A_Star) {
         return '*';
       }
@@ -1883,7 +1883,7 @@ export class Deparser implements DeparserVisitor {
         return output.join(' ');
       }
 
-      const quotedTypeName = QuoteUtils.quote(typeName);
+      const quotedTypeName = QuoteUtils.quoteIdentifier(typeName);
       let result = mods(quotedTypeName, args);
 
       if (node.arrayBounds && node.arrayBounds.length > 0) {
@@ -1972,7 +1972,7 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    const quotedNames = names.map((name: string) => QuoteUtils.quote(name));
+    const quotedNames = names.map((name: string) => QuoteUtils.quoteIdentifier(name));
     let result = mods(quotedNames.join('.'), args);
 
     if (node.arrayBounds && node.arrayBounds.length > 0) {
@@ -2017,15 +2017,15 @@ export class Deparser implements DeparserVisitor {
 
     let tableName = '';
     if (node.catalogname) {
-      tableName = QuoteUtils.quote(node.catalogname);
+      tableName = QuoteUtils.quoteIdentifier(node.catalogname);
       if (node.schemaname) {
-        tableName += '.' + QuoteUtils.quote(node.schemaname);
+        tableName += '.' + QuoteUtils.quoteIdentifier(node.schemaname);
       }
-      tableName += '.' + QuoteUtils.quote(node.relname);
+      tableName += '.' + QuoteUtils.quoteIdentifier(node.relname);
     } else if (node.schemaname) {
-      tableName = QuoteUtils.quote(node.schemaname) + '.' + QuoteUtils.quote(node.relname);
+      tableName = QuoteUtils.quoteIdentifier(node.schemaname) + '.' + QuoteUtils.quoteIdentifier(node.relname);
     } else {
-      tableName = QuoteUtils.quote(node.relname);
+      tableName = QuoteUtils.quoteIdentifier(node.relname);
     }
     output.push(tableName);
 
@@ -2281,7 +2281,7 @@ export class Deparser implements DeparserVisitor {
 
     for (const subnode of indirection) {
       if (subnode.String || subnode.A_Star) {
-        const value = subnode.A_Star ? '*' : QuoteUtils.quote(subnode.String.sval || subnode.String.str);
+        const value = subnode.A_Star ? '*' : QuoteUtils.quoteIdentifier(subnode.String.sval || subnode.String.str);
         output.push(`.${value}`);
       } else {
         output.push(this.visit(subnode, context));
@@ -2690,7 +2690,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.colname) {
-      output.push(QuoteUtils.quote(node.colname));
+      output.push(QuoteUtils.quoteIdentifier(node.colname));
     }
 
     if (node.typeName) {
@@ -2741,7 +2741,7 @@ export class Deparser implements DeparserVisitor {
     // Handle constraint name if present
     if (node.conname && (node.contype === 'CONSTR_CHECK' || node.contype === 'CONSTR_UNIQUE' || node.contype === 'CONSTR_PRIMARY' || node.contype === 'CONSTR_FOREIGN')) {
       output.push('CONSTRAINT');
-      output.push(QuoteUtils.quote(node.conname));
+      output.push(QuoteUtils.quoteIdentifier(node.conname));
     }
 
     switch (node.contype) {
@@ -3673,7 +3673,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.idxname) {
-      output.push(QuoteUtils.quote(node.idxname));
+      output.push(QuoteUtils.quoteIdentifier(node.idxname));
     }
 
     output.push('ON');
@@ -3716,7 +3716,7 @@ export class Deparser implements DeparserVisitor {
 
     if (node.tableSpace) {
       output.push('TABLESPACE');
-      output.push(QuoteUtils.quote(node.tableSpace));
+      output.push(QuoteUtils.quoteIdentifier(node.tableSpace));
     }
 
     return output.join(' ');
@@ -3726,7 +3726,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.name) {
-      output.push(QuoteUtils.quote(node.name));
+      output.push(QuoteUtils.quoteIdentifier(node.name));
     } else if (node.expr) {
       output.push(context.parens(this.visit(node.expr, context)));
     }
@@ -3785,7 +3785,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.name) {
-      output.push(QuoteUtils.quote(node.name));
+      output.push(QuoteUtils.quoteIdentifier(node.name));
     } else if (node.expr) {
       output.push(context.parens(this.visit(node.expr, context)));
     }
@@ -4053,19 +4053,19 @@ export class Deparser implements DeparserVisitor {
       case 'TRANS_STMT_SAVEPOINT':
         output.push('SAVEPOINT');
         if (node.savepoint_name) {
-          output.push(QuoteUtils.quote(node.savepoint_name));
+          output.push(QuoteUtils.quoteIdentifier(node.savepoint_name));
         }
         break;
       case 'TRANS_STMT_RELEASE':
         output.push('RELEASE SAVEPOINT');
         if (node.savepoint_name) {
-          output.push(QuoteUtils.quote(node.savepoint_name));
+          output.push(QuoteUtils.quoteIdentifier(node.savepoint_name));
         }
         break;
       case 'TRANS_STMT_ROLLBACK_TO':
         output.push('ROLLBACK TO');
         if (node.savepoint_name) {
-          output.push(QuoteUtils.quote(node.savepoint_name));
+          output.push(QuoteUtils.quoteIdentifier(node.savepoint_name));
         }
         break;
       case 'TRANS_STMT_PREPARE':
@@ -4524,7 +4524,7 @@ export class Deparser implements DeparserVisitor {
           if (objList && objList.List && objList.List.items) {
             const items = objList.List.items.map((item: any) => {
               if (item.String && item.String.sval) {
-                return QuoteUtils.quote(item.String.sval);
+                return QuoteUtils.quoteIdentifier(item.String.sval);
               }
               return this.visit(item, context);
             }).filter((name: string) => name && name.trim());
@@ -4559,12 +4559,12 @@ export class Deparser implements DeparserVisitor {
             if (items.length === 2) {
               const accessMethod = items[0];
               const objectName = items[1];
-              return `${QuoteUtils.quote(objectName)} USING ${accessMethod}`;
+              return `${QuoteUtils.quoteIdentifier(objectName)} USING ${accessMethod}`;
             } else if (items.length === 3) {
               const accessMethod = items[0];
               const schemaName = items[1];
               const objectName = items[2];
-              return `${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(objectName)} USING ${accessMethod}`;
+              return `${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(objectName)} USING ${accessMethod}`;
             }
             return items.join('.');
           }
@@ -4609,7 +4609,7 @@ export class Deparser implements DeparserVisitor {
           if (objList && objList.List && objList.List.items) {
             const items = objList.List.items.map((item: any) => {
               if (item.String && item.String.sval) {
-                return QuoteUtils.quote(item.String.sval);
+                return QuoteUtils.quoteIdentifier(item.String.sval);
               }
               return this.visit(item, context);
             }).filter((name: string) => name && name.trim());
@@ -4670,7 +4670,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.name) {
-      let nameWithIndirection = QuoteUtils.quote(node.name);
+      let nameWithIndirection = QuoteUtils.quoteIdentifier(node.name);
 
       if (node.indirection && node.indirection.length > 0) {
         const indirectionStr = node.indirection
@@ -4837,7 +4837,7 @@ export class Deparser implements DeparserVisitor {
               const indentedParts: string[] = [];
               
               if (colDefData.colname) {
-                parts.push(QuoteUtils.quote(colDefData.colname));
+                parts.push(QuoteUtils.quoteIdentifier(colDefData.colname));
               }
 
               if (colDefData.typeName) {
@@ -4901,7 +4901,7 @@ export class Deparser implements DeparserVisitor {
               const parts: string[] = [];
 
               if (colDefData.colname) {
-                parts.push(QuoteUtils.quote(colDefData.colname));
+                parts.push(QuoteUtils.quoteIdentifier(colDefData.colname));
               }
 
               if (colDefData.typeName) {
@@ -4959,7 +4959,7 @@ export class Deparser implements DeparserVisitor {
             }
           }
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           if (node.behavior === 'DROP_CASCADE') {
             output.push('CASCADE');
@@ -4974,7 +4974,7 @@ export class Deparser implements DeparserVisitor {
             output.push('ALTER COLUMN');
           }
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('TYPE');
           if (node.def) {
@@ -5000,7 +5000,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_SetTableSpace':
           output.push('SET TABLESPACE');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_AddConstraint':
@@ -5017,7 +5017,7 @@ export class Deparser implements DeparserVisitor {
             output.push('DROP CONSTRAINT');
           }
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           if (node.behavior === 'DROP_CASCADE') {
             output.push('CASCADE');
@@ -5052,7 +5052,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_ColumnDefault':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           if (node.def) {
             output.push('SET DEFAULT');
@@ -5064,7 +5064,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_SetStorage':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('SET STORAGE');
           if (node.def) {
@@ -5075,7 +5075,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_ClusterOn':
           output.push('CLUSTER ON');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_DropCluster':
@@ -5102,21 +5102,21 @@ export class Deparser implements DeparserVisitor {
         case 'AT_SetNotNull':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('SET NOT NULL');
           break;
         case 'AT_DropNotNull':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('DROP NOT NULL');
           break;
         case 'AT_SetStatistics':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           } else if (node.num !== undefined && node.num !== null) {
             output.push(node.num.toString());
           }
@@ -5128,7 +5128,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_SetOptions':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('SET');
           if (node.def) {
@@ -5144,7 +5144,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_ResetOptions':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('RESET');
           if (node.def) {
@@ -5160,7 +5160,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_SetCompression':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('SET COMPRESSION');
           if (node.def) {
@@ -5170,31 +5170,31 @@ export class Deparser implements DeparserVisitor {
         case 'AT_ValidateConstraint':
           output.push('VALIDATE CONSTRAINT');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_EnableTrig':
           output.push('ENABLE TRIGGER');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_EnableAlwaysTrig':
           output.push('ENABLE ALWAYS TRIGGER');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_EnableReplicaTrig':
           output.push('ENABLE REPLICA TRIGGER');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_DisableTrig':
           output.push('DISABLE TRIGGER');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_EnableTrigAll':
@@ -5212,31 +5212,31 @@ export class Deparser implements DeparserVisitor {
         case 'AT_EnableRule':
           output.push('ENABLE RULE');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_EnableAlwaysRule':
           output.push('ENABLE ALWAYS RULE');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_EnableReplicaRule':
           output.push('ENABLE REPLICA RULE');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_DisableRule':
           output.push('DISABLE RULE');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'AT_SetAccessMethod':
           output.push('SET ACCESS METHOD');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           } else {
             // Handle DEFAULT access method case
             output.push('DEFAULT');
@@ -5289,7 +5289,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_CookedColumnDefault':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           if (node.def) {
             output.push('SET DEFAULT');
@@ -5301,7 +5301,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_SetExpression':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('SET EXPRESSION');
           if (node.def) {
@@ -5311,14 +5311,14 @@ export class Deparser implements DeparserVisitor {
         case 'AT_DropExpression':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('DROP EXPRESSION');
           break;
         case 'AT_CheckNotNull':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('SET NOT NULL');
           break;
@@ -5351,7 +5351,7 @@ export class Deparser implements DeparserVisitor {
           if (node.def && this.getNodeType(node.def) === 'Constraint') {
             const constraintData = this.getNodeData(node.def) as any;
             if (constraintData.conname) {
-              output.push(QuoteUtils.quote(constraintData.conname));
+              output.push(QuoteUtils.quoteIdentifier(constraintData.conname));
               if (constraintData.deferrable !== undefined) {
                 output.push(constraintData.deferrable ? 'DEFERRABLE' : 'NOT DEFERRABLE');
               }
@@ -5360,7 +5360,7 @@ export class Deparser implements DeparserVisitor {
               }
             }
           } else if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
             if (node.def) {
               output.push(this.visit(node.def, context));
             }
@@ -5381,7 +5381,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_AlterColumnGenericOptions':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('OPTIONS');
           if (node.def) {
@@ -5434,7 +5434,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_AddIdentity':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('ADD');
           if (node.def) {
@@ -5444,7 +5444,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_SetIdentity':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('SET');
           if (node.def) {
@@ -5454,7 +5454,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_DropIdentity':
           output.push('ALTER COLUMN');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('DROP IDENTITY');
           if (node.behavior === 'DROP_CASCADE') {
@@ -5602,7 +5602,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.name) {
-      output.push(QuoteUtils.quote(node.name));
+      output.push(QuoteUtils.quoteIdentifier(node.name));
     }
 
     if (node.argType) {
@@ -6497,7 +6497,7 @@ export class Deparser implements DeparserVisitor {
         case 'REPLICA_IDENTITY_INDEX':
           output.push('USING', 'INDEX');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         default:
@@ -6564,7 +6564,7 @@ export class Deparser implements DeparserVisitor {
             output.push('IF', 'EXISTS');
           }
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           if (node.behavior === 'DROP_CASCADE') {
             output.push('CASCADE');
@@ -6573,7 +6573,7 @@ export class Deparser implements DeparserVisitor {
         case 'AT_ValidateConstraint':
           output.push('VALIDATE', 'CONSTRAINT');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'C':
@@ -6590,7 +6590,7 @@ export class Deparser implements DeparserVisitor {
             output.push('IF', 'EXISTS');
           }
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           if (node.behavior === 'DROP_CASCADE') {
             output.push('CASCADE');
@@ -6599,7 +6599,7 @@ export class Deparser implements DeparserVisitor {
         case 'V':
           output.push('VALIDATE', 'CONSTRAINT');
           if (node.name) {
-            output.push(QuoteUtils.quote(node.name));
+            output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           break;
         case 'O':
@@ -7011,7 +7011,7 @@ export class Deparser implements DeparserVisitor {
 
     const initialParts = ['CREATE', 'POLICY'];
     if (node.policy_name) {
-      initialParts.push(QuoteUtils.quote(node.policy_name));
+      initialParts.push(QuoteUtils.quoteIdentifier(node.policy_name));
     }
 
     output.push(initialParts.join(' '));
@@ -7090,7 +7090,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'POLICY'];
 
     if (node.policy_name) {
-      output.push(QuoteUtils.quote(node.policy_name));
+      output.push(QuoteUtils.quoteIdentifier(node.policy_name));
     }
 
     if (node.table) {
@@ -7632,7 +7632,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['CLOSE'];
 
     if (node.portalname) {
-      output.push(QuoteUtils.quote(node.portalname));
+      output.push(QuoteUtils.quoteIdentifier(node.portalname));
     } else {
       output.push('ALL');
     }
@@ -7688,7 +7688,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.portalname) {
-      output.push(QuoteUtils.quote(node.portalname));
+      output.push(QuoteUtils.quoteIdentifier(node.portalname));
     }
 
     return output.join(' ');
@@ -7770,7 +7770,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'FOREIGN', 'DATA', 'WRAPPER'];
 
     if (node.fdwname) {
-      output.push(QuoteUtils.quote(node.fdwname));
+      output.push(QuoteUtils.quoteIdentifier(node.fdwname));
     }
 
     if (node.func_options && node.func_options.length > 0) {
@@ -7797,7 +7797,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.servername) {
-      output.push(QuoteUtils.quote(node.servername));
+      output.push(QuoteUtils.quoteIdentifier(node.servername));
     }
 
     if (node.servertype) {
@@ -7809,7 +7809,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.fdwname) {
-      output.push('FOREIGN', 'DATA', 'WRAPPER', QuoteUtils.quote(node.fdwname));
+      output.push('FOREIGN', 'DATA', 'WRAPPER', QuoteUtils.quoteIdentifier(node.fdwname));
     }
 
     if (node.options && node.options.length > 0) {
@@ -7828,7 +7828,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'SERVER'];
 
     if (node.servername) {
-      output.push(QuoteUtils.quote(node.servername));
+      output.push(QuoteUtils.quoteIdentifier(node.servername));
     }
 
     if (node.version) {
@@ -7859,7 +7859,7 @@ export class Deparser implements DeparserVisitor {
     output.push('SERVER');
 
     if (node.servername) {
-      output.push(QuoteUtils.quote(node.servername));
+      output.push(QuoteUtils.quoteIdentifier(node.servername));
     }
 
     if (node.options && node.options.length > 0) {
@@ -7890,7 +7890,7 @@ export class Deparser implements DeparserVisitor {
     output.push('SERVER');
 
     if (node.servername) {
-      output.push(QuoteUtils.quote(node.servername));
+      output.push(QuoteUtils.quoteIdentifier(node.servername));
     }
 
     return output.join(' ');
@@ -7900,7 +7900,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['IMPORT', 'FOREIGN', 'SCHEMA'];
 
     if (node.remote_schema) {
-      output.push(QuoteUtils.quote(node.remote_schema));
+      output.push(QuoteUtils.quoteIdentifier(node.remote_schema));
     }
 
     if (node.list_type) {
@@ -7929,13 +7929,13 @@ export class Deparser implements DeparserVisitor {
     output.push('FROM', 'SERVER');
 
     if (node.server_name) {
-      output.push(QuoteUtils.quote(node.server_name));
+      output.push(QuoteUtils.quoteIdentifier(node.server_name));
     }
 
     output.push('INTO');
 
     if (node.local_schema) {
-      output.push(QuoteUtils.quote(node.local_schema));
+      output.push(QuoteUtils.quoteIdentifier(node.local_schema));
     }
 
     if (node.options && node.options.length > 0) {
@@ -8204,7 +8204,7 @@ export class Deparser implements DeparserVisitor {
       case 'OBJECT_POLICY':
         output.push('POLICY');
         if (node.subname) {
-          output.push(QuoteUtils.quote(node.subname));
+          output.push(QuoteUtils.quoteIdentifier(node.subname));
         }
         break;
       case 'OBJECT_PUBLICATION':
@@ -8263,7 +8263,7 @@ export class Deparser implements DeparserVisitor {
 
     // Handle OBJECT_RULE special case: rule_name ON table_name format
     if (node.renameType === 'OBJECT_RULE' && node.subname && node.relation) {
-      output.push(QuoteUtils.quote(node.subname));
+      output.push(QuoteUtils.quoteIdentifier(node.subname));
       output.push('ON');
       output.push(this.RangeVar(node.relation, context));
     } else if (node.relation) {
@@ -8282,7 +8282,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const accessMethod = items[0].String?.sval || '';
           const objectName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(objectName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(objectName)} USING ${accessMethod}`);
         } else {
           output.push(this.visit(node.object, context));
         }
@@ -8321,7 +8321,7 @@ export class Deparser implements DeparserVisitor {
       throw new Error('RenameStmt requires newname');
     }
 
-    output.push(QuoteUtils.quote(node.newname));
+    output.push(QuoteUtils.quoteIdentifier(node.newname));
 
     // Handle CASCADE/RESTRICT behavior for RENAME operations
     if (node.behavior === 'DROP_CASCADE') {
@@ -8349,7 +8349,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const accessMethod = items[0].String?.sval || '';
           const objectName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(objectName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(objectName)} USING ${accessMethod}`);
         } else {
           output.push(this.visit(node.object, context));
         }
@@ -8815,7 +8815,7 @@ export class Deparser implements DeparserVisitor {
     output.push('LANGUAGE');
 
     if (node.plname) {
-      output.push(QuoteUtils.quote(node.plname));
+      output.push(QuoteUtils.quoteIdentifier(node.plname));
     }
 
     if (node.plhandler && node.plhandler.length > 0) {
@@ -8861,7 +8861,7 @@ export class Deparser implements DeparserVisitor {
     output.push('LANGUAGE');
 
     if (node.lang) {
-      output.push(QuoteUtils.quote(node.lang));
+      output.push(QuoteUtils.quoteIdentifier(node.lang));
     }
 
     output.push('(');
@@ -8899,7 +8899,7 @@ export class Deparser implements DeparserVisitor {
     output.push('TRIGGER');
 
     if (node.trigname) {
-      output.push(QuoteUtils.quote(node.trigname));
+      output.push(QuoteUtils.quoteIdentifier(node.trigname));
     }
 
     if (context.isPretty()) {
@@ -9073,7 +9073,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.name) {
-      output.push(QuoteUtils.quote(node.name));
+      output.push(QuoteUtils.quoteIdentifier(node.name));
     }
 
     return output.join(' ');
@@ -9083,7 +9083,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['CREATE EVENT TRIGGER'];
 
     if (node.trigname) {
-      output.push(QuoteUtils.quote(node.trigname));
+      output.push(QuoteUtils.quoteIdentifier(node.trigname));
     }
 
     output.push('ON');
@@ -9117,7 +9117,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER EVENT TRIGGER'];
 
     if (node.trigname) {
-      output.push(QuoteUtils.quote(node.trigname));
+      output.push(QuoteUtils.quoteIdentifier(node.trigname));
     }
 
     if (node.tgenabled) {
@@ -9286,13 +9286,13 @@ export class Deparser implements DeparserVisitor {
     output.push('ALL', 'IN', 'TABLESPACE');
 
     if (node.orig_tablespacename) {
-      output.push(QuoteUtils.quote(node.orig_tablespacename));
+      output.push(QuoteUtils.quoteIdentifier(node.orig_tablespacename));
     }
 
     output.push('SET', 'TABLESPACE');
 
     if (node.new_tablespacename) {
-      output.push(QuoteUtils.quote(node.new_tablespacename));
+      output.push(QuoteUtils.quoteIdentifier(node.new_tablespacename));
     }
 
     if (node.nowait) {
@@ -9323,10 +9323,10 @@ export class Deparser implements DeparserVisitor {
       const sequenceName: string[] = [];
       const seq = node.sequence as any;
       if (seq.schemaname) {
-        sequenceName.push(QuoteUtils.quote(seq.schemaname));
+        sequenceName.push(QuoteUtils.quoteIdentifier(seq.schemaname));
       }
       if (seq.relname) {
-        sequenceName.push(QuoteUtils.quote(seq.relname));
+        sequenceName.push(QuoteUtils.quoteIdentifier(seq.relname));
       }
       output.push(sequenceName.join('.'));
     }
@@ -9364,10 +9364,10 @@ export class Deparser implements DeparserVisitor {
       const sequenceName: string[] = [];
       const seq = node.sequence as any;
       if (seq.schemaname) {
-        sequenceName.push(QuoteUtils.quote(seq.schemaname));
+        sequenceName.push(QuoteUtils.quoteIdentifier(seq.schemaname));
       }
       if (seq.relname) {
-        sequenceName.push(QuoteUtils.quote(seq.relname));
+        sequenceName.push(QuoteUtils.quoteIdentifier(seq.relname));
       }
       output.push(sequenceName.join('.'));
     }
@@ -9772,7 +9772,7 @@ export class Deparser implements DeparserVisitor {
 
   aliasname(node: any, context: DeparserContext): string {
     if (typeof node === 'string') {
-      return QuoteUtils.quote(node);
+      return QuoteUtils.quoteIdentifier(node);
     }
     return this.visit(node, context);
   }
@@ -10151,7 +10151,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'DATABASE'];
 
     if (node.dbname) {
-      output.push(QuoteUtils.quote(node.dbname));
+      output.push(QuoteUtils.quoteIdentifier(node.dbname));
     }
 
     if (node.options && node.options.length > 0) {
@@ -10166,7 +10166,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'DATABASE'];
 
     if (node.dbname) {
-      output.push(QuoteUtils.quote(node.dbname));
+      output.push(QuoteUtils.quoteIdentifier(node.dbname));
     }
 
     output.push('REFRESH', 'COLLATION', 'VERSION');
@@ -10178,7 +10178,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'DATABASE'];
 
     if (node.dbname) {
-      output.push(QuoteUtils.quote(node.dbname));
+      output.push(QuoteUtils.quoteIdentifier(node.dbname));
     }
 
     if (node.setstmt) {
@@ -10193,7 +10193,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['DECLARE'];
 
     if (node.portalname) {
-      output.push(QuoteUtils.quote(node.portalname));
+      output.push(QuoteUtils.quoteIdentifier(node.portalname));
     }
 
     // Handle cursor options before CURSOR keyword
@@ -10242,7 +10242,7 @@ export class Deparser implements DeparserVisitor {
     } else if (node.pubobjtype === 'PUBLICATIONOBJ_TABLES_IN_SCHEMA') {
       output.push('TABLES IN SCHEMA');
       if (node.name) {
-        output.push(QuoteUtils.quote(node.name));
+        output.push(QuoteUtils.quoteIdentifier(node.name));
       }
     } else if (node.pubobjtype === 'PUBLICATIONOBJ_TABLES_IN_CUR_SCHEMA') {
       output.push('TABLES IN SCHEMA CURRENT_SCHEMA');
@@ -10275,7 +10275,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['CREATE', 'ACCESS', 'METHOD'];
 
     if (node.amname) {
-      output.push(QuoteUtils.quote(node.amname));
+      output.push(QuoteUtils.quoteIdentifier(node.amname));
     }
 
     output.push('TYPE');
@@ -10346,7 +10346,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.tableSpaceName) {
-      output.push('TABLESPACE', QuoteUtils.quote(node.tableSpaceName));
+      output.push('TABLESPACE', QuoteUtils.quoteIdentifier(node.tableSpaceName));
     }
 
     return output.join(' ');
@@ -10533,7 +10533,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.colname) {
-      output.push(QuoteUtils.quote(node.colname));
+      output.push(QuoteUtils.quoteIdentifier(node.colname));
     }
 
     if (node.for_ordinality) {
@@ -10690,9 +10690,9 @@ export class Deparser implements DeparserVisitor {
     if (node.op === 'IS_XMLPI') {
       if (node.name && node.args && node.args.length > 0) {
         const argStrs = ListUtils.unwrapList(node.args).map(arg => this.visit(arg, context));
-        return `xmlpi(name ${QuoteUtils.quote(node.name)}, ${argStrs.join(', ')})`;
+        return `xmlpi(name ${QuoteUtils.quoteIdentifier(node.name)}, ${argStrs.join(', ')})`;
       } else if (node.name) {
-        return `xmlpi(name ${QuoteUtils.quote(node.name)})`;
+        return `xmlpi(name ${QuoteUtils.quoteIdentifier(node.name)})`;
       } else {
         return 'XMLPI()';
       }
@@ -10708,7 +10708,7 @@ export class Deparser implements DeparserVisitor {
         output.push('XMLELEMENT');
         const elementParts: string[] = [];
         if (node.name) {
-          elementParts.push(`NAME ${QuoteUtils.quote(node.name)}`);
+          elementParts.push(`NAME ${QuoteUtils.quoteIdentifier(node.name)}`);
         }
         if (node.named_args && node.named_args.length > 0) {
           const namedArgStrs = ListUtils.unwrapList(node.named_args).map(arg => this.visit(arg, context));
@@ -10805,7 +10805,7 @@ export class Deparser implements DeparserVisitor {
     // Handle name and args for operations that don't have special handling
     if (node.op !== 'IS_XMLELEMENT' && node.op !== 'IS_XMLPARSE' && node.op !== 'IS_XMLROOT' && node.op !== 'IS_DOCUMENT') {
       if (node.name) {
-        const quotedName = QuoteUtils.quote(node.name);
+        const quotedName = QuoteUtils.quoteIdentifier(node.name);
         output.push(`NAME ${quotedName}`);
       }
 
@@ -10829,26 +10829,26 @@ export class Deparser implements DeparserVisitor {
 
   schemaname(node: any, context: DeparserContext): string {
     if (typeof node === 'string') {
-      return QuoteUtils.quote(node);
+      return QuoteUtils.quoteIdentifier(node);
     }
     if (node && node.String && node.String.sval) {
-      return QuoteUtils.quote(node.String.sval);
+      return QuoteUtils.quoteIdentifier(node.String.sval);
     }
     // Handle other node types without recursion
     if (node && typeof node === 'object') {
       if (node.sval !== undefined) {
-        return QuoteUtils.quote(node.sval);
+        return QuoteUtils.quoteIdentifier(node.sval);
       }
       // Handle List nodes that might contain schema names
       if (node.List && Array.isArray(node.List.items)) {
         const items = node.List.items;
         if (items.length > 0 && items[0].String && items[0].String.sval) {
-          return QuoteUtils.quote(items[0].String.sval);
+          return QuoteUtils.quoteIdentifier(items[0].String.sval);
         }
       }
       // For other complex nodes, try to extract string value without recursion
       if (node.val !== undefined) {
-        return QuoteUtils.quote(node.val);
+        return QuoteUtils.quoteIdentifier(node.val);
       }
       return '';
     }
@@ -10932,7 +10932,7 @@ export class Deparser implements DeparserVisitor {
     output.push('RULE');
 
     if (node.rulename) {
-      output.push(QuoteUtils.quote(node.rulename));
+      output.push(QuoteUtils.quoteIdentifier(node.rulename));
     }
 
     output.push('AS ON');
@@ -11012,44 +11012,44 @@ export class Deparser implements DeparserVisitor {
 
   relname(node: any, context: DeparserContext): string {
     if (typeof node === 'string') {
-      return QuoteUtils.quote(node);
+      return QuoteUtils.quoteIdentifier(node);
     }
     if (node && node.String && node.String.sval) {
-      return QuoteUtils.quote(node.String.sval);
+      return QuoteUtils.quoteIdentifier(node.String.sval);
     }
     if (node && typeof node === 'object' && node.relname) {
-      return QuoteUtils.quote(node.relname);
+      return QuoteUtils.quoteIdentifier(node.relname);
     }
     return this.visit(node, context);
   }
 
   rel(node: any, context: DeparserContext): string {
     if (typeof node === 'string') {
-      return QuoteUtils.quote(node);
+      return QuoteUtils.quoteIdentifier(node);
     }
     if (node && node.String && node.String.sval) {
-      return QuoteUtils.quote(node.String.sval);
+      return QuoteUtils.quoteIdentifier(node.String.sval);
     }
     if (node && node.RangeVar) {
       return this.RangeVar(node.RangeVar, context);
     }
     if (node && typeof node === 'object' && node.relname) {
-      return QuoteUtils.quote(node.relname);
+      return QuoteUtils.quoteIdentifier(node.relname);
     }
     return this.visit(node, context);
   }
 
   objname(node: any, context: DeparserContext): string {
     if (typeof node === 'string') {
-      return QuoteUtils.quote(node);
+      return QuoteUtils.quoteIdentifier(node);
     }
     if (node && node.String && node.String.sval) {
-      return QuoteUtils.quote(node.String.sval);
+      return QuoteUtils.quoteIdentifier(node.String.sval);
     }
     if (Array.isArray(node)) {
       const parts = node.map(part => {
         if (part && part.String && part.String.sval) {
-          return QuoteUtils.quote(part.String.sval);
+          return QuoteUtils.quoteIdentifier(part.String.sval);
         }
         return this.visit(part, context);
       });
@@ -11130,7 +11130,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['CURRENT OF'];
 
     if (node.cursor_name) {
-      output.push(QuoteUtils.quote(node.cursor_name));
+      output.push(QuoteUtils.quoteIdentifier(node.cursor_name));
     }
 
     if (node.cursor_param > 0) {
@@ -11218,7 +11218,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const domainName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(domainName)}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(domainName)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11228,7 +11228,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const typeName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(typeName)}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(typeName)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11238,7 +11238,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const conversionName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(conversionName)}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(conversionName)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11248,7 +11248,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const parserName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(parserName)}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(parserName)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11258,7 +11258,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const configName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(configName)}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(configName)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11268,7 +11268,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const templateName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(templateName)}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(templateName)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11278,7 +11278,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const schemaName = items[0].String?.sval || '';
           const dictionaryName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(dictionaryName)}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(dictionaryName)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11288,12 +11288,12 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const accessMethod = items[0].String?.sval || '';
           const opClassName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(opClassName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(opClassName)} USING ${accessMethod}`);
         } else if (items.length === 3) {
           const accessMethod = items[0].String?.sval || '';
           const schemaName = items[1].String?.sval || '';
           const opClassName = items[2].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(opClassName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(opClassName)} USING ${accessMethod}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11303,12 +11303,12 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const accessMethod = items[0].String?.sval || '';
           const opFamilyName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quote(opFamilyName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(opFamilyName)} USING ${accessMethod}`);
         } else if (items.length === 3) {
           const accessMethod = items[0].String?.sval || '';
           const schemaName = items[1].String?.sval || '';
           const opFamilyName = items[2].String?.sval || '';
-          output.push(`${QuoteUtils.quote(schemaName)}.${QuoteUtils.quote(opFamilyName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(schemaName)}.${QuoteUtils.quoteIdentifier(opFamilyName)} USING ${accessMethod}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11320,7 +11320,7 @@ export class Deparser implements DeparserVisitor {
     output.push('SET SCHEMA');
 
     if (node.newschema) {
-      output.push(QuoteUtils.quote(node.newschema));
+      output.push(QuoteUtils.quoteIdentifier(node.newschema));
     }
 
     return output.join(' ');
@@ -11397,7 +11397,7 @@ export class Deparser implements DeparserVisitor {
 
     if (node.servername) {
       output.push('SERVER');
-      output.push(QuoteUtils.quote(node.servername));
+      output.push(QuoteUtils.quoteIdentifier(node.servername));
     }
 
     if (node.options && node.options.length > 0) {
