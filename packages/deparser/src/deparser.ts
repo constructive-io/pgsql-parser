@@ -1883,8 +1883,7 @@ export class Deparser implements DeparserVisitor {
         return output.join(' ');
       }
 
-      const quotedTypeName = QuoteUtils.quoteIdentifier(typeName);
-      let result = mods(quotedTypeName, args);
+      let result = mods(typeName, args);
 
       if (node.arrayBounds && node.arrayBounds.length > 0) {
         result += formatArrayBounds(node.arrayBounds);
