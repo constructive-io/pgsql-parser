@@ -2457,36 +2457,8 @@ export class Deparser implements DeparserVisitor {
     return output.join(' ');
   }
 
-  private static readonly RESERVED_WORDS = new Set([
-    'all', 'analyse', 'analyze', 'and', 'any', 'array', 'as', 'asc', 'asymmetric', 'both',
-    'case', 'cast', 'check', 'collate', 'column', 'constraint', 'create', 'current_catalog',
-    'current_date', 'current_role', 'current_time', 'current_timestamp', 'current_user',
-    'default', 'deferrable', 'desc', 'distinct', 'do', 'else', 'end', 'except', 'false',
-    'fetch', 'for', 'foreign', 'from', 'grant', 'group', 'having', 'in', 'initially',
-    'intersect', 'into', 'lateral', 'leading', 'limit', 'localtime', 'localtimestamp',
-    'not', 'null', 'offset', 'on', 'only', 'or', 'order', 'placing', 'primary',
-    'references', 'returning', 'select', 'session_user', 'some', 'symmetric', 'table',
-    'then', 'to', 'trailing', 'true', 'union', 'unique', 'user', 'using', 'variadic',
-    'when', 'where', 'window', 'with'
-  ]);
-
-  private static needsQuotes(value: string): boolean {
-    if (!value) return false;
-
-    const needsQuotesRegex = /[a-z]+[\W\w]*[A-Z]+|[A-Z]+[\W\w]*[a-z]+|\W/;
-
-    const isAllUppercase = /^[A-Z]+$/.test(value);
-
-    return needsQuotesRegex.test(value) ||
-           Deparser.RESERVED_WORDS.has(value.toLowerCase()) ||
-           isAllUppercase;
-  }
-
   quoteIfNeeded(value: string): string {
-    if (Deparser.needsQuotes(value)) {
-      return `"${value}"`;
-    }
-    return value;
+    return QuoteUtils.quoteString(value);
   }
 
   preserveOperatorDefElemCase(defName: string): string {
@@ -2528,7 +2500,7 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    return Deparser.needsQuotes(value) ? `"${value}"` : value;
+    return QuoteUtils.quoteString(value);
   }
 
   Integer(node: t.Integer, context: DeparserContext): string {
@@ -4190,18 +4162,18 @@ export class Deparser implements DeparserVisitor {
           return this.visit(arg, context);
         }).join(', ') : '';
 
-        // Handle args - always include TO clause if args exist (even if empty string)
-        const paramName = node.name && (node.name.includes('.') || node.name.includes('-') || /[A-Z]/.test(node.name)) ? `"${node.name}"` : node.name;
-        if (!node.args || node.args.length === 0) {
-          return `SET ${localPrefix}${paramName}`;
-        }
-        return `SET ${localPrefix}${paramName} TO ${args}`;
-      case 'VAR_SET_DEFAULT':
-        const defaultParamName = node.name && (node.name.includes('.') || node.name.includes('-') || /[A-Z]/.test(node.name)) ? `"${node.name}"` : node.name;
-        return `SET ${defaultParamName} TO DEFAULT`;
-      case 'VAR_SET_CURRENT':
-        const currentParamName = node.name && (node.name.includes('.') || node.name.includes('-') || /[A-Z]/.test(node.name)) ? `"${node.name}"` : node.name;
-        return `SET ${currentParamName} FROM CURRENT`;
+              // Handle args - always include TO clause if args exist (even if empty string)
+              const paramName = QuoteUtils.quoteString(node.name);
+              if (!node.args || node.args.length === 0) {
+                return `SET ${localPrefix}${paramName}`;
+              }
+              return `SET ${localPrefix}${paramName} TO ${args}`;
+            case 'VAR_SET_DEFAULT':
+              const defaultParamName = QuoteUtils.quoteString(node.name);
+              return `SET ${defaultParamName} TO DEFAULT`;
+            case 'VAR_SET_CURRENT':
+              const currentParamName = QuoteUtils.quoteString(node.name);
+              return `SET ${currentParamName} FROM CURRENT`;
       case 'VAR_SET_MULTI':
         if (node.name === 'TRANSACTION' || node.name === 'SESSION CHARACTERISTICS') {
           // Handle SET TRANSACTION statements specially
@@ -4267,9 +4239,9 @@ export class Deparser implements DeparserVisitor {
           }).join(', ') : '';
           return `SET ${assignments}`;
         }
-      case 'VAR_RESET':
-        const resetParamName = node.name && (node.name.includes('.') || node.name.includes('-') || /[A-Z]/.test(node.name)) ? `"${node.name}"` : node.name;
-        return `RESET ${resetParamName}`;
+            case 'VAR_RESET':
+              const resetParamName = QuoteUtils.quoteString(node.name);
+              return `RESET ${resetParamName}`;
       case 'VAR_RESET_ALL':
         return 'RESET ALL';
       default:
@@ -5715,7 +5687,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.role) {
-      const roleName = Deparser.needsQuotes(node.role) ? `"${node.role}"` : node.role;
+      const roleName = QuoteUtils.quoteString(node.role);
       output.push(roleName);
     }
 
@@ -5759,14 +5731,14 @@ export class Deparser implements DeparserVisitor {
       return `${node.defname}=${this.visit(node.arg, context.spawn('DefElem'))}`;
     }
 
-    // Handle CREATE OPERATOR boolean flags - MUST be first to preserve case
-    if (context.parentNodeTypes.includes('DefineStmt') &&
-        ['hashes', 'merges'].includes(node.defname.toLowerCase()) && !node.arg) {
-      if (node.defname !== node.defname.toLowerCase() && node.defname !== node.defname.toUpperCase()) {
-        return `"${node.defname}"`;
-      }
-      return node.defname.charAt(0).toUpperCase() + node.defname.slice(1).toLowerCase();
-    }
+        // Handle CREATE OPERATOR boolean flags - MUST be first to preserve case
+        if (context.parentNodeTypes.includes('DefineStmt') &&
+            ['hashes', 'merges'].includes(node.defname.toLowerCase()) && !node.arg) {
+          if (node.defname !== node.defname.toLowerCase() && node.defname !== node.defname.toUpperCase()) {
+            return QuoteUtils.quoteString(node.defname);
+          }
+          return node.defname.charAt(0).toUpperCase() + node.defname.slice(1).toLowerCase();
+        }
 
     // Handle FDW-related statements and ALTER OPTIONS that use space format for options
     if (context.parentNodeTypes.includes('AlterFdwStmt') || context.parentNodeTypes.includes('CreateFdwStmt') || context.parentNodeTypes.includes('CreateForeignServerStmt') || context.parentNodeTypes.includes('AlterForeignServerStmt') || context.parentNodeTypes.includes('CreateUserMappingStmt') || context.parentNodeTypes.includes('AlterUserMappingStmt') || context.parentNodeTypes.includes('ColumnDef') || context.parentNodeTypes.includes('CreateForeignTableStmt') || context.parentNodeTypes.includes('ImportForeignSchemaStmt') || context.alterColumnOptions || context.alterTableOptions) {
@@ -5788,9 +5760,7 @@ export class Deparser implements DeparserVisitor {
             ? `'${argValue}'`
             : argValue;
 
-          const quotedDefname = node.defname.includes(' ') || node.defname.includes('-') || Deparser.needsQuotes(node.defname)
-            ? `"${node.defname}"`
-            : node.defname;
+                    const quotedDefname = QuoteUtils.quoteString(node.defname);
 
           if (node.defaction === 'DEFELEM_ADD') {
             return `ADD ${quotedDefname} ${finalValue}`;
@@ -5815,10 +5785,8 @@ export class Deparser implements DeparserVisitor {
           return `SET ${node.defname} ${quotedValue}`;
         }
 
-        const quotedDefname = node.defname.includes(' ') || node.defname.includes('-')
-          ? `"${node.defname}"`
-          : node.defname;
-        return `${quotedDefname} ${quotedValue}`;
+                const quotedDefname = QuoteUtils.quoteString(node.defname);
+                return `${quotedDefname} ${quotedValue}`;
       } else if (node.defaction === 'DEFELEM_DROP') {
         // Handle DROP without argument
         return `DROP ${node.defname}`;
@@ -5883,10 +5851,8 @@ export class Deparser implements DeparserVisitor {
         const quotedValue = typeof argValue === 'string'
           ? QuoteUtils.escape(argValue)
           : argValue;
-        const quotedDefname = node.defname.includes(' ') || node.defname.includes('-')
-          ? `"${node.defname}"`
-          : node.defname;
-        return `${quotedDefname} ${quotedValue}`;
+                const quotedDefname = QuoteUtils.quoteString(node.defname);
+                return `${quotedDefname} ${quotedValue}`;
       }
 
 
@@ -5965,14 +5931,11 @@ export class Deparser implements DeparserVisitor {
             const listItems = ListUtils.unwrapList(listData.items);
             const parts = listItems.map(item => {
               const itemData = this.getNodeData(item);
-              if (this.getNodeType(item) === 'String') {
-                // Check if this identifier needs quotes to preserve case
-                const value = itemData.sval;
-                if (Deparser.needsQuotes(value)) {
-                  return `"${value}"`;
-                }
-                return value;
-              }
+                            if (this.getNodeType(item) === 'String') {
+                              // Check if this identifier needs quotes to preserve case
+                              const value = itemData.sval;
+                              return QuoteUtils.quoteString(value);
+                            }
               return this.visit(item, context);
             });
             return `OWNED BY ${parts.join('.')}`;
@@ -6236,18 +6199,18 @@ export class Deparser implements DeparserVisitor {
           return preservedName;
         }
 
-        // Handle boolean flags (no arguments) - preserve quoted case
-        if (['hashes', 'merges'].includes(node.defname.toLowerCase())) {
-          if (node.defname !== node.defname.toLowerCase() && node.defname !== node.defname.toUpperCase()) {
-            return `"${node.defname}"`;
-          }
-          return preservedName.toUpperCase();
-        }
+                // Handle boolean flags (no arguments) - preserve quoted case
+                if (['hashes', 'merges'].includes(node.defname.toLowerCase())) {
+                  if (node.defname !== node.defname.toLowerCase() && node.defname !== node.defname.toUpperCase()) {
+                    return QuoteUtils.quoteString(node.defname);
+                  }
+                  return preservedName.toUpperCase();
+                }
 
-        // Handle CREATE AGGREGATE quoted identifiers - preserve quotes when needed
-        if (Deparser.needsQuotes(node.defname)) {
-          const quotedDefname = `"${node.defname}"`;
-          if (node.arg) {
+                // Handle CREATE AGGREGATE quoted identifiers - preserve quotes when needed
+                if (QuoteUtils.needsQuotesForString(node.defname)) {
+                  const quotedDefname = QuoteUtils.quoteString(node.defname);
+                  if (node.arg) {
             if (this.getNodeType(node.arg) === 'String') {
               const stringData = this.getNodeData(node.arg);
               // Handle boolean string values without quotes
@@ -6306,13 +6269,13 @@ export class Deparser implements DeparserVisitor {
       return `${node.defname} = ${quotedValue}`;
     }
 
-    // Handle CREATE TYPE boolean flags - preserve quoted case for attributes like "Passedbyvalue"
-    if (context.parentNodeTypes.includes('DefineStmt') && !node.arg) {
-      // Check if the original defname appears to be quoted (mixed case that's not all upper/lower)
-      if (node.defname !== node.defname.toLowerCase() && node.defname !== node.defname.toUpperCase()) {
-        return `"${node.defname}"`;
-      }
-    }
+        // Handle CREATE TYPE boolean flags - preserve quoted case for attributes like "Passedbyvalue"
+        if (context.parentNodeTypes.includes('DefineStmt') && !node.arg) {
+          // Check if the original defname appears to be quoted (mixed case that's not all upper/lower)
+          if (node.defname !== node.defname.toLowerCase() && node.defname !== node.defname.toUpperCase()) {
+            return QuoteUtils.quoteString(node.defname);
+          }
+        }
 
     return node.defname.toUpperCase();
   }
@@ -7174,7 +7137,7 @@ export class Deparser implements DeparserVisitor {
     output.push('SERVER');
 
     if (node.servername) {
-      output.push(`"${node.servername}"`);
+      output.push(QuoteUtils.quoteString(node.servername));
     }
 
     if (node.options && node.options.length > 0) {
@@ -7235,7 +7198,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['CREATE', 'PUBLICATION'];
 
     if (node.pubname) {
-      output.push(`"${node.pubname}"`);
+      output.push(QuoteUtils.quoteString(node.pubname));
     }
 
     if (node.pubobjects && node.pubobjects.length > 0) {
@@ -7259,7 +7222,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['CREATE', 'SUBSCRIPTION'];
 
     if (node.subname) {
-      output.push(`"${node.subname}"`);
+      output.push(QuoteUtils.quoteString(node.subname));
     }
 
     output.push('CONNECTION');
@@ -7288,7 +7251,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'PUBLICATION'];
 
     if (node.pubname) {
-      output.push(`"${node.pubname}"`);
+      output.push(QuoteUtils.quoteString(node.pubname));
     }
 
     if (node.action) {
@@ -7328,7 +7291,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'SUBSCRIPTION'];
 
     if (node.subname) {
-      output.push(`"${node.subname}"`);
+      output.push(QuoteUtils.quoteString(node.subname));
     }
 
     if (node.kind) {
@@ -7380,7 +7343,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.subname) {
-      output.push(`"${node.subname}"`);
+      output.push(QuoteUtils.quoteString(node.subname));
     }
 
     if (node.behavior) {
@@ -7991,7 +7954,7 @@ export class Deparser implements DeparserVisitor {
       output.push(this.RangeVar(node.relation, context));
 
       if (node.indexname) {
-        output.push('USING', `"${node.indexname}"`);
+        output.push('USING', QuoteUtils.quoteString(node.indexname));
       }
     }
 
@@ -8070,7 +8033,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.name) {
-      output.push(`"${node.name}"`);
+      output.push(QuoteUtils.quoteString(node.name));
     }
 
     return output.join(' ');
@@ -8117,7 +8080,7 @@ export class Deparser implements DeparserVisitor {
       throw new Error('CreatedbStmt requires dbname');
     }
 
-    output.push(`"${node.dbname}"`);
+    output.push(QuoteUtils.quoteString(node.dbname));
 
     if (node.options && node.options.length > 0) {
       const options = ListUtils.unwrapList(node.options)
@@ -8140,7 +8103,7 @@ export class Deparser implements DeparserVisitor {
       throw new Error('DropdbStmt requires dbname');
     }
 
-    output.push(`"${node.dbname}"`);
+    output.push(QuoteUtils.quoteString(node.dbname));
 
     if (node.options && node.options.length > 0) {
       const options = ListUtils.unwrapList(node.options)
@@ -8336,16 +8299,16 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    if (node.renameType === 'OBJECT_COLUMN' && node.subname) {
-      output.push('RENAME COLUMN', `"${node.subname}"`, 'TO');
-    } else if (node.renameType === 'OBJECT_DOMCONSTRAINT' && node.subname) {
-      output.push('RENAME CONSTRAINT', `"${node.subname}"`, 'TO');
-    } else if (node.renameType === 'OBJECT_TABCONSTRAINT' && node.subname) {
-      output.push('RENAME CONSTRAINT', `"${node.subname}"`, 'TO');
-    } else if (node.renameType === 'OBJECT_ATTRIBUTE' && node.subname) {
-      output.push('RENAME ATTRIBUTE', `"${node.subname}"`, 'TO');
-    } else if (node.renameType === 'OBJECT_ROLE' && node.subname) {
-      output.push(`"${node.subname}"`, 'RENAME TO');
+        if (node.renameType === 'OBJECT_COLUMN' && node.subname) {
+          output.push('RENAME COLUMN', QuoteUtils.quoteString(node.subname), 'TO');
+        } else if (node.renameType === 'OBJECT_DOMCONSTRAINT' && node.subname) {
+          output.push('RENAME CONSTRAINT', QuoteUtils.quoteString(node.subname), 'TO');
+        } else if (node.renameType === 'OBJECT_TABCONSTRAINT' && node.subname) {
+          output.push('RENAME CONSTRAINT', QuoteUtils.quoteString(node.subname), 'TO');
+        } else if (node.renameType === 'OBJECT_ATTRIBUTE' && node.subname) {
+          output.push('RENAME ATTRIBUTE', QuoteUtils.quoteString(node.subname), 'TO');
+        } else if (node.renameType === 'OBJECT_ROLE' && node.subname) {
+          output.push(QuoteUtils.quoteString(node.subname), 'RENAME TO');
     } else if (node.renameType === 'OBJECT_SCHEMA' && node.subname) {
       output.push(this.quoteIfNeeded(node.subname), 'RENAME TO');
     } else if (node.renameType === 'OBJECT_RULE') {
@@ -8677,7 +8640,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['SECURITY LABEL'];
 
     if (node.provider) {
-      output.push('FOR', `"${node.provider}"`);
+      output.push('FOR', QuoteUtils.quoteString(node.provider));
     }
 
     output.push('ON');
@@ -9846,32 +9809,32 @@ export class Deparser implements DeparserVisitor {
               const defName = defElem.defname;
               const defValue = defElem.arg;
 
-              if (defName && defValue) {
-                let preservedDefName;
-                if (Deparser.needsQuotes(defName)) {
-                  preservedDefName = `"${defName}"`;
-                } else {
-                  preservedDefName = this.preserveOperatorDefElemCase(defName);
-                }
+                            if (defName && defValue) {
+                              let preservedDefName;
+                              if (QuoteUtils.needsQuotesForString(defName)) {
+                                preservedDefName = QuoteUtils.quoteString(defName);
+                              } else {
+                                preservedDefName = this.preserveOperatorDefElemCase(defName);
+                              }
 
-                if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator') && defValue.List) {
-                  const listItems = ListUtils.unwrapList(defValue.List.items);
-                  if (listItems.length === 1 && listItems[0].String) {
-                    return `${preservedDefName} = ${listItems[0].String.sval}`;
-                  }
-                }
-                // For commutator/negator, we already handled them above
-                if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator')) {
-                  return `${preservedDefName} = ${this.visit(defValue, context)}`;
-                }
-                return `${preservedDefName} = ${this.visit(defValue, context)}`;
-              } else if (defName && !defValue) {
-                // Handle boolean flags like HASHES, MERGES - preserve original case
-                if (defName === 'Hashes' || defName === 'Merges') {
-                  return `"${defName}"`;
-                }
-                return this.preserveOperatorDefElemCase(defName).toUpperCase();
-              }
+                              if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator') && defValue.List) {
+                                const listItems = ListUtils.unwrapList(defValue.List.items);
+                                if (listItems.length === 1 && listItems[0].String) {
+                                  return `${preservedDefName} = ${listItems[0].String.sval}`;
+                                }
+                              }
+                              // For commutator/negator, we already handled them above
+                              if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator')) {
+                                return `${preservedDefName} = ${this.visit(defValue, context)}`;
+                              }
+                              return `${preservedDefName} = ${this.visit(defValue, context)}`;
+                            } else if (defName && !defValue) {
+                              // Handle boolean flags like HASHES, MERGES - preserve original case
+                              if (defName === 'Hashes' || defName === 'Merges') {
+                                return QuoteUtils.quoteString(defName);
+                              }
+                              return this.preserveOperatorDefElemCase(defName).toUpperCase();
+                            }
             }
             return this.visit(def, context);
           });
@@ -10010,20 +9973,20 @@ export class Deparser implements DeparserVisitor {
               const defName = defElem.defname;
               const defValue = defElem.arg;
 
-              if (defName && defValue) {
-                let preservedDefName;
-                if (Deparser.needsQuotes(defName)) {
-                  preservedDefName = `"${defName}"`;
-                } else {
-                  preservedDefName = defName;
-                }
+                            if (defName && defValue) {
+                              let preservedDefName;
+                              if (QuoteUtils.needsQuotesForString(defName)) {
+                                preservedDefName = QuoteUtils.quoteString(defName);
+                              } else {
+                                preservedDefName = defName;
+                              }
 
-                // Handle String arguments with single quotes for string literals
-                if (defValue.String) {
-                  return `${preservedDefName} = '${defValue.String.sval}'`;
-                }
-                return `${preservedDefName} = ${this.visit(defValue, context)}`;
-              }
+                              // Handle String arguments with single quotes for string literals
+                              if (defValue.String) {
+                                return `${preservedDefName} = '${defValue.String.sval}'`;
+                              }
+                              return `${preservedDefName} = ${this.visit(defValue, context)}`;
+                            }
             }
             return this.visit(def, context);
           });
