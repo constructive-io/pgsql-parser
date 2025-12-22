@@ -1,48 +1,6 @@
-import { RESERVED_KEYWORDS, TYPE_FUNC_NAME_KEYWORDS, keywordKindOf } from '../kwlist';
+import { keywordKindOf } from '../kwlist';
 
 export class QuoteUtils {
-  static needsQuotes(value: string): boolean {
-    if (!value || typeof value !== 'string') {
-      return false;
-    }
-
-    const lowerValue = value.toLowerCase();
-    
-    if (RESERVED_KEYWORDS.has(lowerValue) || TYPE_FUNC_NAME_KEYWORDS.has(lowerValue)) {
-      return true;
-    }
-
-    if (!/^[a-z_][a-z0-9_$]*$/i.test(value)) {
-      return true;
-    }
-
-    if (value !== value.toLowerCase()) {
-      return true;
-    }
-
-    return false;
-  }
-
-  static quote(value: any): any {
-    if (value == null) {
-      return null;
-    }
-
-    if (Array.isArray(value)) {
-      return value.map(v => this.quote(v));
-    }
-
-    if (typeof value !== 'string') {
-      return value;
-    }
-
-    if (this.needsQuotes(value)) {
-      return `"${value}"`;
-    }
-
-    return value;
-  }
-
   static escape(literal: string): string {
     return `'${literal.replace(/'/g, "''")}'`;
   }
