@@ -20888,6 +20888,7 @@
   "original/tables/match-4.sql": "CREATE TABLE post_type (\n  id integer NOT NULL PRIMARY KEY\n)",
   "original/tables/match-5.sql": "DROP TABLE IF EXISTS assembly_seat CASCADE",
   "original/tables/match-6.sql": "CREATE TABLE assembly_seat (\n  id integer NOT NULL PRIMARY KEY\n)",
+  "original/tables/foreign_table-1.sql": "CREATE FOREIGN TABLE public.foo (\n bar pg_catalog.varchar(50) \n) SERVER dummy OPTIONS (schema_name 'public', table_name 'foo')",
   "original/tables/foreign-1.sql": "CREATE TABLE orders (\n    order_id integer PRIMARY KEY,\n    product_no integer REFERENCES products (product_no),\n    quantity integer\n)",
   "original/tables/foreign-2.sql": "CREATE TABLE orders (\n    order_id integer PRIMARY KEY,\n    product_no integer REFERENCES products,\n    quantity integer\n)",
   "original/tables/foreign-3.sql": "CREATE TABLE t1 (\n  a integer PRIMARY KEY,\n  b integer,\n  c integer,\n  FOREIGN KEY (b, c) REFERENCES other_table (c1, c2)\n)",
