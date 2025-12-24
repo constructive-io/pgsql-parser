@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/utils",
-  "version": "17.8.2",
+  "version": "17.8.3",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostgreSQL AST utils for pgsql-parser",
   "main": "index.js",

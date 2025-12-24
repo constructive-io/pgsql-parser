@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [17.13.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.12.2...pgsql-deparser@17.13.0) (2025-12-24)
+
+### Bug Fixes
+
+- don't quote type names - they are not identifiers ([b85dacf](https://github.com/constructive-io/pgsql-parser/commit/b85dacfa8f91be2e1d44c62328f45afa185d6760))
+- update keywords.ts generator to include Set<string> type annotations ([fb6d159](https://github.com/constructive-io/pgsql-parser/commit/fb6d159f0b2a4c34e045eecec7c0069d3bf43f5d))
+
+### Features
+
+- add quoteIdentifier and quoteQualifiedIdentifier from PostgreSQL ruleutils.c ([b30c359](https://github.com/constructive-io/pgsql-parser/commit/b30c3599c1a1f73e54b44b517ea31bc87cf23257)), closes [/github.com/postgres/postgres/blob/fab5cd3dd1323f9e66efeb676c4bb212ff340204/src/backend/utils/adt/ruleutils.c#L13055-L13137](https://github.com//github.com/postgres/postgres/blob/fab5cd3dd1323f9e66efeb676c4bb212ff340204/src/backend/utils/adt/ruleutils.c/issues/L13055-L13137) [/github.com/postgres/postgres/blob/fab5cd3dd1323f9e66efeb676c4bb212ff340204/src/backend/utils/adt/ruleutils.c#L13139-L13156](https://github.com//github.com/postgres/postgres/blob/fab5cd3dd1323f9e66efeb676c4bb212ff340204/src/backend/utils/adt/ruleutils.c/issues/L13139-L13156)
+
 ## [17.12.2](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.12.1...pgsql-deparser@17.12.2) (2025-12-11)
 
 **Note:** Version bump only for package pgsql-deparser
