@@ -185,5 +185,80 @@ export class QuoteUtils {
     }
     return QuoteUtils.quoteIdentifier(ident);
   }
+
+  /**
+   * Quote an identifier that appears as a type name.
+   *
+   * Type names in PostgreSQL have a less strict quoting policy than standalone identifiers.
+   * In type positions, COL_NAME_KEYWORD and TYPE_FUNC_NAME_KEYWORD are allowed unquoted
+   * (e.g., 'json', 'int', 'boolean', 'interval'). Only RESERVED_KEYWORD must be quoted.
+   *
+   * This is different from:
+   * - quoteIdentifier(): quotes all keywords except UNRESERVED_KEYWORD
+   * - quoteIdentifierAfterDot(): only quotes for lexical reasons (no keyword checking)
+   *
+   * Type names still need quoting for lexical reasons (uppercase, special chars, etc.).
+   */
+  static quoteIdentifierTypeName(ident: string): string {
+    if (!ident) return ident;
+
+    let safe = true;
+
+    // Check first character: must be lowercase letter or underscore
+    const firstChar = ident[0];
+    if (!((firstChar >= 'a' && firstChar <= 'z') || firstChar === '_')) {
+      safe = false;
+    }
+
+    // Check all characters
+    for (let i = 0; i < ident.length; i++) {
+      const ch = ident[i];
+      if ((ch >= 'a' && ch <= 'z') ||
+          (ch >= '0' && ch <= '9') ||
+          (ch === '_')) {
+        // okay
+      } else {
+        safe = false;
+      }
+    }
+
+    if (safe) {
+      // For type names, only quote RESERVED_KEYWORD
+      // COL_NAME_KEYWORD and TYPE_FUNC_NAME_KEYWORD are allowed unquoted in type positions
+      const kwKind = keywordKindOf(ident);
+      if (kwKind === 'RESERVED_KEYWORD') {
+        safe = false;
+      }
+    }
+
+    if (safe) {
+      return ident; // no change needed
+    }
+
+    // Build quoted identifier with escaped embedded quotes
+    let result = '"';
+    for (let i = 0; i < ident.length; i++) {
+      const ch = ident[i];
+      if (ch === '"') {
+        result += '"'; // escape " as ""
+      }
+      result += ch;
+    }
+    result += '"';
+
+    return result;
+  }
+
+  /**
+   * Quote a dotted type name (e.g., schema.typename).
+   *
+   * For type names, we use type-name quoting for all parts since the entire
+   * qualified name is in a type context. This allows keywords like 'json',
+   * 'int', 'boolean' to remain unquoted in user-defined schema-qualified types.
+   */
+  static quoteTypeDottedName(parts: string[]): string {
+    if (!parts || parts.length === 0) return '';
+    return parts.map(part => QuoteUtils.quoteIdentifierTypeName(part)).join('.');
+  }
   
 }
