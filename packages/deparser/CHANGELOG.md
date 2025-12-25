@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [17.15.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.14.0...pgsql-deparser@17.15.0) (2025-12-25)
+
+### Features
+
+- **deparser:** add type-name quoting policy for minimal quoting in type positions ([9104bf3](https://github.com/constructive-io/pgsql-parser/commit/9104bf379a2874a110c5286a3b0bad8caab19804))
+
 # [17.14.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.13.0...pgsql-deparser@17.14.0) (2025-12-25)
 
 ### Features
