@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [17.14.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.13.0...pgsql-deparser@17.14.0) (2025-12-25)
+
+### Features
+
+- add pretty fixtures for quoting and formatting behaviors ([aba85ef](https://github.com/constructive-io/pgsql-parser/commit/aba85ef124d6a097a2df6f9168225b86bf78059d))
+- add relaxed quoting for qualified name tails ([ef51c09](https://github.com/constructive-io/pgsql-parser/commit/ef51c093cbc273e3644b70a1cef52b2c09078924))
+- implement quoteDottedName for relaxed quoting after dots ([4c81523](https://github.com/constructive-io/pgsql-parser/commit/4c81523cf1a777ef9b694288192b482c8c3102b4))
+
 # [17.13.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.12.2...pgsql-deparser@17.13.0) (2025-12-24)
 
 ### Bug Fixes
