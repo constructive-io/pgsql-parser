@@ -203,6 +203,99 @@ The only difference is that `quoteIdentifierAfterDot()` does not check for keywo
 | `interval` | `"interval"` | `interval` |
 | `my-col` | `"my-col"` | `"my-col"` |
 
+## Type-Name Quoting Policy
+
+Type names in PostgreSQL have their own quoting policy that is less strict than standalone identifiers but different from after-dot identifiers.
+
+### The Problem
+
+When you have a user-defined schema-qualified type like `myschema.json`, the type name `json` is a `COL_NAME_KEYWORD`. Using strict quoting (`quoteIdentifier()`) would produce `myschema."json"`, which is unnecessarily verbose.
+
+However, we cannot use the fully relaxed after-dot policy (`quoteIdentifierAfterDot()`) because type names are not in the same permissive grammar slot as identifiers after a dot in qualified names.
+
+### The Type-Name Quoting Algorithm
+
+The `QuoteUtils.quoteIdentifierTypeName()` function implements a middle-ground policy:
+
+- **Quote for lexical reasons**: uppercase, special characters, leading digits, embedded quotes
+- **Quote only RESERVED_KEYWORD**: keywords like `select`, `from`, `where` must be quoted
+- **Allow COL_NAME_KEYWORD unquoted**: keywords like `json`, `int`, `boolean` are allowed
+- **Allow TYPE_FUNC_NAME_KEYWORD unquoted**: keywords like `interval`, `left`, `right` are allowed
+
+```
+function quoteIdentifierTypeName(ident):
+    if ident is empty:
+        return ident
+    
+    safe = true
+    
+    // Rule 1: First character must be lowercase letter or underscore
+    if first_char not in [a-z_]:
+        safe = false
+    
+    // Rule 2: All characters must be in safe set
+    for each char in ident:
+        if char not in [a-z0-9_]:
+            safe = false
+    
+    // Rule 3: Only quote RESERVED_KEYWORD (not COL_NAME_KEYWORD or TYPE_FUNC_NAME_KEYWORD)
+    if safe:
+        kwKind = keywordKindOf(ident)
+        if kwKind == RESERVED_KEYWORD:
+            safe = false
+    
+    if safe:
+        return ident  // No quoting needed
+    
+    // Build quoted identifier with escaped embedded quotes
+    result = '"'
+    for each char in ident:
+        if char == '"':
+            result += '"'
+        result += char
+    result += '"'
+    
+    return result
+```
+
+### Comparison of Quoting Policies
+
+| Input | quoteIdentifier() | quoteIdentifierAfterDot() | quoteIdentifierTypeName() |
+|-------|-------------------|---------------------------|---------------------------|
+| `mytable` | `mytable` | `mytable` | `mytable` |
+| `MyTable` | `"MyTable"` | `"MyTable"` | `"MyTable"` |
+| `json` | `"json"` | `json` | `json` |
+| `int` | `"int"` | `int` | `int` |
+| `boolean` | `"boolean"` | `boolean` | `boolean` |
+| `interval` | `"interval"` | `interval` | `interval` |
+| `select` | `"select"` | `select` | `"select"` |
+| `from` | `"from"` | `from` | `"from"` |
+
+### quoteTypeDottedName(parts: string[])
+
+For schema-qualified type names, use `quoteTypeDottedName()` which applies type-name quoting to all parts:
+
+```typescript
+static quoteTypeDottedName(parts: string[]): string {
+    if (!parts || parts.length === 0) return '';
+    return parts.map(part => QuoteUtils.quoteIdentifierTypeName(part)).join('.');
+}
+```
+
+### Examples
+
+| Input Parts | Output |
+|-------------|--------|
+| `['json']` | `json` |
+| `['myschema', 'json']` | `myschema.json` |
+| `['custom', 'int']` | `custom.int` |
+| `['myapp', 'boolean']` | `myapp.boolean` |
+| `['myschema', 'select']` | `myschema."select"` |
+
+### When to Use Type-Name Quoting
+
+Use `quoteTypeDottedName()` in the `TypeName` handler for non-pg_catalog types. This ensures that user-defined types with keyword names are emitted with minimal quoting.
+
 ## Composition Helpers
 
 ### quoteDottedName(parts: string[])
@@ -359,6 +452,8 @@ When updating to support new PostgreSQL versions, ensure `kwlist.ts` is synchron
 | Dotted name (multi-part) | `quoteDottedName()` | `schema.table`, `schema.function` |
 | Two-part qualified name | `quoteQualifiedIdentifier()` | `schema.table` |
 | After-dot component only | `quoteIdentifierAfterDot()` | Indirection field access |
+| Type name (single or multi-part) | `quoteTypeDottedName()` | `myschema.json`, `custom.int` |
+| Type name component only | `quoteIdentifierTypeName()` | Type name part |
 | String literal | `escape()` or `formatEString()` | String values in SQL |
 
 ## Test Fixtures
@@ -366,6 +461,8 @@ When updating to support new PostgreSQL versions, ensure `kwlist.ts` is synchron
 The quoting behavior is verified by test fixtures in `__fixtures__/kitchen-sink/pretty/`:
 
 - `quoting-1.sql` through `quoting-7.sql`: Test cases for `faker.float`, `faker.interval`, `faker.boolean`, and `pg_catalog.substring`
+- `quoting-8.sql` through `quoting-13.sql`: Test cases for type casts with `json`, `jsonb`, `boolean`, `interval`, `int`
+- `quoting-14.sql` through `quoting-16.sql`: Test cases for user-defined schema-qualified types with keyword names (`myschema.json`, `custom.int`, `myapp.boolean`)
 
 The corresponding snapshots in `__tests__/pretty/__snapshots__/quoting-pretty.test.ts.snap` demonstrate the expected output with minimal quoting.
 

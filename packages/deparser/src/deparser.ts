@@ -1972,8 +1972,9 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    const quotedNames = names.map((name: string) => QuoteUtils.quoteIdentifier(name));
-    let result = mods(quotedNames.join('.'), args);
+    // Use type-name quoting for non-pg_catalog types
+    // This allows keywords like 'json', 'int', 'boolean' to remain unquoted in type positions
+    let result = mods(QuoteUtils.quoteTypeDottedName(names), args);
 
     if (node.arrayBounds && node.arrayBounds.length > 0) {
       result += formatArrayBounds(node.arrayBounds);
