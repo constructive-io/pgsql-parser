@@ -105,6 +105,59 @@ export class QuoteUtils {
   }
 
   /**
+   * Quote an identifier for use as a qualified name tail (after a dot).
+   *
+   * In PostgreSQL's grammar, identifiers that appear after a dot (e.g., schema.name,
+   * table.column) are in a more permissive position that accepts all keyword categories
+   * including RESERVED_KEYWORD. This means we only need to quote for lexical reasons
+   * (uppercase, special characters, leading digits) not for keyword reasons.
+   *
+   * Empirically verified: `myschema.select`, `myschema.float`, `t.from` all parse
+   * successfully in PostgreSQL without quotes.
+   */
+  static quoteIdentifierQualifiedTail(ident: string): string {
+    if (!ident) return ident;
+
+    let nquotes = 0;
+    let safe = true;
+
+    const firstChar = ident[0];
+    if (!((firstChar >= 'a' && firstChar <= 'z') || firstChar === '_')) {
+      safe = false;
+    }
+
+    for (let i = 0; i < ident.length; i++) {
+      const ch = ident[i];
+      if ((ch >= 'a' && ch <= 'z') ||
+          (ch >= '0' && ch <= '9') ||
+          (ch === '_')) {
+        // okay
+      } else {
+        safe = false;
+        if (ch === '"') {
+          nquotes++;
+        }
+      }
+    }
+
+    if (safe) {
+      return ident;
+    }
+
+    let result = '"';
+    for (let i = 0; i < ident.length; i++) {
+      const ch = ident[i];
+      if (ch === '"') {
+        result += '"';
+      }
+      result += ch;
+    }
+    result += '"';
+
+    return result;
+  }
+
+  /**
    * Quote a possibly-qualified identifier
    *
    * This is a TypeScript port of PostgreSQL's quote_qualified_identifier() function from ruleutils.c
@@ -112,10 +165,14 @@ export class QuoteUtils {
    *
    * Return a name of the form qualifier.ident, or just ident if qualifier
    * is null/undefined, quoting each component if necessary.
+   *
+   * When a qualifier is present, the tail identifier uses relaxed quoting that
+   * ignores keyword categories, since PostgreSQL's grammar accepts all keywords
+   * in qualified name positions.
    */
   static quoteQualifiedIdentifier(qualifier: string | null | undefined, ident: string): string {
     if (qualifier) {
-      return `${QuoteUtils.quoteIdentifier(qualifier)}.${QuoteUtils.quoteIdentifier(ident)}`;
+      return `${QuoteUtils.quoteIdentifier(qualifier)}.${QuoteUtils.quoteIdentifierQualifiedTail(ident)}`;
     }
     return QuoteUtils.quoteIdentifier(ident);
   }

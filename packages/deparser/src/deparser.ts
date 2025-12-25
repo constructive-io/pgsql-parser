@@ -1317,7 +1317,7 @@ export class Deparser implements DeparserVisitor {
       if (node.indirection && node.indirection.length > 0) {
         const indirectionStrs = ListUtils.unwrapList(node.indirection).map(item => {
           if (item.String) {
-            return `.${QuoteUtils.quoteIdentifier(item.String.sval || item.String.str)}`;
+            return `.${QuoteUtils.quoteIdentifierQualifiedTail(item.String.sval || item.String.str)}`;
           }
           return this.visit(item, context);
         });
@@ -1335,7 +1335,7 @@ export class Deparser implements DeparserVisitor {
       if (node.indirection && node.indirection.length > 0) {
         const indirectionStrs = ListUtils.unwrapList(node.indirection).map(item => {
           if (item.String) {
-            return `.${QuoteUtils.quoteIdentifier(item.String.sval || item.String.str)}`;
+            return `.${QuoteUtils.quoteIdentifierQualifiedTail(item.String.sval || item.String.str)}`;
           }
           return this.visit(item, context);
         });
@@ -2018,9 +2018,9 @@ export class Deparser implements DeparserVisitor {
     if (node.catalogname) {
       tableName = QuoteUtils.quoteIdentifier(node.catalogname);
       if (node.schemaname) {
-        tableName += '.' + QuoteUtils.quoteIdentifier(node.schemaname);
+        tableName += '.' + QuoteUtils.quoteIdentifierQualifiedTail(node.schemaname);
       }
-      tableName += '.' + QuoteUtils.quoteIdentifier(node.relname);
+      tableName += '.' + QuoteUtils.quoteIdentifierQualifiedTail(node.relname);
     } else if (node.schemaname) {
       tableName = QuoteUtils.quoteQualifiedIdentifier(node.schemaname, node.relname);
     } else {
