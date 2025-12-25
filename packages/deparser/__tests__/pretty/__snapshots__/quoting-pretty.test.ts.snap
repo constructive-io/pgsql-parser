@@ -50,6 +50,24 @@ $$ LANGUAGE plpgsql"
 
 exports[`non-pretty: pretty/quoting-7.sql 1`] = `"CREATE DOMAIN origin AS text CHECK (value = pg_catalog.substring(value, '^(https?://[^/]*)'))"`;
 
+exports[`non-pretty: pretty/quoting-8.sql 1`] = `"SELECT '{"a":1}'::json"`;
+
+exports[`non-pretty: pretty/quoting-9.sql 1`] = `"SELECT '{"b":2}'::jsonb"`;
+
+exports[`non-pretty: pretty/quoting-10.sql 1`] = `"SELECT CAST(true AS boolean)"`;
+
+exports[`non-pretty: pretty/quoting-11.sql 1`] = `"SELECT '1 day'::interval"`;
+
+exports[`non-pretty: pretty/quoting-12.sql 1`] = `"SELECT 42::int"`;
+
+exports[`non-pretty: pretty/quoting-13.sql 1`] = `"INSERT INTO test_table (data) VALUES ('{"c":3}'::json)"`;
+
+exports[`non-pretty: pretty/quoting-14.sql 1`] = `"SELECT CAST('{"d":4}' AS myschema."json")"`;
+
+exports[`non-pretty: pretty/quoting-15.sql 1`] = `"SELECT CAST(100 AS custom."int")"`;
+
+exports[`non-pretty: pretty/quoting-16.sql 1`] = `"SELECT CAST(true AS myapp."boolean")"`;
+
 exports[`pretty: pretty/quoting-1.sql 1`] = `
 "CREATE FUNCTION faker.float(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
 BEGIN
@@ -102,3 +120,26 @@ exports[`pretty: pretty/quoting-7.sql 1`] = `
 "CREATE DOMAIN origin AS text 
   CHECK (value = pg_catalog.substring(value, '^(https?://[^/]*)'))"
 `;
+
+exports[`pretty: pretty/quoting-8.sql 1`] = `"SELECT '{"a":1}'::json"`;
+
+exports[`pretty: pretty/quoting-9.sql 1`] = `"SELECT '{"b":2}'::jsonb"`;
+
+exports[`pretty: pretty/quoting-10.sql 1`] = `"SELECT CAST(true AS boolean)"`;
+
+exports[`pretty: pretty/quoting-11.sql 1`] = `"SELECT '1 day'::interval"`;
+
+exports[`pretty: pretty/quoting-12.sql 1`] = `"SELECT 42::int"`;
+
+exports[`pretty: pretty/quoting-13.sql 1`] = `
+"INSERT INTO test_table (
+  data
+) VALUES
+  ('{"c":3}'::json)"
+`;
+
+exports[`pretty: pretty/quoting-14.sql 1`] = `"SELECT CAST('{"d":4}' AS myschema."json")"`;
+
+exports[`pretty: pretty/quoting-15.sql 1`] = `"SELECT CAST(100 AS custom."int")"`;
+
+exports[`pretty: pretty/quoting-16.sql 1`] = `"SELECT CAST(true AS myapp."boolean")"`;
