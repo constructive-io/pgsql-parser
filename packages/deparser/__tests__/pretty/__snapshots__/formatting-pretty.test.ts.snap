@@ -1,0 +1,85 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: pretty/formatting-1.sql 1`] = `"EXPLAIN (COSTS OFF) SELECT * FROM onek2 WHERE unique2 = 11 AND stringu1 = 'ATAAAA'"`;
+
+exports[`non-pretty: pretty/formatting-2.sql 1`] = `"EXPLAIN SELECT * FROM onek2 WHERE unique2 = 11 AND stringu1 = 'ATAAAA'"`;
+
+exports[`non-pretty: pretty/formatting-3.sql 1`] = `"INSERT INTO objects.object (name, val, active, hash) VALUES ('name', 'val', CAST('t' AS boolean), 'abcdefg'), ('name', 'val', CAST('t' AS boolean), 'abcdefg'), ('name', 'val', CAST('t' AS boolean), 'abcdefg')"`;
+
+exports[`non-pretty: pretty/formatting-4.sql 1`] = `"INSERT INTO objects.object (name, val, active, hash) VALUES ('name', 'val', true, 'abcdefg'), ('name', 'val', true, 'abcdefg'), ('name', 'val', true, 'abcdefg')"`;
+
+exports[`non-pretty: pretty/formatting-5.sql 1`] = `"INSERT INTO objects.object (name, val, active, hash) VALUES ('name', 'val', false, 'abcdefg')"`;
+
+exports[`non-pretty: pretty/formatting-6.sql 1`] = `"INSERT INTO objects.object (name, val, active, hash) VALUES ('name', 'val', CAST('f' AS boolean), 'abcdefg')"`;
+
+exports[`non-pretty: pretty/formatting-7.sql 1`] = `"CREATE FUNCTION test_func(IN p1 pos_int) RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql"`;
+
+exports[`non-pretty: pretty/formatting-8.sql 1`] = `"CREATE FUNCTION test_func2(IN p1 pos_int, IN p2 text) RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql"`;
+
+exports[`non-pretty: pretty/formatting-9.sql 1`] = `"CREATE FUNCTION test_func3(IN p1 int, OUT p2 text, INOUT p3 boolean) RETURNS record AS $$ BEGIN p2 := 'test'; END; $$ LANGUAGE plpgsql"`;
+
+exports[`pretty: pretty/formatting-1.sql 1`] = `
+"EXPLAIN (COSTS OFF) SELECT *
+FROM onek2
+WHERE
+  unique2 = 11
+  AND stringu1 = 'ATAAAA'"
+`;
+
+exports[`pretty: pretty/formatting-2.sql 1`] = `
+"EXPLAIN SELECT *
+FROM onek2
+WHERE
+  unique2 = 11
+  AND stringu1 = 'ATAAAA'"
+`;
+
+exports[`pretty: pretty/formatting-3.sql 1`] = `
+"INSERT INTO objects.object (
+  name,
+  val,
+  active,
+  hash
+) VALUES
+  ('name', 'val', CAST('t' AS boolean), 'abcdefg'),
+  ('name', 'val', CAST('t' AS boolean), 'abcdefg'),
+  ('name', 'val', CAST('t' AS boolean), 'abcdefg')"
+`;
+
+exports[`pretty: pretty/formatting-4.sql 1`] = `
+"INSERT INTO objects.object (
+  name,
+  val,
+  active,
+  hash
+) VALUES
+  ('name', 'val', true, 'abcdefg'),
+  ('name', 'val', true, 'abcdefg'),
+  ('name', 'val', true, 'abcdefg')"
+`;
+
+exports[`pretty: pretty/formatting-5.sql 1`] = `
+"INSERT INTO objects.object (
+  name,
+  val,
+  active,
+  hash
+) VALUES
+  ('name', 'val', false, 'abcdefg')"
+`;
+
+exports[`pretty: pretty/formatting-6.sql 1`] = `
+"INSERT INTO objects.object (
+  name,
+  val,
+  active,
+  hash
+) VALUES
+  ('name', 'val', CAST('f' AS boolean), 'abcdefg')"
+`;
+
+exports[`pretty: pretty/formatting-7.sql 1`] = `"CREATE FUNCTION test_func(IN p1 pos_int) RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql"`;
+
+exports[`pretty: pretty/formatting-8.sql 1`] = `"CREATE FUNCTION test_func2(IN p1 pos_int, IN p2 text) RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql"`;
+
+exports[`pretty: pretty/formatting-9.sql 1`] = `"CREATE FUNCTION test_func3(IN p1 int, OUT p2 text, INOUT p3 boolean) RETURNS record AS $$ BEGIN p2 := 'test'; END; $$ LANGUAGE plpgsql"`;
