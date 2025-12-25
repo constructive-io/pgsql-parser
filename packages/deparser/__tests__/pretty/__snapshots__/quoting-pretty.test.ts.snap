@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`non-pretty: pretty/quoting-1.sql 1`] = `
-"CREATE FUNCTION faker."float"(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
+"CREATE FUNCTION faker.float(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
 BEGIN
   RETURN min + random() * (max - min);
 END;
@@ -9,7 +9,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`non-pretty: pretty/quoting-2.sql 1`] = `
-"CREATE FUNCTION faker."float"(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
+"CREATE FUNCTION faker.float(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
 BEGIN
   RETURN min + random() * (max - min);
 END;
@@ -17,7 +17,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`non-pretty: pretty/quoting-3.sql 1`] = `
-"CREATE FUNCTION faker."interval"(min int, max int) RETURNS interval AS $$
+"CREATE FUNCTION faker.interval(min int, max int) RETURNS interval AS $$
 BEGIN
   RETURN make_interval(secs => (min + floor(random() * (max - min + 1)))::int);
 END;
@@ -25,7 +25,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`non-pretty: pretty/quoting-4.sql 1`] = `
-"CREATE FUNCTION faker."interval"(min int, max int) RETURNS interval AS $$
+"CREATE FUNCTION faker.interval(min int, max int) RETURNS interval AS $$
 BEGIN
   RETURN make_interval(secs => (min + floor(random() * (max - min + 1)))::int);
 END;
@@ -33,7 +33,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`non-pretty: pretty/quoting-5.sql 1`] = `
-"CREATE FUNCTION faker."boolean"() RETURNS boolean AS $$
+"CREATE FUNCTION faker.boolean() RETURNS boolean AS $$
 BEGIN
   RETURN random() < 0.5;
 END;
@@ -41,17 +41,17 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`non-pretty: pretty/quoting-6.sql 1`] = `
-"CREATE FUNCTION faker."boolean"() RETURNS boolean AS $$
+"CREATE FUNCTION faker.boolean() RETURNS boolean AS $$
 BEGIN
   RETURN random() < 0.5;
 END;
 $$ LANGUAGE plpgsql"
 `;
 
-exports[`non-pretty: pretty/quoting-7.sql 1`] = `"CREATE DOMAIN origin AS text CHECK (value = pg_catalog."substring"(value, '^(https?://[^/]*)'))"`;
+exports[`non-pretty: pretty/quoting-7.sql 1`] = `"CREATE DOMAIN origin AS text CHECK (value = pg_catalog.substring(value, '^(https?://[^/]*)'))"`;
 
 exports[`pretty: pretty/quoting-1.sql 1`] = `
-"CREATE FUNCTION faker."float"(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
+"CREATE FUNCTION faker.float(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
 BEGIN
   RETURN min + random() * (max - min);
 END;
@@ -59,7 +59,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`pretty: pretty/quoting-2.sql 1`] = `
-"CREATE FUNCTION faker."float"(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
+"CREATE FUNCTION faker.float(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
 BEGIN
   RETURN min + random() * (max - min);
 END;
@@ -67,7 +67,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`pretty: pretty/quoting-3.sql 1`] = `
-"CREATE FUNCTION faker."interval"(min int, max int) RETURNS interval AS $$
+"CREATE FUNCTION faker.interval(min int, max int) RETURNS interval AS $$
 BEGIN
   RETURN make_interval(secs => (min + floor(random() * (max - min + 1)))::int);
 END;
@@ -75,7 +75,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`pretty: pretty/quoting-4.sql 1`] = `
-"CREATE FUNCTION faker."interval"(min int, max int) RETURNS interval AS $$
+"CREATE FUNCTION faker.interval(min int, max int) RETURNS interval AS $$
 BEGIN
   RETURN make_interval(secs => (min + floor(random() * (max - min + 1)))::int);
 END;
@@ -83,7 +83,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`pretty: pretty/quoting-5.sql 1`] = `
-"CREATE FUNCTION faker."boolean"() RETURNS boolean AS $$
+"CREATE FUNCTION faker.boolean() RETURNS boolean AS $$
 BEGIN
   RETURN random() < 0.5;
 END;
@@ -91,7 +91,7 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`pretty: pretty/quoting-6.sql 1`] = `
-"CREATE FUNCTION faker."boolean"() RETURNS boolean AS $$
+"CREATE FUNCTION faker.boolean() RETURNS boolean AS $$
 BEGIN
   RETURN random() < 0.5;
 END;
@@ -100,5 +100,5 @@ $$ LANGUAGE plpgsql"
 
 exports[`pretty: pretty/quoting-7.sql 1`] = `
 "CREATE DOMAIN origin AS text 
-  CHECK (value = pg_catalog."substring"(value, '^(https?://[^/]*)'))"
+  CHECK (value = pg_catalog.substring(value, '^(https?://[^/]*)'))"
 `;

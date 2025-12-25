@@ -52,7 +52,6 @@ export class QuoteUtils {
   static quoteIdentifier(ident: string): string {
     if (!ident) return ident;
 
-    let nquotes = 0;
     let safe = true;
 
     // Check first character: must be lowercase letter or underscore
@@ -70,9 +69,6 @@ export class QuoteUtils {
         // okay
       } else {
         safe = false;
-        if (ch === '"') {
-          nquotes++;
-        }
       }
     }
 
@@ -105,7 +101,7 @@ export class QuoteUtils {
   }
 
   /**
-   * Quote an identifier for use as a qualified name tail (after a dot).
+   * Quote an identifier that appears after a dot in a qualified name.
    *
    * In PostgreSQL's grammar, identifiers that appear after a dot (e.g., schema.name,
    * table.column) are in a more permissive position that accepts all keyword categories
@@ -115,10 +111,9 @@ export class QuoteUtils {
    * Empirically verified: `myschema.select`, `myschema.float`, `t.from` all parse
    * successfully in PostgreSQL without quotes.
    */
-  static quoteIdentifierQualifiedTail(ident: string): string {
+  static quoteIdentifierAfterDot(ident: string): string {
     if (!ident) return ident;
 
-    let nquotes = 0;
     let safe = true;
 
     const firstChar = ident[0];
@@ -134,9 +129,6 @@ export class QuoteUtils {
         // okay
       } else {
         safe = false;
-        if (ch === '"') {
-          nquotes++;
-        }
       }
     }
 
@@ -158,21 +150,38 @@ export class QuoteUtils {
   }
 
   /**
+   * Quote a dotted name (e.g., schema.table, catalog.schema.table).
+   *
+   * The first part uses strict quoting (keywords are quoted), while subsequent
+   * parts use relaxed quoting (keywords allowed, only quote for lexical reasons).
+   *
+   * This reflects PostgreSQL's grammar where the first identifier in a statement
+   * may conflict with keywords, but identifiers after a dot are in a more
+   * permissive position.
+   */
+  static quoteDottedName(parts: string[]): string {
+    if (!parts || parts.length === 0) return '';
+    if (parts.length === 1) {
+      return QuoteUtils.quoteIdentifier(parts[0]);
+    }
+    return parts.map((part, index) => 
+      index === 0 ? QuoteUtils.quoteIdentifier(part) : QuoteUtils.quoteIdentifierAfterDot(part)
+    ).join('.');
+  }
+
+  /**
    * Quote a possibly-qualified identifier
    *
-   * This is a TypeScript port of PostgreSQL's quote_qualified_identifier() function from ruleutils.c
-   * https://github.com/postgres/postgres/blob/fab5cd3dd1323f9e66efeb676c4bb212ff340204/src/backend/utils/adt/ruleutils.c#L13139-L13156
+   * This is inspired by PostgreSQL's quote_qualified_identifier() function from ruleutils.c
+   * but uses relaxed quoting for the tail component since PostgreSQL's grammar accepts
+   * all keywords in qualified name positions.
    *
    * Return a name of the form qualifier.ident, or just ident if qualifier
    * is null/undefined, quoting each component if necessary.
-   *
-   * When a qualifier is present, the tail identifier uses relaxed quoting that
-   * ignores keyword categories, since PostgreSQL's grammar accepts all keywords
-   * in qualified name positions.
    */
   static quoteQualifiedIdentifier(qualifier: string | null | undefined, ident: string): string {
     if (qualifier) {
-      return `${QuoteUtils.quoteIdentifier(qualifier)}.${QuoteUtils.quoteIdentifierQualifiedTail(ident)}`;
+      return `${QuoteUtils.quoteIdentifier(qualifier)}.${QuoteUtils.quoteIdentifierAfterDot(ident)}`;
     }
     return QuoteUtils.quoteIdentifier(ident);
   }

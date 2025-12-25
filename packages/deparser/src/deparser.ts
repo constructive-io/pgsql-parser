@@ -1317,7 +1317,7 @@ export class Deparser implements DeparserVisitor {
       if (node.indirection && node.indirection.length > 0) {
         const indirectionStrs = ListUtils.unwrapList(node.indirection).map(item => {
           if (item.String) {
-            return `.${QuoteUtils.quoteIdentifierQualifiedTail(item.String.sval || item.String.str)}`;
+            return `.${QuoteUtils.quoteIdentifierAfterDot(item.String.sval || item.String.str)}`;
           }
           return this.visit(item, context);
         });
@@ -1335,7 +1335,7 @@ export class Deparser implements DeparserVisitor {
       if (node.indirection && node.indirection.length > 0) {
         const indirectionStrs = ListUtils.unwrapList(node.indirection).map(item => {
           if (item.String) {
-            return `.${QuoteUtils.quoteIdentifierQualifiedTail(item.String.sval || item.String.str)}`;
+            return `.${QuoteUtils.quoteIdentifierAfterDot(item.String.sval || item.String.str)}`;
           }
           return this.visit(item, context);
         });
@@ -1421,7 +1421,8 @@ export class Deparser implements DeparserVisitor {
   FuncCall(node: t.FuncCall, context: DeparserContext): string {
     const funcname = ListUtils.unwrapList(node.funcname);
     const args = ListUtils.unwrapList(node.args);
-    const name = funcname.map(n => this.visit(n, context)).join('.');
+    const funcnameParts = funcname.map((n: any) => n.String?.sval || n.String?.str || '').filter((s: string) => s);
+    const name = QuoteUtils.quoteDottedName(funcnameParts);
 
     // Handle special SQL syntax functions like XMLEXISTS and EXTRACT
     if (node.funcformat === 'COERCE_SQL_SYNTAX' && name === 'pg_catalog.xmlexists' && args.length >= 2) {
@@ -2018,9 +2019,9 @@ export class Deparser implements DeparserVisitor {
     if (node.catalogname) {
       tableName = QuoteUtils.quoteIdentifier(node.catalogname);
       if (node.schemaname) {
-        tableName += '.' + QuoteUtils.quoteIdentifierQualifiedTail(node.schemaname);
+        tableName += '.' + QuoteUtils.quoteIdentifierAfterDot(node.schemaname);
       }
-      tableName += '.' + QuoteUtils.quoteIdentifierQualifiedTail(node.relname);
+      tableName += '.' + QuoteUtils.quoteIdentifierAfterDot(node.relname);
     } else if (node.schemaname) {
       tableName = QuoteUtils.quoteQualifiedIdentifier(node.schemaname, node.relname);
     } else {
@@ -5490,7 +5491,8 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.funcname && node.funcname.length > 0) {
-      const funcName = node.funcname.map((name: any) => this.visit(name, context)).join('.');
+      const funcnameParts = node.funcname.map((name: any) => name.String?.sval || name.String?.str || '').filter((s: string) => s);
+      const funcName = QuoteUtils.quoteDottedName(funcnameParts);
 
       if (node.parameters && node.parameters.length > 0) {
         const params = node.parameters
