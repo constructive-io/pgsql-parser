@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/traverse",
-  "version": "17.2.2",
+  "version": "17.2.3",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostgreSQL AST traversal utilities for pgsql-parser",
   "main": "index.js",
