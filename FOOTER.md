@@ -3,6 +3,9 @@
 
 ## Related
 
+* [pgpm](https://pgpm.dev): A Postgres Package Manager that brings modular development to PostgreSQL with reusable packages, deterministic migrations, recursive dependency resolution, and tag-aware versioning.
+* [pgsql-test](https://www.npmjs.com/package/pgsql-test): Instant, isolated PostgreSQL databases for each test with automatic transaction rollbacks, context switching, and clean seeding for fast, reliable database testing.
+* [pgsql-seed](https://www.npmjs.com/package/pgsql-seed): PostgreSQL seeding utilities for CSV, JSON, SQL data loading, and pgpm deployment.
 * [pgsql-parser](https://www.npmjs.com/package/pgsql-parser): The real PostgreSQL parser for Node.js, providing symmetric parsing and deparsing of SQL statements with actual PostgreSQL parser integration.
 * [pgsql-deparser](https://www.npmjs.com/package/pgsql-deparser): A streamlined tool designed for converting PostgreSQL ASTs back into SQL queries, focusing solely on deparser functionality to complement `pgsql-parser`.
 * [@pgsql/parser](https://www.npmjs.com/package/@pgsql/parser): Multi-version PostgreSQL parser with dynamic version selection at runtime, supporting PostgreSQL 15, 16, and 17 in a single package.
