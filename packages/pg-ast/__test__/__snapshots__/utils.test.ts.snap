@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`dynamic creation of tables 1`] = `"CREATE TABLE users (id int PRIMARY KEY, username text, email text UNIQUE, created_at timestamp NOT NULL)"`;
+
+exports[`simple SelectStmt 1`] = `
+{
+  "SelectStmt": {
+    "fromClause": [
+      {
+        "RangeVar": {
+          "inh": true,
+          "relname": "another_table",
+          "relpersistence": "p",
+        },
+      },
+    ],
+    "limitOption": "LIMIT_OPTION_DEFAULT",
+    "op": "SETOP_NONE",
+    "targetList": [
+      {
+        "ResTarget": {
+          "val": {
+            "ColumnRef": {
+              "fields": [
+                {
+                  "A_Star": {},
+                },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+}
+`;
+
+exports[`simple SelectStmt 2`] = `"SELECT * FROM another_table"`;

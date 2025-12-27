@@ -1,0 +1,43 @@
+{
+  "name": "pg-ast",
+  "version": "17.8.5",
+  "author": "Constructive <developers@constructive.io>",
+  "description": "PostgreSQL AST helpers for building AST nodes",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
+  "homepage": "https://github.com/constructive-io/pgsql-parser",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/constructive-io/pgsql-parser"
+  },
+  "bugs": {
+    "url": "https://github.com/constructive-io/pgsql-parser/issues"
+  },
+  "scripts": {
+    "copy": "makage assets",
+    "clean": "makage clean dist",
+    "prepublishOnly": "npm run build",
+    "build": "npm run build:proto && npm run clean && tsc && tsc -p tsconfig.esm.json && npm run copy",
+    "build:dev": "npm run clean && tsc --declarationMap && tsc -p tsconfig.esm.json && npm run copy",
+    "build:proto": "ts-node scripts/pg-proto-parser",
+    "lint": "eslint . --fix",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "makage": "^0.1.8",
+    "pg-proto-parser": "workspace:*",
+    "pgsql-deparser": "workspace:*"
+  },
+  "dependencies": {
+    "@pgsql/types": "^17.6.2",
+    "nested-obj": "0.1.5"
+  },
+  "keywords": []
+}
