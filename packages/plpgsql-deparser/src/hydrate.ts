@@ -349,3 +349,60 @@ export function getOriginalQuery(query: string | HydratedExprQuery): string {
   }
   return query.original;
 }
+
+export function dehydratePlpgsqlAst<T>(ast: T): T {
+  return dehydrateNode(ast) as T;
+}
+
+function dehydrateNode(node: any): any {
+  if (node === null || node === undefined) {
+    return node;
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(item => dehydrateNode(item));
+  }
+
+  if (typeof node !== 'object') {
+    return node;
+  }
+
+  if ('PLpgSQL_expr' in node) {
+    const expr = node.PLpgSQL_expr;
+    const query = expr.query;
+    
+    let dehydratedQuery: string;
+    if (typeof query === 'string') {
+      dehydratedQuery = query;
+    } else if (isHydratedExpr(query)) {
+      dehydratedQuery = dehydrateQuery(query);
+    } else {
+      dehydratedQuery = String(query);
+    }
+
+    return {
+      PLpgSQL_expr: {
+        ...expr,
+        query: dehydratedQuery,
+      },
+    };
+  }
+
+  const result: any = {};
+  for (const [key, value] of Object.entries(node)) {
+    result[key] = dehydrateNode(value);
+  }
+  return result;
+}
+
+function dehydrateQuery(query: HydratedExprQuery): string {
+  switch (query.kind) {
+    case 'assign':
+      return `${query.target} := ${query.value}`;
+    case 'sql-expr':
+    case 'sql-stmt':
+    case 'raw':
+    default:
+      return query.original;
+  }
+}
