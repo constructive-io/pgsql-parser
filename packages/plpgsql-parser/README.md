@@ -1,6 +1,31 @@
 # plpgsql-parser
 
+<p align="center" width="100%">
+  <img height="250" src="https://raw.githubusercontent.com/constructive-io/constructive/refs/heads/main/assets/outline-logo.svg" />
+</p>
+
+<p align="center" width="100%">
+  <a href="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml">
+    <img height="20" src="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
+  </a>
+   <a href="https://github.com/constructive-io/pgsql-parser/blob/main/LICENSE-MIT"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
+   <a href="https://www.npmjs.com/package/plpgsql-parser"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/pgsql-parser?filename=packages%2Fplpgsql-parser%2Fpackage.json"/></a>
+</p>
+
 Combined SQL + PL/pgSQL parser with hydrated ASTs and transform API.
+
+> **⚠️ Experimental:** This package is currently experimental. If you're looking for just SQL parsing, see [`pgsql-parser`](https://www.npmjs.com/package/pgsql-parser). For just PL/pgSQL deparsing, see [`plpgsql-deparser`](https://www.npmjs.com/package/plpgsql-deparser).
+
+## Overview
+
+This package provides a unified API for parsing SQL scripts containing PL/pgSQL functions. It combines the SQL parser and PL/pgSQL parser, automatically detecting and hydrating PL/pgSQL function bodies.
+
+Key features:
+
+- Auto-detects `CREATE FUNCTION` statements with `LANGUAGE plpgsql`
+- Hydrates PL/pgSQL function bodies into structured ASTs
+- Transform API for parse → modify → deparse workflows
+- Re-exports underlying primitives for power users
 
 ## Installation
 
@@ -80,3 +105,7 @@ For power users, the package re-exports underlying primitives:
 - `deparsePlpgsqlBody` - PL/pgSQL deparser from `plpgsql-deparser`
 - `hydratePlpgsqlAst` - Hydration utility from `plpgsql-deparser`
 - `dehydratePlpgsqlAst` - Dehydration utility from `plpgsql-deparser`
+
+## License
+
+MIT
