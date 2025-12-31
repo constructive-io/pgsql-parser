@@ -1,10 +1,26 @@
 # plpgsql-deparser
 
+<p align="center" width="100%">
+  <img height="250" src="https://raw.githubusercontent.com/constructive-io/constructive/refs/heads/main/assets/outline-logo.svg" />
+</p>
+
+<p align="center" width="100%">
+  <a href="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml">
+    <img height="20" src="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
+  </a>
+   <a href="https://www.npmjs.com/package/plpgsql-deparser"><img height="20" src="https://img.shields.io/npm/dt/plpgsql-deparser"></a>
+   <a href="https://www.npmjs.com/package/plpgsql-deparser"><img height="20" src="https://img.shields.io/npm/dw/plpgsql-deparser"/></a>
+   <a href="https://github.com/constructive-io/pgsql-parser/blob/main/LICENSE-MIT"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
+   <a href="https://www.npmjs.com/package/plpgsql-deparser"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/pgsql-parser?filename=packages%2Fplpgsql-deparser%2Fpackage.json"/></a>
+</p>
+
 PL/pgSQL AST Deparser - Converts PL/pgSQL function ASTs back to SQL strings.
+
+> **⚠️ Experimental:** This package is currently experimental. If you're looking for SQL deparsing (not PL/pgSQL), see [`pgsql-deparser`](https://www.npmjs.com/package/pgsql-deparser).
 
 ## Overview
 
-This package provides a deparser for PL/pgSQL (PostgreSQL's procedural language) AST structures. It works with the AST output from `parsePlPgSQL` function in `@libpg-query/parser` (or `libpg-query-full`).
+This package provides a deparser for PL/pgSQL (PostgreSQL's procedural language) AST structures. It works with the AST output from `parsePlPgSQL` function in `@libpg-query/parser`.
 
 The PL/pgSQL AST is different from the regular SQL AST - it represents the internal structure of PL/pgSQL function bodies, including:
 
