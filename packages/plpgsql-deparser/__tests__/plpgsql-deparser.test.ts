@@ -1,12 +1,13 @@
 import { loadModule } from '@libpg-query/parser';
 import { PLpgSQLDeparser, deparseSync, PLpgSQLParseResult } from '../src';
-import { loadPLpgSQLFixtures, PLpgSQLTestUtils } from '../test-utils';
-
-const testUtils = new PLpgSQLTestUtils();
+import { FixtureTestUtils } from '../test-utils';
 
 describe('PLpgSQLDeparser', () => {
+  let fixtureTestUtils: FixtureTestUtils;
+
   beforeAll(async () => {
     await loadModule();
+    fixtureTestUtils = new FixtureTestUtils();
   });
 
   describe('empty results', () => {
@@ -20,32 +21,24 @@ describe('PLpgSQLDeparser', () => {
     });
   });
 
-  describe('fixture-based tests using @libpg-query/parser', () => {
-    const fixtures = loadPLpgSQLFixtures();
-    
-    if (fixtures.length > 0) {
-      describe('PL/pgSQL fixtures from __fixtures__/plpgsql/', () => {
-        const sampleFixtures = fixtures.slice(0, 50);
-        
-        it.each(sampleFixtures)('should parse and deparse $name', (testCase) => {
-          try {
-            const parsed = testUtils.parsePLpgSQLSync(testCase.functionBody);
-            
-            if (parsed.plpgsql_funcs && parsed.plpgsql_funcs.length > 0) {
-              const deparsed = deparseSync(parsed);
-              expect(deparsed).toBeTruthy();
-              expect(deparsed.length).toBeGreaterThan(0);
-            }
-          } catch (err) {
-            console.log(`Skipping ${testCase.name}: ${err instanceof Error ? err.message : String(err)}`);
-          }
-        });
-      });
-    }
+  describe('generated fixtures', () => {
+    it('should have generated fixtures available', () => {
+      expect(fixtureTestUtils.getFixtureCount()).toBeGreaterThan(0);
+    });
 
-    it('should load fixtures from actual SQL files', () => {
-      const fixtures = loadPLpgSQLFixtures();
-      expect(fixtures.length).toBeGreaterThan(0);
+    it('should have at least 100 valid fixtures', () => {
+      expect(fixtureTestUtils.getFixtureCount()).toBeGreaterThanOrEqual(100);
+    });
+  });
+
+  describe('round-trip tests using generated.json', () => {
+    it('should round-trip plpgsql_domain fixtures', async () => {
+      const entries = fixtureTestUtils.getTestEntries(['plpgsql_domain']);
+      expect(entries.length).toBeGreaterThan(0);
+      
+      for (const [key] of entries) {
+        await fixtureTestUtils.runSingleFixture(key);
+      }
     });
   });
 

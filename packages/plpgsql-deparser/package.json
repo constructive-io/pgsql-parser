@@ -25,6 +25,7 @@
     "prepublishOnly": "npm run build",
     "build": "npm run clean && tsc && tsc -p tsconfig.esm.json && npm run copy",
     "build:dev": "npm run clean && tsc --declarationMap && tsc -p tsconfig.esm.json && npm run copy",
+    "fixtures": "ts-node scripts/make-fixtures.ts",
     "lint": "eslint . --fix",
     "test": "jest",
     "test:watch": "jest --watch"
@@ -42,6 +43,7 @@
   ],
   "devDependencies": {
     "@libpg-query/parser": "^17.6.3",
+    "libpg-query": "17.7.3",
     "makage": "^0.1.8"
   },
   "dependencies": {

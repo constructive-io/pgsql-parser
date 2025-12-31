@@ -175,6 +175,9 @@ importers:
       '@libpg-query/parser':
         specifier: ^17.6.3
         version: 17.6.3
+      libpg-query:
+        specifier: 17.7.3
+        version: 17.7.3
       makage:
         specifier: ^0.1.8
         version: 0.1.8
