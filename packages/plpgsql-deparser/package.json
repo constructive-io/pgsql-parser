@@ -41,6 +41,7 @@
     "database"
   ],
   "devDependencies": {
+    "@libpg-query/parser": "^17.6.3",
     "makage": "^0.1.8"
   },
   "dependencies": {

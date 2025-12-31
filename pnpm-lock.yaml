@@ -172,6 +172,9 @@ importers:
         specifier: ^17.15.2
         version: 17.15.2
     devDependencies:
+      '@libpg-query/parser':
+        specifier: ^17.6.3
+        version: 17.6.3
       makage:
         specifier: ^0.1.8
         version: 0.1.8
@@ -661,6 +664,9 @@ packages:
   '@lerna/create@8.2.4':
     resolution: {integrity: sha512-A8AlzetnS2WIuhijdAzKUyFpR5YbLLfV3luQ4lzBgIBgRfuoBDZeF+RSZPhra+7A6/zTUlrbhKZIOi/MNhqgvQ==}
     engines: {node: '>=18.0.0'}
+
+  '@libpg-query/parser@17.6.3':
+    resolution: {integrity: sha512-AvbS7b9GJZfCzqt4tLMqTaYK7Css9pJRTA2dKWLoTlob/XO2VNc30Q3g9DmxNBmokVTrmibkn/dy9bw8hfosQQ==}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -4506,6 +4512,11 @@ snapshots:
       - encoding
       - supports-color
       - typescript
+
+  '@libpg-query/parser@17.6.3':
+    dependencies:
+      '@launchql/protobufjs': 7.2.6
+      '@pgsql/types': 17.6.2
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
