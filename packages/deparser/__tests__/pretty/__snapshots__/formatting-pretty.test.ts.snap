@@ -78,8 +78,23 @@ exports[`pretty: pretty/formatting-6.sql 1`] = `
   ('name', 'val', CAST('f' AS boolean), 'abcdefg')"
 `;
 
-exports[`pretty: pretty/formatting-7.sql 1`] = `"CREATE FUNCTION test_func(IN p1 pos_int) RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql"`;
+exports[`pretty: pretty/formatting-7.sql 1`] = `
+"CREATE FUNCTION test_func(
+  IN p1 pos_int
+) RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql"
+`;
 
-exports[`pretty: pretty/formatting-8.sql 1`] = `"CREATE FUNCTION test_func2(IN p1 pos_int, IN p2 text) RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql"`;
+exports[`pretty: pretty/formatting-8.sql 1`] = `
+"CREATE FUNCTION test_func2(
+  IN p1 pos_int,
+  IN p2 text
+) RETURNS void AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql"
+`;
 
-exports[`pretty: pretty/formatting-9.sql 1`] = `"CREATE FUNCTION test_func3(IN p1 int, OUT p2 text, INOUT p3 boolean) RETURNS record AS $$ BEGIN p2 := 'test'; END; $$ LANGUAGE plpgsql"`;
+exports[`pretty: pretty/formatting-9.sql 1`] = `
+"CREATE FUNCTION test_func3(
+  IN p1 int,
+  OUT p2 text,
+  INOUT p3 boolean
+) RETURNS record AS $$ BEGIN p2 := 'test'; END; $$ LANGUAGE plpgsql"
+`;

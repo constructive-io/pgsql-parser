@@ -69,7 +69,10 @@ exports[`non-pretty: pretty/quoting-15.sql 1`] = `"SELECT CAST(100 AS custom.int
 exports[`non-pretty: pretty/quoting-16.sql 1`] = `"SELECT CAST(true AS myapp.boolean)"`;
 
 exports[`pretty: pretty/quoting-1.sql 1`] = `
-"CREATE FUNCTION faker.float(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
+"CREATE FUNCTION faker.float(
+  min double precision DEFAULT 0,
+  max double precision DEFAULT 100
+) RETURNS double precision AS $$
 BEGIN
   RETURN min + random() * (max - min);
 END;
@@ -77,7 +80,10 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`pretty: pretty/quoting-2.sql 1`] = `
-"CREATE FUNCTION faker.float(min double precision DEFAULT 0, max double precision DEFAULT 100) RETURNS double precision AS $$
+"CREATE FUNCTION faker.float(
+  min double precision DEFAULT 0,
+  max double precision DEFAULT 100
+) RETURNS double precision AS $$
 BEGIN
   RETURN min + random() * (max - min);
 END;
@@ -85,7 +91,10 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`pretty: pretty/quoting-3.sql 1`] = `
-"CREATE FUNCTION faker.interval(min int, max int) RETURNS interval AS $$
+"CREATE FUNCTION faker.interval(
+  min int,
+  max int
+) RETURNS interval AS $$
 BEGIN
   RETURN make_interval(secs => (min + floor(random() * (max - min + 1)))::int);
 END;
@@ -93,7 +102,10 @@ $$ LANGUAGE plpgsql"
 `;
 
 exports[`pretty: pretty/quoting-4.sql 1`] = `
-"CREATE FUNCTION faker.interval(min int, max int) RETURNS interval AS $$
+"CREATE FUNCTION faker.interval(
+  min int,
+  max int
+) RETURNS interval AS $$
 BEGIN
   RETURN make_interval(secs => (min + floor(random() * (max - min + 1)))::int);
 END;

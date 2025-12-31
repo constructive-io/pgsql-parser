@@ -5504,7 +5504,12 @@ export class Deparser implements DeparserVisitor {
           .map((param: any) => this.visit(param, context));
 
         if (params.length > 0) {
-          output.push(funcName + '(' + params.join(', ') + ')');
+          if (context.isPretty()) {
+            const formattedParams = params.map(p => context.indent(p)).join(',' + context.newline());
+            output.push(funcName + '(' + context.newline() + formattedParams + context.newline() + ')');
+          } else {
+            output.push(funcName + '(' + params.join(', ') + ')');
+          }
         } else {
           output.push(funcName + '()');
         }
@@ -5519,15 +5524,20 @@ export class Deparser implements DeparserVisitor {
     });
 
     if (hasTableParams) {
-      output.push('RETURNS TABLE (');
       const tableParams = node.parameters
         .filter((param: any) => {
           const paramData = this.getNodeData(param);
           return paramData.mode === 'FUNC_PARAM_TABLE';
         })
         .map((param: any) => this.visit(param, context));
-      output.push(tableParams.join(', '));
-      output.push(')');
+      if (context.isPretty()) {
+        const formattedTableParams = tableParams.map(p => context.indent(p)).join(',' + context.newline());
+        output.push('RETURNS TABLE (' + context.newline() + formattedTableParams + context.newline() + ')');
+      } else {
+        output.push('RETURNS TABLE (');
+        output.push(tableParams.join(', '));
+        output.push(')');
+      }
     } else if (node.returnType) {
       output.push('RETURNS');
       output.push(this.TypeName(node.returnType as any, context));
