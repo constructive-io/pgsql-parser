@@ -86,6 +86,34 @@ importers:
         version: 0.1.8
     publishDirectory: dist
 
+  packages/deparser/versions/13:
+    dependencies:
+      '@pgsql/types':
+        specifier: ^13.11.1
+        version: 13.11.1
+    publishDirectory: dist
+
+  packages/deparser/versions/14:
+    dependencies:
+      '@pgsql/types':
+        specifier: ^14.1.1
+        version: 14.1.1
+    publishDirectory: dist
+
+  packages/deparser/versions/15:
+    dependencies:
+      '@pgsql/types':
+        specifier: ^15.1.1
+        version: 15.1.1
+    publishDirectory: dist
+
+  packages/deparser/versions/16:
+    dependencies:
+      '@pgsql/types':
+        specifier: ^16.1.1
+        version: 16.1.1
+    publishDirectory: dist
+
   packages/parser:
     dependencies:
       '@pgsql/types':
@@ -101,6 +129,71 @@ importers:
       makage:
         specifier: ^0.1.8
         version: 0.1.8
+    publishDirectory: dist
+
+  packages/parser/versions/13:
+    dependencies:
+      '@pgsql/types':
+        specifier: 13.11.1
+        version: 13.11.1
+      libpg-query:
+        specifier: 13.6.0
+        version: 13.6.0
+      pgsql-deparser:
+        specifier: 13.19.1
+        version: 13.19.1
+    publishDirectory: dist
+
+  packages/parser/versions/14:
+    dependencies:
+      '@pgsql/types':
+        specifier: 14.1.1
+        version: 14.1.1
+      libpg-query:
+        specifier: 14.3.0
+        version: 14.3.0
+      pgsql-deparser:
+        specifier: 14.1.1
+        version: 14.1.1
+    publishDirectory: dist
+
+  packages/parser/versions/15:
+    dependencies:
+      '@pgsql/types':
+        specifier: 15.1.1
+        version: 15.1.1
+      libpg-query:
+        specifier: 15.5.0
+        version: 15.5.0
+      pgsql-deparser:
+        specifier: 15.1.1
+        version: 15.1.1
+    publishDirectory: dist
+
+  packages/parser/versions/16:
+    dependencies:
+      '@pgsql/types':
+        specifier: 16.1.1
+        version: 16.1.1
+      libpg-query:
+        specifier: 16.6.0
+        version: 16.6.0
+      pgsql-deparser:
+        specifier: 16.1.1
+        version: 16.1.1
+    publishDirectory: dist
+
+  packages/parser/versions/17:
+    dependencies:
+      '@pgsql/types':
+        specifier: 17.6.1
+        version: 17.6.1
+      libpg-query:
+        specifier: 17.6.0
+        version: 17.6.0
+      pgsql-deparser:
+        specifier: 17.12.2
+        version: 17.12.2
     publishDirectory: dist
 
   packages/pg-ast:
@@ -889,6 +982,21 @@ packages:
 
   '@pgsql/parser@1.2.1':
     resolution: {integrity: sha512-PxP4YFLKik6HLb4BObzMqHblyMCyPnXzDAYgLidEm62Q+0YE6uplDehsnyE+mvYnzMkXxTK5EqLTWKRPMKinAQ==}
+
+  '@pgsql/types@13.11.1':
+    resolution: {integrity: sha512-5JeN7DZYCVbxPPFI47Z370Jzr3eHZpqgwCdutYWV8e8XtuhxF7UuvWvOsx2oPJe9KnQen0vzJWnVq/61bRvxmw==}
+
+  '@pgsql/types@14.1.1':
+    resolution: {integrity: sha512-b5Pfo8uzB42nw2nA6FAe5ChbqyQwykCJZ1/tx1pZMespbGJF2qmuTn7/YXp0IWMuqZQLpP4P7KKb2v4ASekOyA==}
+
+  '@pgsql/types@15.1.1':
+    resolution: {integrity: sha512-sPoz8XEeeh6lDoEmsKexak+ijGSm+ioLgQ1HmIXzIh/0QbNIp0Cy8M+d9jUjlIMNnFQCn6tPHzlzvmDL2vOcgw==}
+
+  '@pgsql/types@16.1.1':
+    resolution: {integrity: sha512-7ZAYUEs7hkNURh+ZnRYI/XtJzqtsXdOHQ7O7Gm/VXfnPrOzwi1/apyCMPmfqLqoT+B3r526440rUyz7bxWzVrA==}
+
+  '@pgsql/types@17.6.1':
+    resolution: {integrity: sha512-Hk51+nyOxS7Dy5oySWywyNZxo5HndX1VDXT4ZEBD+p+vvMFM2Vc+sKSuByCiI8banou4edbgdnOC251IOuq7QQ==}
 
   '@pgsql/types@17.6.2':
     resolution: {integrity: sha512-1UtbELdbqNdyOShhrVfSz3a1gDi0s9XXiQemx+6QqtsrXe62a6zOGU+vjb2GRfG5jeEokI1zBBcfD42enRv0Rw==}
@@ -2637,6 +2745,21 @@ packages:
     resolution: {integrity: sha512-26zzwoBNAvX9AWOPiqqF6FG4HrSCPsHFkQm7nT+xU1ggAujL/eae81RnCv4CJ2In9q9fh10B88sYSzKCUh/Ghg==}
     engines: {node: ^16.14.0 || >=18.0.0}
 
+  libpg-query@13.6.0:
+    resolution: {integrity: sha512-zaCGweMgNiPRGRfNVR8wO+XNCl2jZOx8eOXTbaIPgkePI6UJ2FKbHrRSHO5qJSvLxGm5j/5ry7uAdFw3lCn7gw==}
+
+  libpg-query@14.3.0:
+    resolution: {integrity: sha512-1EXJl0jnbBNOmnElRl0iBCIMJutNVYRrCd6K4Qb0bCVQBEg/GZIy3nahEkhyNu304FuKrdvpXjPSwbF3SA8l5g==}
+
+  libpg-query@15.5.0:
+    resolution: {integrity: sha512-BICQ93a3lS//ADwh9QBAvb0zqhK0FORYgce3sOLF+OUTJXzB5XT1BKSx/ZGaVW81pKQS7yUz9983uO9xc2n+Iw==}
+
+  libpg-query@16.6.0:
+    resolution: {integrity: sha512-9nFUiRa+0Qysh/UYKi2k3xGkZrKHjc8iUd4xY2u+M4iGYO2HBfgb1QfIFlGlG/HE5/nRQF2rp8nIOgDnugEN6g==}
+
+  libpg-query@17.6.0:
+    resolution: {integrity: sha512-r4zOTcLTGYS5PlLQAicJ6Yi/tvZFag42YUuNEO8pi8bwt/ZZ4kj514J4QV5bOx0mZzPLF6agbfNXQVxGgmHR8g==}
+
   libpg-query@17.7.3:
     resolution: {integrity: sha512-lHKBvoWRsXt/9bJxpAeFxkLu0CA6tELusqy3o1z6/DwGXSETxhKJDaNlNdrNV8msvXDLBhpg/4RE/fKKs5rYFA==}
 
@@ -3151,6 +3274,21 @@ packages:
   path-type@3.0.0:
     resolution: {integrity: sha512-T2ZUsdZFHgA3u4e5PfPbjd7HDDpxPnQb5jN0SrDsjNSuVXHJqtwTnWqG0B1jZrgmJ/7lj1EmVIByWt1gxGkWvg==}
     engines: {node: '>=4'}
+
+  pgsql-deparser@13.19.1:
+    resolution: {integrity: sha512-iCkE5h6wrXtRjT8ygdj7YktDVE3TwTYOLDmpEGT+8WWY47722584Zcr8kN/mk+2nA8mMVqH1Wwzwuu+aAdvjpQ==}
+
+  pgsql-deparser@14.1.1:
+    resolution: {integrity: sha512-Oc6Q5XnKYI6GwmgwVAGQ9K5jV7HViw9yNZGXuMoJ4I6vHB9osEFcbYLYIyCeVXRIo+jwdu9vKfNq0SsH/lo8cw==}
+
+  pgsql-deparser@15.1.1:
+    resolution: {integrity: sha512-tz+wcxIhgyGO7Ns8cdoup9X8hKK/2bTCtocwiXkO/Ore9n5aLIJNL/4Vc2cbSrkszqaEm2CJl+/0VX+tYqPi2A==}
+
+  pgsql-deparser@16.1.1:
+    resolution: {integrity: sha512-57YaGD+aBDa6Bz3WwP58aEwXMzq8Y9O8OaPJJYG3XpF3z9DVNiGW5PX/UpSClMfPjaEm0aGnQuTfMXrC0Bx5Ug==}
+
+  pgsql-deparser@17.12.2:
+    resolution: {integrity: sha512-R/2BFqeAhUWK64c8RluoXR2f2+U/UZAPRG7KFsTXzrTX3HUQsYK/IYaWRyzJCST/HmeGXMLtXq3UeSd7xTUmOw==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -4801,6 +4939,16 @@ snapshots:
       '@octokit/openapi-types': 24.2.0
 
   '@pgsql/parser@1.2.1': {}
+
+  '@pgsql/types@13.11.1': {}
+
+  '@pgsql/types@14.1.1': {}
+
+  '@pgsql/types@15.1.1': {}
+
+  '@pgsql/types@16.1.1': {}
+
+  '@pgsql/types@17.6.1': {}
 
   '@pgsql/types@17.6.2': {}
 
@@ -6849,6 +6997,26 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  libpg-query@13.6.0:
+    dependencies:
+      '@pgsql/types': 13.11.1
+
+  libpg-query@14.3.0:
+    dependencies:
+      '@pgsql/types': 14.1.1
+
+  libpg-query@15.5.0:
+    dependencies:
+      '@pgsql/types': 15.1.1
+
+  libpg-query@16.6.0:
+    dependencies:
+      '@pgsql/types': 16.1.1
+
+  libpg-query@17.6.0:
+    dependencies:
+      '@pgsql/types': 17.6.2
+
   libpg-query@17.7.3:
     dependencies:
       '@pgsql/types': 17.6.2
@@ -7465,6 +7633,26 @@ snapshots:
   path-type@3.0.0:
     dependencies:
       pify: 3.0.0
+
+  pgsql-deparser@13.19.1:
+    dependencies:
+      '@pgsql/types': 13.11.1
+
+  pgsql-deparser@14.1.1:
+    dependencies:
+      '@pgsql/types': 14.1.1
+
+  pgsql-deparser@15.1.1:
+    dependencies:
+      '@pgsql/types': 15.1.1
+
+  pgsql-deparser@16.1.1:
+    dependencies:
+      '@pgsql/types': 16.1.1
+
+  pgsql-deparser@17.12.2:
+    dependencies:
+      '@pgsql/types': 17.6.2
 
   picocolors@1.1.1: {}
 
