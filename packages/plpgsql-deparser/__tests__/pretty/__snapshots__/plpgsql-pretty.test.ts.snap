@@ -1,0 +1,63 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`lowercase: if-else-function.sql 1`] = `
+"begin
+  if val > 100 then
+    return 'large';
+elsif val > 10 then
+    return 'medium';
+else
+    return 'small';
+end if;
+  return;
+end"
+`;
+
+exports[`lowercase: loop-function.sql 1`] = `
+"declare
+  total integer := 0;
+  i integer;
+begin
+  for i in 1..n loop
+    total := total + i;
+end loop;
+  return total;
+end"
+`;
+
+exports[`lowercase: simple-function.sql 1`] = `
+"begin
+  return a + b;
+end"
+`;
+
+exports[`uppercase: if-else-function.sql 1`] = `
+"BEGIN
+  IF val > 100 THEN
+    RETURN 'large';
+ELSIF val > 10 THEN
+    RETURN 'medium';
+ELSE
+    RETURN 'small';
+END IF;
+  RETURN;
+END"
+`;
+
+exports[`uppercase: loop-function.sql 1`] = `
+"DECLARE
+  total integer := 0;
+  i integer;
+BEGIN
+  FOR i IN 1..n LOOP
+    total := total + i;
+END LOOP;
+  RETURN total;
+END"
+`;
+
+exports[`uppercase: simple-function.sql 1`] = `
+"BEGIN
+  RETURN a + b;
+END"
+`;

@@ -407,3 +407,4 @@ export class FixtureTestUtils extends PLpgSQLTestUtils {
 
 export const testUtils = new PLpgSQLTestUtils();
 export const fixtureTestUtils = new FixtureTestUtils();
+export { PlpgsqlPrettyTest } from './PlpgsqlPrettyTest';

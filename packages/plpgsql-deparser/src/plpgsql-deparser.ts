@@ -137,8 +137,14 @@ export class PLpgSQLDeparser {
 
     const parts: string[] = [];
 
-    // Deparse DECLARE section (local variables)
-    const declareSection = this.deparseDeclareSection(func.datums, context);
+    // Collect loop-introduced variables before generating DECLARE section
+    const loopVarLinenos = new Set<number>();
+    if (func.action) {
+      this.collectLoopVariables(func.action, loopVarLinenos);
+    }
+
+    // Deparse DECLARE section (local variables, excluding loop variables)
+    const declareSection = this.deparseDeclareSection(func.datums, context, loopVarLinenos);
     if (declareSection) {
       parts.push(declareSection);
     }
@@ -152,14 +158,161 @@ export class PLpgSQLDeparser {
   }
 
   /**
+   * Collect line numbers of variables introduced by loop constructs.
+   * Only adds a variable's lineno if it matches the loop statement's lineno,
+   * indicating the variable was implicitly declared by the loop (not explicitly in DECLARE).
+   */
+  private collectLoopVariables(stmt: PLpgSQLStmtNode, loopVarLinenos: Set<number>): void {
+    if ('PLpgSQL_stmt_block' in stmt) {
+      const block = stmt.PLpgSQL_stmt_block;
+      if (block.body) {
+        for (const s of block.body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_fori' in stmt) {
+      // Integer FOR loop - only exclude if var.lineno matches stmt.lineno (implicit declaration)
+      const fori = stmt.PLpgSQL_stmt_fori;
+      const stmtLineno = fori.lineno;
+      if (fori.var && 'PLpgSQL_var' in fori.var) {
+        const varLineno = fori.var.PLpgSQL_var.lineno;
+        if (varLineno !== undefined && varLineno === stmtLineno) {
+          loopVarLinenos.add(varLineno);
+        }
+      }
+      if (fori.body) {
+        for (const s of fori.body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_fors' in stmt) {
+      // Query FOR loop - only exclude if var.lineno matches stmt.lineno (implicit declaration)
+      const fors = stmt.PLpgSQL_stmt_fors;
+      const stmtLineno = fors.lineno;
+      if (fors.var && 'PLpgSQL_rec' in fors.var) {
+        const varLineno = fors.var.PLpgSQL_rec.lineno;
+        if (varLineno !== undefined && varLineno === stmtLineno) {
+          loopVarLinenos.add(varLineno);
+        }
+      }
+      if (fors.var && 'PLpgSQL_row' in fors.var) {
+        const varLineno = fors.var.PLpgSQL_row.lineno;
+        if (varLineno !== undefined && varLineno === stmtLineno) {
+          loopVarLinenos.add(varLineno);
+        }
+      }
+      if (fors.body) {
+        for (const s of fors.body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_forc' in stmt) {
+      // Cursor FOR loop - only exclude if var.lineno matches stmt.lineno (implicit declaration)
+      const forc = stmt.PLpgSQL_stmt_forc;
+      const stmtLineno = forc.lineno;
+      if (forc.var && 'PLpgSQL_rec' in forc.var) {
+        const varLineno = forc.var.PLpgSQL_rec.lineno;
+        if (varLineno !== undefined && varLineno === stmtLineno) {
+          loopVarLinenos.add(varLineno);
+        }
+      }
+      if (forc.body) {
+        for (const s of forc.body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_foreach_a' in stmt) {
+      // FOREACH loop - uses varno reference, not embedded var
+      // The variable is referenced by index, so we can't easily exclude it here
+      // Just recurse into the body
+      const foreach = stmt.PLpgSQL_stmt_foreach_a;
+      if (foreach.body) {
+        for (const s of foreach.body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_dynfors' in stmt) {
+      // Dynamic FOR loop - only exclude if var.lineno matches stmt.lineno (implicit declaration)
+      const dynfors = stmt.PLpgSQL_stmt_dynfors;
+      const stmtLineno = dynfors.lineno;
+      if (dynfors.var && 'PLpgSQL_rec' in dynfors.var) {
+        const varLineno = dynfors.var.PLpgSQL_rec.lineno;
+        if (varLineno !== undefined && varLineno === stmtLineno) {
+          loopVarLinenos.add(varLineno);
+        }
+      }
+      if (dynfors.body) {
+        for (const s of dynfors.body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_if' in stmt) {
+      const ifStmt = stmt.PLpgSQL_stmt_if;
+      if (ifStmt.then_body) {
+        for (const s of ifStmt.then_body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+      if (ifStmt.elsif_list) {
+        for (const elsif of ifStmt.elsif_list) {
+          if ('PLpgSQL_if_elsif' in elsif && elsif.PLpgSQL_if_elsif.stmts) {
+            for (const s of elsif.PLpgSQL_if_elsif.stmts) {
+              this.collectLoopVariables(s, loopVarLinenos);
+            }
+          }
+        }
+      }
+      if (ifStmt.else_body) {
+        for (const s of ifStmt.else_body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_case' in stmt) {
+      const caseStmt = stmt.PLpgSQL_stmt_case;
+      if (caseStmt.case_when_list) {
+        for (const when of caseStmt.case_when_list) {
+          if ('PLpgSQL_case_when' in when && when.PLpgSQL_case_when.stmts) {
+            for (const s of when.PLpgSQL_case_when.stmts) {
+              this.collectLoopVariables(s, loopVarLinenos);
+            }
+          }
+        }
+      }
+      if (caseStmt.have_else && caseStmt.else_stmts) {
+        for (const s of caseStmt.else_stmts) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_loop' in stmt) {
+      const loop = stmt.PLpgSQL_stmt_loop;
+      if (loop.body) {
+        for (const s of loop.body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    } else if ('PLpgSQL_stmt_while' in stmt) {
+      const whileStmt = stmt.PLpgSQL_stmt_while;
+      if (whileStmt.body) {
+        for (const s of whileStmt.body) {
+          this.collectLoopVariables(s, loopVarLinenos);
+        }
+      }
+    }
+  }
+
+  /**
    * Deparse the DECLARE section
    */
-  private deparseDeclareSection(datums: PLpgSQLDatum[] | undefined, context: PLpgSQLDeparserContext): string {
+  private deparseDeclareSection(
+    datums: PLpgSQLDatum[] | undefined,
+    context: PLpgSQLDeparserContext,
+    loopVarLinenos: Set<number> = new Set()
+  ): string {
     if (!datums || datums.length === 0) {
       return '';
     }
 
-    // Filter out internal variables (like 'found', parameters, etc.)
+    // Filter out internal variables (like 'found', parameters, etc.) and loop variables
     const localVars = datums.filter(datum => {
       if ('PLpgSQL_var' in datum) {
         const v = datum.PLpgSQL_var;
@@ -171,10 +324,22 @@ export class PLpgSQLDeparser {
         if (v.lineno === undefined) {
           return false;
         }
+        // Skip loop-introduced variables
+        if (loopVarLinenos.has(v.lineno)) {
+          return false;
+        }
         return true;
       }
       if ('PLpgSQL_rec' in datum) {
-        return datum.PLpgSQL_rec.lineno !== undefined;
+        const rec = datum.PLpgSQL_rec;
+        if (rec.lineno === undefined) {
+          return false;
+        }
+        // Skip loop-introduced records
+        if (loopVarLinenos.has(rec.lineno)) {
+          return false;
+        }
+        return true;
       }
       return false;
     });
@@ -1087,15 +1252,11 @@ export class PLpgSQLDeparser {
    * Deparse a CALL statement
    */
   private deparseCall(call: PLpgSQL_stmt_call, context: PLpgSQLDeparserContext): string {
-    const kw = this.keyword;
     const expr = call.expr ? this.deparseExpr(call.expr) : '';
     
-    if (call.is_call) {
-      return `${kw('CALL')} ${expr}`;
-    }
-    
-    // DO block
-    return `${kw('DO')} ${expr}`;
+    // The expression already contains the CALL keyword from the parser
+    // so we just return the expression as-is
+    return expr;
   }
 
   /**
