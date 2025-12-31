@@ -1,4 +1,5 @@
-import { loadModule, parsePlPgSQLSync } from '@libpg-query/parser';
+import { loadModule, parsePlPgSQLSync, parseSync } from '@libpg-query/parser';
+import { deparse } from 'pgsql-deparser';
 import * as fs from 'fs';
 import * as path from 'path';
 import { hydratePlpgsqlAst, dehydratePlpgsqlAst, PLpgSQLParseResult, deparseSync } from '../src';
@@ -8,13 +9,23 @@ describe('hydrate demonstration with big-function.sql', () => {
     await loadModule();
   });
 
-  it('should parse, hydrate, modify, and deparse big-function.sql', () => {
+  it('should parse, hydrate, modify, and deparse big-function.sql with full CREATE FUNCTION', async () => {
     const fixturePath = path.join(__dirname, '../../../__fixtures__/plpgsql-pretty/big-function.sql');
     const sql = fs.readFileSync(fixturePath, 'utf-8');
     
-    const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+    const sqlParsed = parseSync(sql) as any;
+    const createFunctionStmt = sqlParsed.stmts[0].stmt.CreateFunctionStmt;
     
-    const { ast: hydratedAst, stats } = hydratePlpgsqlAst(parsed);
+    const asOption = createFunctionStmt.options.find(
+      (opt: any) => opt.DefElem?.defname === 'as'
+    );
+    const plpgsqlBody = asOption?.DefElem?.arg?.List?.items?.[0]?.String?.sval;
+    
+    expect(plpgsqlBody).toBeDefined();
+    
+    const plpgsqlParsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+    
+    const { ast: hydratedAst, stats } = hydratePlpgsqlAst(plpgsqlParsed);
     
     expect(stats.totalExpressions).toBe(68);
     expect(stats.parsedExpressions).toBe(68);
@@ -23,17 +34,28 @@ describe('hydrate demonstration with big-function.sql', () => {
     expect(stats.failedExpressions).toBe(0);
     expect(stats.rawExpressions).toBe(0);
     
-    const modifiedAst = modifyAst(JSON.parse(JSON.stringify(hydratedAst)));
+    createFunctionStmt.funcname[1].String.sval = 'big_kitchen_sink_MODIFIED';
     
-    const dehydratedAst = dehydratePlpgsqlAst(modifiedAst);
+    const modifiedPlpgsqlAst = modifyAst(JSON.parse(JSON.stringify(hydratedAst)));
     
-    const deparsed = deparseSync(dehydratedAst);
+    const dehydratedAst = dehydratePlpgsqlAst(modifiedPlpgsqlAst);
     
-    expect(deparsed).toContain('v_discount_MODIFIED');
-    expect(deparsed).toContain('v_tax_MODIFIED');
-    expect(deparsed).toContain('888');
+    const modifiedBody = deparseSync(dehydratedAst);
     
-    expect(deparsed).toMatchSnapshot();
+    if (asOption?.DefElem?.arg?.List?.items?.[0]?.String) {
+      asOption.DefElem.arg.List.items[0].String.sval = modifiedBody;
+    }
+    
+    const fullDeparsed = await deparse(sqlParsed.stmts[0].stmt);
+    
+    expect(fullDeparsed).toContain('big_kitchen_sink_MODIFIED');
+    expect(fullDeparsed).toContain('RETURNS TABLE');
+    expect(fullDeparsed).toContain('CREATE OR REPLACE FUNCTION');
+    expect(fullDeparsed).toContain('v_discount_MODIFIED');
+    expect(fullDeparsed).toContain('v_tax_MODIFIED');
+    expect(fullDeparsed).toContain('888');
+    
+    expect(fullDeparsed).toMatchSnapshot();
   });
 });
 
