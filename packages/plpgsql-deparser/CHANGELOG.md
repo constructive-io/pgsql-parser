@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.2.1...plpgsql-deparser@0.3.0) (2025-12-31)
+
+### Features
+
+- **deparser:** add pretty printing for CREATE FUNCTION params and RETURNS TABLE ([9dda8d1](https://github.com/constructive-io/pgsql-parser/commit/9dda8d1bf8c9d18a82ad3e462d93edb93e8662eb))
+- **plpgsql-deparser:** add dehydratePlpgsqlAst and demo test ([b530f17](https://github.com/constructive-io/pgsql-parser/commit/b530f17c0f80b0a82bcc1ea6d86a83661293c56e))
+- **plpgsql-deparser:** add hydratePlpgsqlAst for parsing embedded SQL expressions ([c8e23a1](https://github.com/constructive-io/pgsql-parser/commit/c8e23a110640d55f74c0e5b1d0145eab831cafff))
+- **plpgsql-deparser:** include full CREATE FUNCTION in hydrate demo ([c1698f9](https://github.com/constructive-io/pgsql-parser/commit/c1698f9b39569e4f3890361c89123bb9400b34e1))
+
 ## [0.2.1](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.2.0...plpgsql-deparser@0.2.1) (2025-12-31)
 
 **Note:** Version bump only for package plpgsql-deparser

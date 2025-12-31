@@ -1,6 +1,6 @@
 {
   "name": "plpgsql-deparser",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "PL/pgSQL AST Deparser - Converts PL/pgSQL function ASTs back to SQL",
   "main": "index.js",
@@ -46,8 +46,8 @@
     "libpg-query": "17.7.3",
     "makage": "^0.1.8"
   },
-    "dependencies": {
-      "@pgsql/types": "^17.6.2",
-      "pgsql-deparser": "workspace:*"
-    }
+  "dependencies": {
+    "@pgsql/types": "^17.6.2",
+    "pgsql-deparser": "workspace:*"
+  }
 }

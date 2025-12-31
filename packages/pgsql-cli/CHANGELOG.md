@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.32.8](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/cli@1.32.7...@pgsql/cli@1.32.8) (2025-12-31)
+
+**Note:** Version bump only for package @pgsql/cli
+
 ## [1.32.7](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/cli@1.32.6...@pgsql/cli@1.32.7) (2025-12-27)
 
 **Note:** Version bump only for package @pgsql/cli

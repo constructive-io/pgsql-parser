@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [17.16.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.15.2...pgsql-deparser@17.16.0) (2025-12-31)
+
+### Features
+
+- **deparser:** add pretty printing for CREATE FUNCTION params and RETURNS TABLE ([9dda8d1](https://github.com/constructive-io/pgsql-parser/commit/9dda8d1bf8c9d18a82ad3e462d93edb93e8662eb))
+
 ## [17.15.2](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.15.1...pgsql-deparser@17.15.2) (2025-12-27)
 
 **Note:** Version bump only for package pgsql-deparser
