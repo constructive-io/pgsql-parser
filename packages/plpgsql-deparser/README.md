@@ -8,8 +8,6 @@
   <a href="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml">
     <img height="20" src="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
   </a>
-   <a href="https://www.npmjs.com/package/plpgsql-deparser"><img height="20" src="https://img.shields.io/npm/dt/plpgsql-deparser"></a>
-   <a href="https://www.npmjs.com/package/plpgsql-deparser"><img height="20" src="https://img.shields.io/npm/dw/plpgsql-deparser"/></a>
    <a href="https://github.com/constructive-io/pgsql-parser/blob/main/LICENSE-MIT"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
    <a href="https://www.npmjs.com/package/plpgsql-deparser"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/pgsql-parser?filename=packages%2Fplpgsql-deparser%2Fpackage.json"/></a>
 </p>
