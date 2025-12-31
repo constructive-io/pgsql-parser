@@ -1,7 +1,37 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`hydrate demonstration with big-function.sql should parse, hydrate, modify, and deparse big-function.sql with full CREATE FUNCTION 1`] = `
-"CREATE OR REPLACE FUNCTION app_public.order_rollup_calculator(p_org_id uuid, p_user_id uuid, p_from_ts timestamptz DEFAULT now() - '30 days'::interval, p_to_ts timestamptz DEFAULT now(), p_min_total numeric DEFAULT 0, p_max_rows int DEFAULT 250, p_currency text DEFAULT 'USD', p_apply_discount boolean DEFAULT true, p_discount_rate numeric DEFAULT 0.05, p_tax_rate numeric DEFAULT 0.0875, p_round_to int DEFAULT 2, p_note text DEFAULT NULL, p_lock boolean DEFAULT false, p_debug boolean DEFAULT false) RETURNS TABLE ( org_id uuid, user_id uuid, period_from timestamptz, period_to timestamptz, orders_scanned int, orders_upserted int, gross_total numeric, discount_total numeric, tax_total numeric, net_total numeric, avg_order_total numeric, top_sku text, top_sku_qty bigint, message text ) LANGUAGE plpgsql AS $$DECLARE
+"CREATE OR REPLACE FUNCTION app_public.order_rollup_calculator(
+  p_org_id uuid,
+  p_user_id uuid,
+  p_from_ts timestamptz DEFAULT now() - '30 days'::interval,
+  p_to_ts timestamptz DEFAULT now(),
+  p_min_total numeric DEFAULT 0,
+  p_max_rows int DEFAULT 250,
+  p_currency text DEFAULT 'USD',
+  p_apply_discount boolean DEFAULT true,
+  p_discount_rate numeric DEFAULT 0.05,
+  p_tax_rate numeric DEFAULT 0.0875,
+  p_round_to int DEFAULT 2,
+  p_note text DEFAULT NULL,
+  p_lock boolean DEFAULT false,
+  p_debug boolean DEFAULT false
+) RETURNS TABLE (
+  org_id uuid,
+  user_id uuid,
+  period_from timestamptz,
+  period_to timestamptz,
+  orders_scanned int,
+  orders_upserted int,
+  gross_total numeric,
+  discount_total numeric,
+  tax_total numeric,
+  net_total numeric,
+  avg_order_total numeric,
+  top_sku text,
+  top_sku_qty bigint,
+  message text
+) LANGUAGE plpgsql AS $$DECLARE
   v_orders_scanned int := 42;
   v_orders_upserted int := 42;
   v_gross numeric := 42;
