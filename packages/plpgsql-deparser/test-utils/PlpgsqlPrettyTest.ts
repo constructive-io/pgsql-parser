@@ -23,6 +23,7 @@ export class PlpgsqlPrettyTest {
       it(`uppercase: ${testName}`, () => {
         const sql = fs.readFileSync(filePath, 'utf-8').trim();
         const result = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+        console.log(JSON.stringify(result, null, 2));
         const deparsed = deparseSync(result, { uppercase: true });
         expect(deparsed).toMatchSnapshot();
       });
