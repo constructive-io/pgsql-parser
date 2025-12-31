@@ -183,6 +183,26 @@ importers:
         version: 0.1.8
     publishDirectory: dist
 
+  packages/plpgsql-parser:
+    dependencies:
+      '@libpg-query/parser':
+        specifier: ^17.6.3
+        version: 17.6.3
+      '@pgsql/types':
+        specifier: ^17.6.2
+        version: 17.6.2
+      pgsql-deparser:
+        specifier: workspace:*
+        version: link:../deparser/dist
+      plpgsql-deparser:
+        specifier: workspace:*
+        version: link:../plpgsql-deparser/dist
+    devDependencies:
+      makage:
+        specifier: ^0.1.8
+        version: 0.1.8
+    publishDirectory: dist
+
   packages/proto-parser:
     dependencies:
       '@babel/generator':
