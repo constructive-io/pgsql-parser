@@ -563,7 +563,9 @@ export class Deparser implements DeparserVisitor {
         output.push('VALUES');
         const lists = ListUtils.unwrapList(node.valuesLists).map(list => {
           const values = ListUtils.unwrapList(list).map(val => this.visit(val as Node, context));
-          return context.parens(values.join(', '));
+          // Put each value on its own line for pretty printing
+          const indentedValues = values.map(val => context.indent(val));
+          return '(\n' + indentedValues.join(',\n') + '\n)';
         });
         const indentedTuples = lists.map(tuple => {
           if (this.containsMultilineStringLiteral(tuple)) {
@@ -1116,7 +1118,13 @@ export class Deparser implements DeparserVisitor {
           } else {
             const updateContext = context.spawn('UpdateStmt', { update: true });
             const targets = targetList.map(target => this.visit(target as Node, updateContext));
-            output.push(targets.join(', '));
+            if (context.isPretty()) {
+              // Put each assignment on its own line for pretty printing
+              const indentedTargets = targets.map(target => context.indent(target));
+              output.push('\n' + indentedTargets.join(',\n'));
+            } else {
+              output.push(targets.join(', '));
+            }
           }
         }
 
