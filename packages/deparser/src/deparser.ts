@@ -2199,7 +2199,7 @@ export class Deparser implements DeparserVisitor {
         if (size != null) {
           return 'char';
         }
-        return 'pg_catalog.bpchar';
+        return 'bpchar';
       case 'varchar':
         return 'varchar';
       case 'numeric':
@@ -2213,7 +2213,7 @@ export class Deparser implements DeparserVisitor {
       case 'int8':
         return 'bigint';
       case 'real':
-        return 'pg_catalog.float4';
+        return 'float4';
       case 'time':
         return 'time';
       case 'timestamp':
@@ -2223,7 +2223,7 @@ export class Deparser implements DeparserVisitor {
       case 'bit':
         return 'bit';
       default:
-        return `pg_catalog.${typeName}`;
+        return typeName;
     }
   }
 
