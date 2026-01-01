@@ -68,7 +68,7 @@ function generateWrappedUnion(tags: string[]): string {
 function generateTypeAlias(nodeName: string, fieldName: string, tags: string[]): string {
   const aliasName = `${nodeName}_${fieldName}`;
   const union = generateWrappedUnion(tags);
-  return `export type ${aliasName} = ${union};`;
+  return `type ${aliasName} = ${union};`;
 }
 
 function generateInterface(
@@ -157,7 +157,7 @@ function generateTypes(metadata: AllFieldMetadata): string {
   }
   
   if (typeAliases.length > 0) {
-    lines.push('// Narrowed type aliases for Node-typed fields');
+    lines.push('// Internal type aliases for narrowed Node-typed fields (not exported)');
     lines.push(typeAliases.join('\n'));
     lines.push('');
   }
