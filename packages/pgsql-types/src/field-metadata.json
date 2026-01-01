@@ -1,0 +1,2915 @@
+{
+  "A_ArrayExpr": {
+    "elements": {
+      "nullable": true,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "CaseExpr",
+        "CoalesceExpr",
+        "ColumnRef",
+        "FuncCall",
+        "RowExpr",
+        "SQLValueFunction",
+        "TypeCast"
+      ],
+      "isArray": true
+    }
+  },
+  "A_Expr": {
+    "lexpr": {
+      "nullable": true,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "BoolExpr",
+        "CaseExpr",
+        "CoalesceExpr",
+        "CollateClause",
+        "ColumnRef",
+        "FuncCall",
+        "GroupingFunc",
+        "JsonFuncExpr",
+        "MinMaxExpr",
+        "NullTest",
+        "ParamRef",
+        "RowExpr",
+        "SQLValueFunction",
+        "SubLink",
+        "TypeCast",
+        "XmlSerialize"
+      ],
+      "isArray": false
+    },
+    "name": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "rexpr": {
+      "nullable": false,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "BoolExpr",
+        "CaseExpr",
+        "CoalesceExpr",
+        "CollateClause",
+        "ColumnRef",
+        "FuncCall",
+        "List",
+        "MergeSupportFunc",
+        "NullTest",
+        "ParamRef",
+        "RowExpr",
+        "SQLValueFunction",
+        "SubLink",
+        "TypeCast",
+        "XmlSerialize"
+      ],
+      "isArray": false
+    }
+  },
+  "A_Indices": {
+    "lidx": {
+      "nullable": true,
+      "tags": [
+        "A_Const"
+      ],
+      "isArray": false
+    },
+    "uidx": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef"
+      ],
+      "isArray": false
+    }
+  },
+  "A_Indirection": {
+    "arg": {
+      "nullable": false,
+      "tags": [
+        "A_Indirection",
+        "ColumnRef",
+        "FuncCall",
+        "JsonFuncExpr",
+        "RowExpr",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "indirection": {
+      "nullable": false,
+      "tags": [
+        "A_Indices",
+        "A_Star",
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AccessPriv": {
+    "cols": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterCollationStmt": {
+    "collname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterDatabaseStmt": {
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterDefaultPrivilegesStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterDomainStmt": {
+    "def": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "Constraint"
+      ],
+      "isArray": false
+    },
+    "typeName": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterEnumStmt": {
+    "typeName": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterExtensionContentsStmt": {
+    "object": {
+      "nullable": false,
+      "tags": [
+        "ObjectWithArgs"
+      ],
+      "isArray": false
+    }
+  },
+  "AlterExtensionStmt": {
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterFdwStmt": {
+    "func_options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterForeignServerStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterFunctionStmt": {
+    "actions": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterObjectSchemaStmt": {
+    "object": {
+      "nullable": true,
+      "tags": [
+        "List",
+        "ObjectWithArgs",
+        "String"
+      ],
+      "isArray": false
+    }
+  },
+  "AlterOpFamilyStmt": {
+    "items": {
+      "nullable": false,
+      "tags": [
+        "CreateOpClassItem"
+      ],
+      "isArray": true
+    },
+    "opfamilyname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterOperatorStmt": {
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterOwnerStmt": {
+    "object": {
+      "nullable": false,
+      "tags": [
+        "Integer",
+        "List",
+        "ObjectWithArgs",
+        "String"
+      ],
+      "isArray": false
+    }
+  },
+  "AlterPolicyStmt": {
+    "qual": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "roles": {
+      "nullable": true,
+      "tags": [
+        "RoleSpec"
+      ],
+      "isArray": true
+    },
+    "with_check": {
+      "nullable": true,
+      "tags": [
+        "SubLink"
+      ],
+      "isArray": false
+    }
+  },
+  "AlterPublicationStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "pubobjects": {
+      "nullable": true,
+      "tags": [
+        "PublicationObjSpec"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterRoleStmt": {
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterSeqStmt": {
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterStatsStmt": {
+    "defnames": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "stxstattarget": {
+      "nullable": false,
+      "tags": [
+        "Integer"
+      ],
+      "isArray": false
+    }
+  },
+  "AlterSubscriptionStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "publication": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterTSConfigurationStmt": {
+    "cfgname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "dicts": {
+      "nullable": true,
+      "tags": [
+        "List"
+      ],
+      "isArray": true
+    },
+    "tokentype": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterTSDictionaryStmt": {
+    "dictname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterTableCmd": {
+    "def": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnDef",
+        "Constraint",
+        "FuncCall",
+        "Integer",
+        "List",
+        "PartitionCmd",
+        "RangeVar",
+        "ReplicaIdentityStmt",
+        "String",
+        "TypeCast",
+        "TypeName"
+      ],
+      "isArray": false
+    }
+  },
+  "AlterTableMoveAllStmt": {
+    "roles": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    }
+  },
+  "AlterTableSpaceOptionsStmt": {
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterTableStmt": {
+    "cmds": {
+      "nullable": false,
+      "tags": [
+        "AlterTableCmd"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterTypeStmt": {
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "typeName": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "AlterUserMappingStmt": {
+    "options": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "BoolExpr": {
+    "args": {
+      "nullable": false,
+      "tags": [
+        "A_Expr",
+        "BoolExpr",
+        "BooleanTest",
+        "CaseExpr",
+        "ColumnRef",
+        "FuncCall",
+        "JsonIsPredicate",
+        "NullTest",
+        "ParamRef",
+        "SubLink",
+        "TypeCast",
+        "XmlExpr"
+      ],
+      "isArray": true
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "BooleanTest": {
+    "arg": {
+      "nullable": false,
+      "tags": [
+        "A_Expr",
+        "BoolExpr",
+        "ColumnRef",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "CallStmt": {
+    "outargs": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    }
+  },
+  "CaseExpr": {
+    "arg": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "CaseExpr",
+        "ColumnRef",
+        "FuncCall",
+        "GroupingFunc",
+        "MergeSupportFunc",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "args": {
+      "nullable": false,
+      "tags": [
+        "CaseWhen"
+      ],
+      "isArray": true
+    },
+    "defresult": {
+      "nullable": true,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "CaseExpr",
+        "ColumnRef",
+        "FuncCall",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "CaseWhen": {
+    "expr": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "BooleanTest",
+        "ColumnRef",
+        "FuncCall",
+        "NullTest",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "result": {
+      "nullable": false,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "CaseExpr",
+        "CoalesceExpr",
+        "ColumnRef",
+        "FuncCall",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "ClusterStmt": {
+    "params": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    }
+  },
+  "CoalesceExpr": {
+    "args": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef",
+        "FuncCall",
+        "RowExpr",
+        "TypeCast"
+      ],
+      "isArray": true
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "CollateClause": {
+    "arg": {
+      "nullable": false,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "CaseExpr",
+        "ColumnRef",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "collname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "ColumnDef": {
+    "constraints": {
+      "nullable": true,
+      "tags": [
+        "Constraint"
+      ],
+      "isArray": true
+    },
+    "cooked_default": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    },
+    "fdwoptions": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "raw_default": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "CaseExpr",
+        "FuncCall",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "ColumnRef": {
+    "fields": {
+      "nullable": false,
+      "tags": [
+        "A_Star",
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CommentStmt": {
+    "object": {
+      "nullable": false,
+      "tags": [
+        "Integer",
+        "List",
+        "ObjectWithArgs",
+        "String",
+        "TypeName"
+      ],
+      "isArray": false
+    }
+  },
+  "CommonTableExpr": {
+    "aliascolnames": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "ctecolcollations": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "ctecolnames": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "ctecoltypes": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "ctecoltypmods": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "ctequery": {
+      "nullable": false,
+      "tags": [
+        "DeleteStmt",
+        "InsertStmt",
+        "MergeStmt",
+        "SelectStmt",
+        "UpdateStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "CompositeTypeStmt": {
+    "coldeflist": {
+      "nullable": true,
+      "tags": [
+        "ColumnDef"
+      ],
+      "isArray": true
+    }
+  },
+  "Constraint": {
+    "exclusions": {
+      "nullable": true,
+      "tags": [
+        "List"
+      ],
+      "isArray": true
+    },
+    "fk_attrs": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "fk_del_set_cols": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "including": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "keys": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "old_conpfeqop": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "pk_attrs": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "raw_expr": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "ColumnRef",
+        "FuncCall",
+        "JsonFuncExpr",
+        "JsonIsPredicate",
+        "NullTest",
+        "RowExpr",
+        "SQLValueFunction",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "where_clause": {
+      "nullable": true,
+      "tags": [
+        "A_Expr",
+        "NullTest"
+      ],
+      "isArray": false
+    }
+  },
+  "ConstraintsSetStmt": {
+    "constraints": {
+      "nullable": true,
+      "tags": [
+        "RangeVar"
+      ],
+      "isArray": true
+    }
+  },
+  "CopyStmt": {
+    "attlist": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "query": {
+      "nullable": true,
+      "tags": [
+        "DeleteStmt",
+        "InsertStmt",
+        "MergeStmt",
+        "SelectStmt",
+        "UpdateStmt"
+      ],
+      "isArray": false
+    },
+    "whereClause": {
+      "nullable": true,
+      "tags": [
+        "A_Expr",
+        "SubLink"
+      ],
+      "isArray": false
+    }
+  },
+  "CreateAmStmt": {
+    "handler_name": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateConversionStmt": {
+    "conversion_name": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "func_name": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateDomainStmt": {
+    "constraints": {
+      "nullable": true,
+      "tags": [
+        "Constraint"
+      ],
+      "isArray": true
+    },
+    "domainname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateEnumStmt": {
+    "typeName": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "vals": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateEventTrigStmt": {
+    "funcname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "whenclause": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateExtensionStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateFdwStmt": {
+    "func_options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateForeignServerStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateForeignTableStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateFunctionStmt": {
+    "funcname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "parameters": {
+      "nullable": true,
+      "tags": [
+        "FunctionParameter"
+      ],
+      "isArray": true
+    },
+    "sql_body": {
+      "nullable": true,
+      "tags": [
+        "List",
+        "ReturnStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "CreateOpClassItem": {
+    "class_args": {
+      "nullable": true,
+      "tags": [
+        "TypeName"
+      ],
+      "isArray": true
+    },
+    "order_family": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateOpClassStmt": {
+    "items": {
+      "nullable": false,
+      "tags": [
+        "CreateOpClassItem"
+      ],
+      "isArray": true
+    },
+    "opclassname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "opfamilyname": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    }
+  },
+  "CreateOpFamilyStmt": {
+    "opfamilyname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreatePLangStmt": {
+    "plhandler": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "plinline": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "plvalidator": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    }
+  },
+  "CreatePolicyStmt": {
+    "qual": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "CaseExpr",
+        "FuncCall",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "roles": {
+      "nullable": false,
+      "tags": [
+        "RoleSpec"
+      ],
+      "isArray": true
+    },
+    "with_check": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "SubLink"
+      ],
+      "isArray": false
+    }
+  },
+  "CreatePublicationStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "pubobjects": {
+      "nullable": true,
+      "tags": [
+        "PublicationObjSpec"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateRangeStmt": {
+    "params": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "typeName": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateRoleStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateSchemaStmt": {
+    "schemaElts": {
+      "nullable": true,
+      "tags": [
+        "CreateSeqStmt",
+        "CreateStmt",
+        "CreateTrigStmt",
+        "IndexStmt",
+        "ViewStmt"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateSeqStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateStatsStmt": {
+    "defnames": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "exprs": {
+      "nullable": false,
+      "tags": [
+        "StatsElem"
+      ],
+      "isArray": true
+    },
+    "relations": {
+      "nullable": false,
+      "tags": [
+        "RangeVar"
+      ],
+      "isArray": true
+    },
+    "stat_types": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateStmt": {
+    "constraints": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "inhRelations": {
+      "nullable": true,
+      "tags": [
+        "RangeVar"
+      ],
+      "isArray": true
+    },
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "tableElts": {
+      "nullable": true,
+      "tags": [
+        "ColumnDef",
+        "Constraint",
+        "TableLikeClause"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateSubscriptionStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "publication": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateTableAsStmt": {
+    "query": {
+      "nullable": false,
+      "tags": [
+        "ExecuteStmt",
+        "SelectStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "CreateTableSpaceStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreateTrigStmt": {
+    "args": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "columns": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "funcname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "transitionRels": {
+      "nullable": true,
+      "tags": [
+        "TriggerTransition"
+      ],
+      "isArray": true
+    },
+    "whenClause": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "NullTest"
+      ],
+      "isArray": false
+    }
+  },
+  "CreateUserMappingStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CreatedbStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "CurrentOfExpr": {
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "DeclareCursorStmt": {
+    "query": {
+      "nullable": false,
+      "tags": [
+        "SelectStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "DefElem": {
+    "arg": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Star",
+        "Boolean",
+        "Float",
+        "Integer",
+        "List",
+        "String",
+        "TypeName",
+        "VariableSetStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "DefineStmt": {
+    "args": {
+      "nullable": true,
+      "tags": [
+        "Integer",
+        "List"
+      ],
+      "isArray": true
+    },
+    "definition": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "defnames": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "DeleteStmt": {
+    "returningList": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "usingClause": {
+      "nullable": true,
+      "tags": [
+        "JoinExpr",
+        "RangeSubselect",
+        "RangeVar"
+      ],
+      "isArray": true
+    },
+    "whereClause": {
+      "nullable": true,
+      "tags": [
+        "A_Expr",
+        "BoolExpr",
+        "CurrentOfExpr",
+        "FuncCall",
+        "NullTest",
+        "SubLink"
+      ],
+      "isArray": false
+    }
+  },
+  "DoStmt": {
+    "args": {
+      "nullable": false,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "DropOwnedStmt": {
+    "roles": {
+      "nullable": false,
+      "tags": [
+        "RoleSpec"
+      ],
+      "isArray": true
+    }
+  },
+  "DropRoleStmt": {
+    "roles": {
+      "nullable": false,
+      "tags": [
+        "RoleSpec"
+      ],
+      "isArray": true
+    }
+  },
+  "DropStmt": {
+    "objects": {
+      "nullable": false,
+      "tags": [
+        "List",
+        "ObjectWithArgs",
+        "String",
+        "TypeName"
+      ],
+      "isArray": true
+    }
+  },
+  "DropdbStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "ExecuteStmt": {
+    "params": {
+      "nullable": true,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "FuncCall",
+        "TypeCast"
+      ],
+      "isArray": true
+    }
+  },
+  "ExplainStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "query": {
+      "nullable": false,
+      "tags": [
+        "CreateTableAsStmt",
+        "DeclareCursorStmt",
+        "DeleteStmt",
+        "ExecuteStmt",
+        "InsertStmt",
+        "MergeStmt",
+        "SelectStmt",
+        "UpdateStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "FuncCall": {
+    "agg_filter": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "ColumnRef",
+        "FuncCall",
+        "NullTest",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "agg_order": {
+      "nullable": true,
+      "tags": [
+        "SortBy"
+      ],
+      "isArray": true
+    },
+    "args": {
+      "nullable": true,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "BoolExpr",
+        "CaseExpr",
+        "CoalesceExpr",
+        "CollateClause",
+        "ColumnRef",
+        "FuncCall",
+        "JsonFuncExpr",
+        "JsonParseExpr",
+        "JsonSerializeExpr",
+        "MinMaxExpr",
+        "NamedArgExpr",
+        "ParamRef",
+        "RowExpr",
+        "SQLValueFunction",
+        "SubLink",
+        "TypeCast",
+        "XmlExpr"
+      ],
+      "isArray": true
+    },
+    "funcname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "FunctionParameter": {
+    "defexpr": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "FuncCall",
+        "SQLValueFunction",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "GrantRoleStmt": {
+    "granted_roles": {
+      "nullable": false,
+      "tags": [
+        "AccessPriv"
+      ],
+      "isArray": true
+    },
+    "grantee_roles": {
+      "nullable": false,
+      "tags": [
+        "RoleSpec"
+      ],
+      "isArray": true
+    },
+    "opt": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "GrantStmt": {
+    "grantees": {
+      "nullable": false,
+      "tags": [
+        "RoleSpec"
+      ],
+      "isArray": true
+    },
+    "objects": {
+      "nullable": false,
+      "tags": [
+        "Integer",
+        "List",
+        "ObjectWithArgs",
+        "RangeVar",
+        "String"
+      ],
+      "isArray": true
+    },
+    "privileges": {
+      "nullable": true,
+      "tags": [
+        "AccessPriv"
+      ],
+      "isArray": true
+    }
+  },
+  "GroupingFunc": {
+    "args": {
+      "nullable": false,
+      "tags": [
+        "A_Expr",
+        "ColumnRef"
+      ],
+      "isArray": true
+    },
+    "refs": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "GroupingSet": {
+    "content": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef",
+        "GroupingSet",
+        "RowExpr",
+        "TypeCast"
+      ],
+      "isArray": true
+    }
+  },
+  "ImportForeignSchemaStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "table_list": {
+      "nullable": true,
+      "tags": [
+        "RangeVar"
+      ],
+      "isArray": true
+    }
+  },
+  "IndexElem": {
+    "collation": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "expr": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "CoalesceExpr",
+        "CollateClause",
+        "FuncCall",
+        "JsonFuncExpr",
+        "RowExpr",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "opclass": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "opclassopts": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "IndexStmt": {
+    "excludeOpNames": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "indexIncludingParams": {
+      "nullable": true,
+      "tags": [
+        "IndexElem"
+      ],
+      "isArray": true
+    },
+    "indexParams": {
+      "nullable": false,
+      "tags": [
+        "IndexElem"
+      ],
+      "isArray": true
+    },
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "whereClause": {
+      "nullable": true,
+      "tags": [
+        "A_Expr",
+        "BoolExpr",
+        "FuncCall",
+        "NullTest"
+      ],
+      "isArray": false
+    }
+  },
+  "InsertStmt": {
+    "cols": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "returningList": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "selectStmt": {
+      "nullable": true,
+      "tags": [
+        "SelectStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "JoinExpr": {
+    "larg": {
+      "nullable": false,
+      "tags": [
+        "JoinExpr",
+        "RangeFunction",
+        "RangeSubselect",
+        "RangeVar"
+      ],
+      "isArray": false
+    },
+    "quals": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "NullTest",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "rarg": {
+      "nullable": false,
+      "tags": [
+        "JoinExpr",
+        "JsonTable",
+        "RangeFunction",
+        "RangeSubselect",
+        "RangeVar"
+      ],
+      "isArray": false
+    },
+    "usingClause": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "JsonArrayConstructor": {
+    "exprs": {
+      "nullable": true,
+      "tags": [
+        "JsonValueExpr"
+      ],
+      "isArray": true
+    }
+  },
+  "JsonArrayQueryConstructor": {
+    "query": {
+      "nullable": false,
+      "tags": [
+        "SelectStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "JsonFuncExpr": {
+    "passing": {
+      "nullable": true,
+      "tags": [
+        "JsonArgument"
+      ],
+      "isArray": true
+    },
+    "pathspec": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef"
+      ],
+      "isArray": false
+    }
+  },
+  "JsonIsPredicate": {
+    "expr": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "JsonKeyValue": {
+    "key": {
+      "nullable": false,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "FuncCall",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "JsonObjectConstructor": {
+    "exprs": {
+      "nullable": true,
+      "tags": [
+        "JsonKeyValue"
+      ],
+      "isArray": true
+    }
+  },
+  "JsonScalarExpr": {
+    "expr": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "JsonTable": {
+    "columns": {
+      "nullable": false,
+      "tags": [
+        "JsonTableColumn"
+      ],
+      "isArray": true
+    },
+    "passing": {
+      "nullable": true,
+      "tags": [
+        "JsonArgument"
+      ],
+      "isArray": true
+    }
+  },
+  "JsonTableColumn": {
+    "columns": {
+      "nullable": true,
+      "tags": [
+        "JsonTableColumn"
+      ],
+      "isArray": true
+    }
+  },
+  "JsonValueExpr": {
+    "formatted_expr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    },
+    "raw_expr": {
+      "nullable": false,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "ColumnRef",
+        "JsonArrayConstructor",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "List": {
+    "items": {
+      "nullable": false,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "CoalesceExpr",
+        "CollateClause",
+        "ColumnDef",
+        "ColumnRef",
+        "DefElem",
+        "FuncCall",
+        "FunctionParameter",
+        "IndexElem",
+        "List",
+        "ParamRef",
+        "RoleSpec",
+        "RowExpr",
+        "SQLValueFunction",
+        "SetToDefault",
+        "String",
+        "SubLink",
+        "TypeCast",
+        "TypeName"
+      ],
+      "isArray": true
+    }
+  },
+  "LockStmt": {
+    "relations": {
+      "nullable": false,
+      "tags": [
+        "RangeVar"
+      ],
+      "isArray": true
+    }
+  },
+  "LockingClause": {
+    "lockedRels": {
+      "nullable": true,
+      "tags": [
+        "RangeVar"
+      ],
+      "isArray": true
+    }
+  },
+  "MergeStmt": {
+    "joinCondition": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "mergeWhenClauses": {
+      "nullable": false,
+      "tags": [
+        "MergeWhenClause"
+      ],
+      "isArray": true
+    },
+    "returningList": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "sourceRelation": {
+      "nullable": false,
+      "tags": [
+        "JoinExpr",
+        "RangeFunction",
+        "RangeSubselect",
+        "RangeVar"
+      ],
+      "isArray": false
+    }
+  },
+  "MergeSupportFunc": {
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "MergeWhenClause": {
+    "condition": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "FuncCall",
+        "NullTest",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "targetList": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "values": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef",
+        "TypeCast"
+      ],
+      "isArray": true
+    }
+  },
+  "MinMaxExpr": {
+    "args": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef"
+      ],
+      "isArray": true
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "MultiAssignRef": {
+    "source": {
+      "nullable": false,
+      "tags": [
+        "ColumnRef",
+        "RowExpr",
+        "SubLink"
+      ],
+      "isArray": false
+    }
+  },
+  "NamedArgExpr": {
+    "arg": {
+      "nullable": false,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "ColumnRef",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "NullTest": {
+    "arg": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "ColumnRef",
+        "FuncCall",
+        "JsonArrayAgg",
+        "JsonObjectAgg",
+        "RowExpr",
+        "SQLValueFunction",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "ObjectWithArgs": {
+    "objargs": {
+      "nullable": true,
+      "tags": [
+        "TypeName"
+      ],
+      "isArray": true
+    },
+    "objfuncargs": {
+      "nullable": true,
+      "tags": [
+        "FunctionParameter"
+      ],
+      "isArray": true
+    },
+    "objname": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "PartitionElem": {
+    "collation": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "expr": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "ColumnRef",
+        "FuncCall",
+        "RowExpr",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "opclass": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "PrepareStmt": {
+    "argtypes": {
+      "nullable": true,
+      "tags": [
+        "TypeName"
+      ],
+      "isArray": true
+    },
+    "query": {
+      "nullable": false,
+      "tags": [
+        "InsertStmt",
+        "MergeStmt",
+        "SelectStmt",
+        "UpdateStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "RangeFunction": {
+    "coldeflist": {
+      "nullable": true,
+      "tags": [
+        "ColumnDef"
+      ],
+      "isArray": true
+    },
+    "functions": {
+      "nullable": false,
+      "tags": [
+        "List"
+      ],
+      "isArray": true
+    }
+  },
+  "RangeSubselect": {
+    "subquery": {
+      "nullable": false,
+      "tags": [
+        "SelectStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "RangeTableFunc": {
+    "columns": {
+      "nullable": false,
+      "tags": [
+        "RangeTableFuncCol"
+      ],
+      "isArray": true
+    },
+    "docexpr": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "ColumnRef"
+      ],
+      "isArray": false
+    },
+    "namespaces": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "rowexpr": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "RowExpr"
+      ],
+      "isArray": false
+    }
+  },
+  "RangeTableFuncCol": {
+    "coldefexpr": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr"
+      ],
+      "isArray": false
+    },
+    "colexpr": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr"
+      ],
+      "isArray": false
+    }
+  },
+  "RangeTableSample": {
+    "args": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef",
+        "TypeCast"
+      ],
+      "isArray": true
+    },
+    "method": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "relation": {
+      "nullable": false,
+      "tags": [
+        "RangeVar"
+      ],
+      "isArray": false
+    },
+    "repeatable": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "ColumnRef"
+      ],
+      "isArray": false
+    }
+  },
+  "ReassignOwnedStmt": {
+    "roles": {
+      "nullable": false,
+      "tags": [
+        "RoleSpec"
+      ],
+      "isArray": true
+    }
+  },
+  "ReindexStmt": {
+    "params": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "RenameStmt": {
+    "object": {
+      "nullable": true,
+      "tags": [
+        "List",
+        "ObjectWithArgs",
+        "String"
+      ],
+      "isArray": false
+    }
+  },
+  "ResTarget": {
+    "indirection": {
+      "nullable": true,
+      "tags": [
+        "A_Indices",
+        "String"
+      ],
+      "isArray": true
+    },
+    "val": {
+      "nullable": true,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "BoolExpr",
+        "BooleanTest",
+        "CaseExpr",
+        "CoalesceExpr",
+        "CollateClause",
+        "ColumnRef",
+        "FuncCall",
+        "GroupingFunc",
+        "JsonArrayAgg",
+        "JsonArrayConstructor",
+        "JsonArrayQueryConstructor",
+        "JsonFuncExpr",
+        "JsonIsPredicate",
+        "JsonObjectAgg",
+        "JsonObjectConstructor",
+        "JsonParseExpr",
+        "JsonScalarExpr",
+        "JsonSerializeExpr",
+        "MergeSupportFunc",
+        "MinMaxExpr",
+        "MultiAssignRef",
+        "NullTest",
+        "ParamRef",
+        "RowExpr",
+        "SQLValueFunction",
+        "SetToDefault",
+        "SubLink",
+        "TypeCast",
+        "XmlExpr",
+        "XmlSerialize"
+      ],
+      "isArray": false
+    }
+  },
+  "ReturnStmt": {
+    "returnval": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "BoolExpr",
+        "ColumnRef",
+        "FuncCall",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "RowExpr": {
+    "args": {
+      "nullable": true,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "CollateClause",
+        "ColumnRef",
+        "FuncCall",
+        "RowExpr",
+        "SetToDefault",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": true
+    },
+    "colnames": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "RuleStmt": {
+    "actions": {
+      "nullable": true,
+      "tags": [
+        "DeleteStmt",
+        "InsertStmt",
+        "NotifyStmt",
+        "SelectStmt",
+        "UpdateStmt"
+      ],
+      "isArray": true
+    },
+    "whereClause": {
+      "nullable": true,
+      "tags": [
+        "A_Expr",
+        "BoolExpr",
+        "SubLink"
+      ],
+      "isArray": false
+    }
+  },
+  "SQLValueFunction": {
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "SecLabelStmt": {
+    "object": {
+      "nullable": false,
+      "tags": [
+        "List",
+        "String"
+      ],
+      "isArray": false
+    }
+  },
+  "SelectStmt": {
+    "distinctClause": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "ColumnRef"
+      ],
+      "isArray": true
+    },
+    "fromClause": {
+      "nullable": true,
+      "tags": [
+        "JoinExpr",
+        "JsonTable",
+        "RangeFunction",
+        "RangeSubselect",
+        "RangeTableFunc",
+        "RangeTableSample",
+        "RangeVar"
+      ],
+      "isArray": true
+    },
+    "groupClause": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "CollateClause",
+        "ColumnRef",
+        "FuncCall",
+        "GroupingSet",
+        "RowExpr",
+        "TypeCast"
+      ],
+      "isArray": true
+    },
+    "havingClause": {
+      "nullable": true,
+      "tags": [
+        "A_Expr",
+        "BoolExpr",
+        "ColumnRef",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "limitCount": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "CaseExpr",
+        "FuncCall"
+      ],
+      "isArray": false
+    },
+    "limitOffset": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "CaseExpr",
+        "ColumnRef"
+      ],
+      "isArray": false
+    },
+    "lockingClause": {
+      "nullable": true,
+      "tags": [
+        "LockingClause"
+      ],
+      "isArray": true
+    },
+    "sortClause": {
+      "nullable": true,
+      "tags": [
+        "SortBy"
+      ],
+      "isArray": true
+    },
+    "targetList": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "valuesLists": {
+      "nullable": true,
+      "tags": [
+        "List"
+      ],
+      "isArray": true
+    },
+    "whereClause": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "BooleanTest",
+        "CaseExpr",
+        "ColumnRef",
+        "FuncCall",
+        "JsonIsPredicate",
+        "NullTest",
+        "SubLink"
+      ],
+      "isArray": false
+    },
+    "windowClause": {
+      "nullable": true,
+      "tags": [
+        "WindowDef"
+      ],
+      "isArray": true
+    }
+  },
+  "SetToDefault": {
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "SortBy": {
+    "node": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "CollateClause",
+        "ColumnRef",
+        "FuncCall",
+        "RowExpr",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "useOp": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "StatsElem": {
+    "expr": {
+      "nullable": true,
+      "tags": [
+        "A_Expr",
+        "CaseExpr",
+        "ColumnRef",
+        "FuncCall"
+      ],
+      "isArray": false
+    }
+  },
+  "SubLink": {
+    "operName": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "subselect": {
+      "nullable": false,
+      "tags": [
+        "SelectStmt"
+      ],
+      "isArray": false
+    },
+    "testexpr": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "CaseExpr",
+        "ColumnRef",
+        "RowExpr",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "TransactionStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "TruncateStmt": {
+    "relations": {
+      "nullable": false,
+      "tags": [
+        "RangeVar"
+      ],
+      "isArray": true
+    }
+  },
+  "TypeCast": {
+    "arg": {
+      "nullable": false,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
+        "A_Indirection",
+        "CollateClause",
+        "ColumnRef",
+        "FuncCall",
+        "ParamRef",
+        "RowExpr",
+        "SQLValueFunction",
+        "SubLink",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "TypeName": {
+    "arrayBounds": {
+      "nullable": true,
+      "tags": [
+        "Integer"
+      ],
+      "isArray": true
+    },
+    "names": {
+      "nullable": false,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "typmods": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "ColumnRef"
+      ],
+      "isArray": true
+    }
+  },
+  "UpdateStmt": {
+    "fromClause": {
+      "nullable": true,
+      "tags": [
+        "JoinExpr",
+        "RangeFunction",
+        "RangeSubselect",
+        "RangeVar"
+      ],
+      "isArray": true
+    },
+    "returningList": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "targetList": {
+      "nullable": false,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "whereClause": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "A_Expr",
+        "BoolExpr",
+        "ColumnRef",
+        "CurrentOfExpr",
+        "FuncCall",
+        "NullTest",
+        "SubLink"
+      ],
+      "isArray": false
+    }
+  },
+  "VacuumRelation": {
+    "va_cols": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    }
+  },
+  "VacuumStmt": {
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "rels": {
+      "nullable": true,
+      "tags": [
+        "VacuumRelation"
+      ],
+      "isArray": true
+    }
+  },
+  "VariableSetStmt": {
+    "args": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "DefElem"
+      ],
+      "isArray": true
+    }
+  },
+  "ViewStmt": {
+    "aliases": {
+      "nullable": true,
+      "tags": [
+        "String"
+      ],
+      "isArray": true
+    },
+    "options": {
+      "nullable": true,
+      "tags": [
+        "DefElem"
+      ],
+      "isArray": true
+    },
+    "query": {
+      "nullable": false,
+      "tags": [
+        "SelectStmt"
+      ],
+      "isArray": false
+    }
+  },
+  "WindowDef": {
+    "endOffset": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "TypeCast"
+      ],
+      "isArray": false
+    },
+    "orderClause": {
+      "nullable": true,
+      "tags": [
+        "SortBy"
+      ],
+      "isArray": true
+    },
+    "partitionClause": {
+      "nullable": true,
+      "tags": [
+        "ColumnRef"
+      ],
+      "isArray": true
+    },
+    "startOffset": {
+      "nullable": true,
+      "tags": [
+        "A_Const",
+        "TypeCast"
+      ],
+      "isArray": false
+    }
+  },
+  "XmlExpr": {
+    "arg_names": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
+    "args": {
+      "nullable": true,
+      "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "ColumnRef",
+        "FuncCall",
+        "ParamRef",
+        "TypeCast",
+        "XmlExpr"
+      ],
+      "isArray": true
+    },
+    "named_args": {
+      "nullable": true,
+      "tags": [
+        "ResTarget"
+      ],
+      "isArray": true
+    },
+    "xpr": {
+      "nullable": true,
+      "tags": [],
+      "isArray": false
+    }
+  },
+  "XmlSerialize": {
+    "expr": {
+      "nullable": false,
+      "tags": [
+        "A_Const",
+        "ColumnRef"
+      ],
+      "isArray": false
+    }
+  }
+}
