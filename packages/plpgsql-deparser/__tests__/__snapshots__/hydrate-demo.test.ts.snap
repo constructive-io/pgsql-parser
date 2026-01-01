@@ -139,7 +139,33 @@ LIMIT 1;
   note,
   updated_at
 ) VALUES
-  (p_org_id, p_user_id, p_from_ts, p_to_ts, p_currency, v_orders_scanned, v_gross, v_discount, v_tax, v_net, v_avg, v_top_sku, v_top_sku_qty, p_note, now()) ON CONFLICT (org_id, user_id, period_from, period_to, currency) DO UPDATE SET orders_scanned = excluded.orders_scanned, gross_total = excluded.gross_total, discount_total = excluded.discount_total, tax_total = excluded.tax_total, net_total = excluded.net_total, avg_order_total = excluded.avg_order_total, top_sku = excluded.top_sku, top_sku_qty = excluded.top_sku_qty, note = COALESCE(excluded.note, app_public.order_rollup.note), updated_at = now();
+  (
+    p_org_id,
+    p_user_id,
+    p_from_ts,
+    p_to_ts,
+    p_currency,
+    v_orders_scanned,
+    v_gross,
+    v_discount,
+    v_tax,
+    v_net,
+    v_avg,
+    v_top_sku,
+    v_top_sku_qty,
+    p_note,
+    now()
+  ) ON CONFLICT (org_id, user_id, period_from, period_to, currency) DO UPDATE SET 
+  orders_scanned = excluded.orders_scanned,
+  gross_total = excluded.gross_total,
+  discount_total = excluded.discount_total,
+  tax_total = excluded.tax_total,
+  net_total = excluded.net_total,
+  avg_order_total = excluded.avg_order_total,
+  top_sku = excluded.top_sku,
+  top_sku_qty = excluded.top_sku_qty,
+  note = COALESCE(excluded.note, app_public.order_rollup.note),
+  updated_at = now();
     GET DIAGNOSTICS v_rowcount = ;
     v_orders_upserted := v_rowcount;
     v_sql := format(
