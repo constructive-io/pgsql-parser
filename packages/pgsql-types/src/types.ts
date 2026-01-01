@@ -7,6 +7,7 @@
  */
 
 import type { Node } from '@pgsql/types';
+import { A_Expr_Kind, AggSplit, AlterPublicationAction, AlterSubscriptionType, AlterTSConfigType, AlterTableType, BoolExprType, BoolTestType, CTEMaterialize, CmdType, CoercionContext, CoercionForm, ConstrType, DefElemAction, DiscardMode, DropBehavior, FetchDirection, FunctionParameterMode, GrantTargetType, GroupingSetKind, ImportForeignSchemaType, JoinType, JsonBehaviorType, JsonConstructorType, JsonEncoding, JsonExprOp, JsonFormatType, JsonQuotes, JsonTableColumnType, JsonValueType, JsonWrapper, KeywordKind, LimitOption, LockClauseStrength, LockWaitPolicy, MergeMatchKind, MinMaxOp, NullTestType, ObjectType, OnCommitAction, OnConflictAction, OverridingKind, ParamKind, PartitionRangeDatumKind, PartitionStrategy, PublicationObjSpecType, QuerySource, RTEKind, ReindexObjectType, RoleSpecType, RoleStmtType, RowCompareType, SQLValueFunctionOp, SetOperation, SortByDir, SortByNulls, SubLinkType, TableFuncType, Token, TransactionStmtKind, VariableSetKind, ViewCheckOption, WCOKind, XmlExprOp, XmlOptionType } from '@pgsql/enums';
 export type { Node } from '@pgsql/types';
 export * from '@pgsql/enums';
 

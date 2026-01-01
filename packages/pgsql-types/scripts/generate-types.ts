@@ -36,8 +36,24 @@ function isPrimitiveType(type: string): boolean {
   return type in primitiveTypeMap;
 }
 
+function isEnumType(type: string): boolean {
+  return !isPrimitiveType(type) && !schemaMap.has(type) && type !== 'Node';
+}
+
 function getTsType(type: string): string {
   return primitiveTypeMap[type] || type;
+}
+
+function collectEnumTypes(): Set<string> {
+  const enumTypes = new Set<string>();
+  for (const nodeSpec of runtimeSchema) {
+    for (const field of nodeSpec.fields) {
+      if (isEnumType(field.type)) {
+        enumTypes.add(field.type);
+      }
+    }
+  }
+  return enumTypes;
 }
 
 function generateWrappedUnion(tags: string[]): string {
@@ -118,7 +134,13 @@ function generateTypes(metadata: AllFieldMetadata): string {
   lines.push(' */');
   lines.push('');
   
+  const enumTypes = collectEnumTypes();
+  const sortedEnums = [...enumTypes].sort();
+  
   lines.push("import type { Node } from '@pgsql/types';");
+  if (sortedEnums.length > 0) {
+    lines.push(`import { ${sortedEnums.join(', ')} } from '@pgsql/enums';`);
+  }
   lines.push("export type { Node } from '@pgsql/types';");
   lines.push("export * from '@pgsql/enums';");
   lines.push('');
