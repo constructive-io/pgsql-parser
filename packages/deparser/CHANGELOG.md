@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [17.17.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.16.0...pgsql-deparser@17.17.0) (2026-01-01)
+
+### Bug Fixes
+
+- remove pg_catalog prefix for unknown types in deparser ([0b45483](https://github.com/constructive-io/pgsql-parser/commit/0b4548375d9d9a9803f48e3ccc2cc466e18ac57c)), closes [constructive-io/constructive-planning#477](https://github.com/constructive-io/constructive-planning/issues/477)
+
+### Features
+
+- **pgsql-deparser:** add pretty-printing for INSERT VALUES and ON CONFLICT SET ([6428b87](https://github.com/constructive-io/pgsql-parser/commit/6428b87b98bdfcc7fd1b37ff8fd254f59a6d3303))
+
 # [17.16.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.15.2...pgsql-deparser@17.16.0) (2025-12-31)
 
 ### Features

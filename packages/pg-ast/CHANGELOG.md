@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [17.9.4](https://github.com/constructive-io/pgsql-parser/compare/pg-ast@17.9.3...pg-ast@17.9.4) (2026-01-01)
+
+**Note:** Version bump only for package pg-ast
+
 ## [17.9.3](https://github.com/constructive-io/pgsql-parser/compare/pg-ast@17.9.2...pg-ast@17.9.3) (2025-12-31)
 
 **Note:** Version bump only for package pg-ast

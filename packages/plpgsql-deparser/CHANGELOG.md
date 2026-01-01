@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.3.0...plpgsql-deparser@0.4.0) (2026-01-01)
+
+### Features
+
+- **plpgsql-deparser:** add DehydrationOptions to thread SQL deparse options ([1278b39](https://github.com/constructive-io/pgsql-parser/commit/1278b391534f4627997b09db909b143984d4c24b))
+- **plpgsql-deparser:** deparse modified AST for sql-stmt kind ([070f9a0](https://github.com/constructive-io/pgsql-parser/commit/070f9a0013cbc3f260f99c375070ad01fcf161b8))
+
 # [0.3.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.2.1...plpgsql-deparser@0.3.0) (2025-12-31)
 
 ### Features

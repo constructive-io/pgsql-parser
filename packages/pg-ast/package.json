@@ -1,6 +1,6 @@
 {
   "name": "pg-ast",
-  "version": "17.9.3",
+  "version": "17.9.4",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostgreSQL AST helpers for building AST nodes",
   "main": "index.js",
