@@ -1,9 +1,11 @@
 import { parseSync, scanSync } from '@libpg-query/parser';
 import { ParseResult, Node } from '@pgsql/types';
+import { Deparser } from 'pgsql-deparser';
 import {
   HydratedExprQuery,
   HydratedExprRaw,
   HydratedExprSqlExpr,
+  HydratedExprSqlStmt,
   HydratedExprAssign,
   HydrationOptions,
   HydrationResult,
@@ -397,10 +399,31 @@ function dehydrateNode(node: any): any {
 
 function dehydrateQuery(query: HydratedExprQuery): string {
   switch (query.kind) {
-    case 'assign':
-      return `${query.target} := ${query.value}`;
+    case 'assign': {
+      // For assignments, use the target and value strings directly
+      // These may have been modified by the caller
+      const assignQuery = query as HydratedExprAssign;
+      return `${assignQuery.target} := ${assignQuery.value}`;
+    }
+    case 'sql-stmt': {
+      // Deparse the modified parseResult back to SQL
+      // This enables AST-based transformations (e.g., schema renaming)
+      const stmtQuery = query as HydratedExprSqlStmt;
+      if (stmtQuery.parseResult?.stmts?.[0]?.stmt) {
+        try {
+          return Deparser.deparse(stmtQuery.parseResult.stmts[0].stmt);
+        } catch {
+          // Fall back to original if deparse fails
+          return query.original;
+        }
+      }
+      return query.original;
+    }
     case 'sql-expr':
-    case 'sql-stmt':
+      // For sql-expr, return the original string
+      // Callers can modify query.original directly for simple transformations
+      // For AST-based transformations, use sql-stmt instead
+      return query.original;
     case 'raw':
     default:
       return query.original;

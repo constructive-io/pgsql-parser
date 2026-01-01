@@ -71,34 +71,33 @@ END IF;
     IF p_debug THEN
       RAISE NOTICE 'big_kitchen_sink start=% org=% user=% from=% to=% min_total=%', v_now, p_org_id, p_user_id, p_from_ts, p_to_ts, v_min_total;
 END IF;
-    WITH base AS (
-    SELECT
-      o.id,
-      o.total_amount::numeric AS total_amount,
-      o.currency,
-      o.created_at
-    FROM app_public.app_order o
-    WHERE o.org_id = p_org_id
-      AND o.user_id = p_user_id
-      AND o.created_at >= p_from_ts
-      AND o.created_at <  p_to_ts
-      AND o.total_amount::numeric >= v_min_total
-      AND o.currency = p_currency
-    ORDER BY o.created_at DESC
-    LIMIT p_max_rows
-  ),
-  totals AS (
-    SELECT
-      count(*)::int AS orders_scanned,
-      COALESCE(sum(total_amount), 0) AS gross_total,
-      COALESCE(avg(total_amount), 0) AS avg_total
-    FROM base
-  )
-  SELECT
-    t.orders_scanned,
-    t.gross_total,
-    t.avg_total
-                                                      FROM totals t;
+    WITH 
+  base AS (SELECT
+    o.id,
+    o.total_amount::numeric AS total_amount,
+    o.currency,
+    o.created_at
+  FROM app_public.app_order AS o
+  WHERE
+    o.org_id = p_org_id
+    AND o.user_id = p_user_id
+    AND o.created_at >= p_from_ts
+    AND o.created_at < p_to_ts
+    AND o.total_amount::numeric >= v_min_total
+    AND o.currency = p_currency
+  ORDER BY
+    o.created_at DESC
+  LIMIT p_max_rows),
+  totals AS (SELECT
+    (count(*))::int AS orders_scanned,
+    COALESCE(sum(total_amount), 0) AS gross_total,
+    COALESCE(avg(total_amount), 0) AS avg_total
+  FROM base)
+SELECT
+  t.orders_scanned,
+  t.gross_total,
+  t.avg_total
+FROM totals AS t;
     IF p_apply_discount THEN
       v_rebate := round(v_gross * GREATEST(LEAST(v_discount_rate + v_jitter, 0.50), 0), p_round_to);
 ELSE
@@ -107,64 +106,40 @@ END IF;
     v_levy := round(GREATEST(v_gross - v_discount, 0) * v_tax_rate, p_round_to);
     v_net := round((v_gross - v_discount + v_tax) * power(10::numeric, 0), p_round_to);
     SELECT
-    oi.sku,
-    sum(oi.quantity)::bigint AS qty
-                                  FROM app_public.order_item oi
-  JOIN app_public.app_order o ON o.id = oi.order_id
-  WHERE o.org_id = p_org_id
-    AND o.user_id = p_user_id
-    AND o.created_at >= p_from_ts
-    AND o.created_at <  p_to_ts
-    AND o.currency = p_currency
-  GROUP BY oi.sku
-  ORDER BY qty DESC, oi.sku ASC
-  LIMIT 1;
+  oi.sku,
+  CAST(sum(oi.quantity) AS bigint) AS qty
+FROM app_public.order_item AS oi
+JOIN app_public.app_order AS o ON o.id = oi.order_id
+WHERE
+  o.org_id = p_org_id
+  AND o.user_id = p_user_id
+  AND o.created_at >= p_from_ts
+  AND o.created_at < p_to_ts
+  AND o.currency = p_currency
+GROUP BY
+  oi.sku
+ORDER BY
+  qty DESC,
+  oi.sku ASC
+LIMIT 1;
     INSERT INTO app_public.order_rollup (
-    org_id,
-    user_id,
-    period_from,
-    period_to,
-    currency,
-    orders_scanned,
-    gross_total,
-    discount_total,
-    tax_total,
-    net_total,
-    avg_order_total,
-    top_sku,
-    top_sku_qty,
-    note,
-    updated_at
-  )
-  VALUES (
-    p_org_id,
-    p_user_id,
-    p_from_ts,
-    p_to_ts,
-    p_currency,
-    v_orders_scanned,
-    v_gross,
-    v_discount,
-    v_tax,
-    v_net,
-    v_avg,
-    v_top_sku,
-    v_top_sku_qty,
-    p_note,
-    now()
-  )
-  ON CONFLICT (org_id, user_id, period_from, period_to, currency)
-  DO UPDATE SET
-    orders_scanned   = EXCLUDED.orders_scanned,
-    gross_total      = EXCLUDED.gross_total,
-    discount_total   = EXCLUDED.discount_total,
-    tax_total        = EXCLUDED.tax_total,
-    net_total        = EXCLUDED.net_total,
-    avg_order_total  = EXCLUDED.avg_order_total,
-    top_sku          = EXCLUDED.top_sku,
-    top_sku_qty      = EXCLUDED.top_sku_qty,
-    note             = COALESCE(EXCLUDED.note, app_public.order_rollup.note),
-    updated_at       = now();
+  org_id,
+  user_id,
+  period_from,
+  period_to,
+  currency,
+  orders_scanned,
+  gross_total,
+  discount_total,
+  tax_total,
+  net_total,
+  avg_order_total,
+  top_sku,
+  top_sku_qty,
+  note,
+  updated_at
+) VALUES
+  (p_org_id, p_user_id, p_from_ts, p_to_ts, p_currency, v_orders_scanned, v_gross, v_discount, v_tax, v_net, v_avg, v_top_sku, v_top_sku_qty, p_note, now()) ON CONFLICT (org_id, user_id, period_from, period_to, currency) DO UPDATE SET orders_scanned = excluded.orders_scanned, gross_total = excluded.gross_total, discount_total = excluded.discount_total, tax_total = excluded.tax_total, net_total = excluded.net_total, avg_order_total = excluded.avg_order_total, top_sku = excluded.top_sku, top_sku_qty = excluded.top_sku_qty, note = COALESCE(excluded.note, app_public.order_rollup.note), updated_at = now();
     GET DIAGNOSTICS v_rowcount = ;
     v_orders_upserted := v_rowcount;
     v_sql := format(
