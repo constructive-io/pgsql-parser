@@ -1,6 +1,6 @@
 {
   "name": "pgsql-types",
-  "version": "17.0.0",
+  "version": "17.1.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "Narrowed PostgreSQL AST type definitions with specific Node unions",
   "main": "index.js",
@@ -32,12 +32,12 @@
     "test:watch": "jest --watch"
   },
   "devDependencies": {
-    "makage": "^0.1.8",
-    "libpg-query": "17.7.3"
+    "libpg-query": "17.7.3",
+    "makage": "^0.1.8"
   },
   "dependencies": {
-    "@pgsql/types": "^17.6.2",
     "@pgsql/enums": "^17.6.2",
+    "@pgsql/types": "^17.6.2",
     "@pgsql/utils": "^17.8.9"
   },
   "keywords": [
