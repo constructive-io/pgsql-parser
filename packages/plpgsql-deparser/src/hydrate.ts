@@ -1,6 +1,6 @@
 import { parseSync, scanSync } from '@libpg-query/parser';
 import { ParseResult, Node } from '@pgsql/types';
-import { Deparser } from 'pgsql-deparser';
+import { Deparser, DeparserOptions } from 'pgsql-deparser';
 import {
   HydratedExprQuery,
   HydratedExprRaw,
@@ -14,6 +14,18 @@ import {
   ParseMode,
 } from './hydrate-types';
 import { PLpgSQLParseResult } from './types';
+
+/**
+ * Options for dehydrating (converting back to strings) a hydrated PL/pgSQL AST
+ */
+export interface DehydrationOptions {
+  /**
+   * Options to pass to the SQL deparser when deparsing sql-stmt expressions.
+   * This allows callers to control formatting (pretty printing, etc.) of
+   * embedded SQL statements inside PL/pgSQL function bodies.
+   */
+  sqlDeparseOptions?: DeparserOptions;
+}
 
 function extractExprFromSelectWrapper(result: ParseResult): Node | undefined {
   const stmt = result.stmts?.[0]?.stmt as any;
@@ -352,17 +364,17 @@ export function getOriginalQuery(query: string | HydratedExprQuery): string {
   return query.original;
 }
 
-export function dehydratePlpgsqlAst<T>(ast: T): T {
-  return dehydrateNode(ast) as T;
+export function dehydratePlpgsqlAst<T>(ast: T, options?: DehydrationOptions): T {
+  return dehydrateNode(ast, options) as T;
 }
 
-function dehydrateNode(node: any): any {
+function dehydrateNode(node: any, options?: DehydrationOptions): any {
   if (node === null || node === undefined) {
     return node;
   }
 
   if (Array.isArray(node)) {
-    return node.map(item => dehydrateNode(item));
+    return node.map(item => dehydrateNode(item, options));
   }
 
   if (typeof node !== 'object') {
@@ -377,7 +389,7 @@ function dehydrateNode(node: any): any {
     if (typeof query === 'string') {
       dehydratedQuery = query;
     } else if (isHydratedExpr(query)) {
-      dehydratedQuery = dehydrateQuery(query);
+      dehydratedQuery = dehydrateQuery(query, options?.sqlDeparseOptions);
     } else {
       dehydratedQuery = String(query);
     }
@@ -392,12 +404,12 @@ function dehydrateNode(node: any): any {
 
   const result: any = {};
   for (const [key, value] of Object.entries(node)) {
-    result[key] = dehydrateNode(value);
+    result[key] = dehydrateNode(value, options);
   }
   return result;
 }
 
-function dehydrateQuery(query: HydratedExprQuery): string {
+function dehydrateQuery(query: HydratedExprQuery, sqlDeparseOptions?: DeparserOptions): string {
   switch (query.kind) {
     case 'assign': {
       // For assignments, use the target and value strings directly
@@ -408,10 +420,11 @@ function dehydrateQuery(query: HydratedExprQuery): string {
     case 'sql-stmt': {
       // Deparse the modified parseResult back to SQL
       // This enables AST-based transformations (e.g., schema renaming)
+      // Pass through sqlDeparseOptions to control formatting (pretty printing, etc.)
       const stmtQuery = query as HydratedExprSqlStmt;
       if (stmtQuery.parseResult?.stmts?.[0]?.stmt) {
         try {
-          return Deparser.deparse(stmtQuery.parseResult.stmts[0].stmt);
+          return Deparser.deparse(stmtQuery.parseResult.stmts[0].stmt, sqlDeparseOptions);
         } catch {
           // Fall back to original if deparse fails
           return query.original;
