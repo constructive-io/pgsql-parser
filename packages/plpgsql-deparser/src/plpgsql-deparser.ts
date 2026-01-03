@@ -1460,11 +1460,12 @@ export class PLpgSQLDeparser {
   }
 
   /**
-   * Apply indentation
+   * Apply indentation to all lines of text
+   * This ensures proper formatting for multi-line statements (nested IF/WHILE/LOOP blocks)
    */
   private indent(text: string, level: number): string {
     const indent = this.options.indent!.repeat(level);
-    return indent + text;
+    return indent + text.replace(/\n/g, '\n' + indent);
   }
 
   /**
