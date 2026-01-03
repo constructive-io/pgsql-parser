@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.4.0...plpgsql-deparser@0.4.1) (2026-01-03)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** indent all lines of multi-line statements ([36dd819](https://github.com/constructive-io/pgsql-parser/commit/36dd819c39fb193fbc90797bba7d144beae0bdbe))
+
 # [0.4.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.3.0...plpgsql-deparser@0.4.0) (2026-01-01)
 
 ### Features
