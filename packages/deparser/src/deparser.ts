@@ -4273,7 +4273,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.schemaname) {
-      output.push(node.schemaname);
+      output.push(QuoteUtils.quoteIdentifier(node.schemaname));
     }
 
     if (node.authrole) {
