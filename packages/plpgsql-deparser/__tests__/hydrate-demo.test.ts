@@ -90,6 +90,14 @@ function collectHydratedExprs(obj: any, limit: number): any[] {
   return results;
 }
 
+/**
+ * Modify AST nodes directly (not string fields).
+ * This demonstrates the proper way to transform hydrated PL/pgSQL ASTs.
+ * 
+ * For assign kind: modify targetExpr/valueExpr AST nodes
+ * For sql-expr kind: modify expr AST node
+ * For sql-stmt kind: modify parseResult AST
+ */
 function modifyAst(ast: any): any {
   let modCount = 0;
   let assignModCount = 0;
@@ -102,26 +110,46 @@ function modifyAst(ast: any): any {
         const query = node.PLpgSQL_expr.query;
         
         if (typeof query === 'object' && query.kind === 'assign') {
-          if (query.target === 'v_discount' && assignModCount === 0) {
-            query.target = 'v_rebate';
-            assignModCount++;
-            modCount++;
+          // Modify targetExpr AST node (not the string field)
+          // targetExpr is a ColumnRef with fields array containing String nodes
+          if (query.target === 'v_discount' && query.targetExpr && assignModCount === 0) {
+            // ColumnRef structure: { ColumnRef: { fields: [{ String: { sval: 'v_discount' } }] } }
+            if (query.targetExpr.ColumnRef?.fields?.[0]?.String) {
+              query.targetExpr.ColumnRef.fields[0].String.sval = 'v_rebate';
+              assignModCount++;
+              modCount++;
+            }
           }
-          if (query.target === 'v_tax' && assignModCount === 1) {
-            query.target = 'v_levy';
-            assignModCount++;
-            modCount++;
+          if (query.target === 'v_tax' && query.targetExpr && assignModCount === 1) {
+            if (query.targetExpr.ColumnRef?.fields?.[0]?.String) {
+              query.targetExpr.ColumnRef.fields[0].String.sval = 'v_levy';
+              assignModCount++;
+              modCount++;
+            }
           }
-          if (query.value === '0' && modCount < 5) {
-            query.value = '42';
-            modCount++;
+          // Modify valueExpr AST node for integer constants
+          // A_Const structure: { A_Const: { ival: { ival: 0 } } } or { A_Const: { sval: { sval: '0' } } }
+          if (query.value === '0' && query.valueExpr && modCount < 5) {
+            if (query.valueExpr.A_Const?.ival !== undefined) {
+              query.valueExpr.A_Const.ival.ival = 42;
+              modCount++;
+            } else if (query.valueExpr.A_Const?.sval !== undefined) {
+              query.valueExpr.A_Const.sval.sval = '42';
+              modCount++;
+            }
           }
         }
         
         if (typeof query === 'object' && query.kind === 'sql-expr') {
-          if (query.original === '0' && modCount < 8) {
-            query.original = '42';
-            modCount++;
+          // Modify expr AST node for integer constants
+          if (query.original === '0' && query.expr && modCount < 8) {
+            if (query.expr.A_Const?.ival !== undefined) {
+              query.expr.A_Const.ival.ival = 42;
+              modCount++;
+            } else if (query.expr.A_Const?.sval !== undefined) {
+              query.expr.A_Const.sval.sval = '42';
+              modCount++;
+            }
           }
         }
       }

@@ -48,21 +48,24 @@ exports[`hydrate demonstration with big-function.sql should parse, hydrate, modi
   v_min_total numeric := COALESCE(p_min_total, 0);
   v_sql text;
   v_rowcount int := 0;
-  v_lock_key bigint := ('x' || substr(md5(p_org_id::text), 1, 16))::bit(64)::bigint;
+  v_lock_key bigint := CAST(CAST('x' || substr(md5(p_org_id::text), 1, 16) AS pg_catalog.bit(64)) AS bigint);
   sqlstate CONSTANT text;
   sqlerrm CONSTANT text;
 BEGIN
   BEGIN
-      IF p_org_id IS NULL OR p_user_id IS NULL THEN
+      IF p_org_id IS NULL
+          OR p_user_id IS NULL THEN
             RAISE EXCEPTION 'p_org_id and p_user_id are required';
       END IF;
       IF p_from_ts > p_to_ts THEN
             RAISE EXCEPTION 'p_from_ts (%) must be <= p_to_ts (%)', p_from_ts, p_to_ts;
       END IF;
-      IF p_max_rows < 1 OR p_max_rows > 10000 THEN
+      IF p_max_rows < 1
+          OR p_max_rows > 10000 THEN
             RAISE EXCEPTION 'p_max_rows out of range: %', p_max_rows;
       END IF;
-      IF p_round_to < 0 OR p_round_to > 6 THEN
+      IF p_round_to < 0
+          OR p_round_to > 6 THEN
             RAISE EXCEPTION 'p_round_to out of range: %', p_round_to;
       END IF;
       IF p_lock THEN
@@ -104,7 +107,7 @@ BEGIN
             v_discount := 0;
       END IF;
       v_levy := round(GREATEST(v_gross - v_discount, 0) * v_tax_rate, p_round_to);
-      v_net := round((v_gross - v_discount + v_tax) * power(10::numeric, 0), p_round_to);
+      v_net := round(((v_gross - v_discount) + v_tax) * power(10::numeric, 0), p_round_to);
       SELECT
         oi.sku,
         CAST(sum(oi.quantity) AS bigint) AS qty
@@ -168,11 +171,7 @@ BEGIN
         updated_at = now();
       GET DIAGNOSTICS v_rowcount = ;
       v_orders_upserted := v_rowcount;
-      v_sql := format(
-          'SELECT count(*)::int FROM %I.%I WHERE org_id = $1 AND created_at >= $2 AND created_at < $3',
-          'app_public',
-          'app_order'
-        );
+      v_sql := format('SELECT count(*)::int FROM %I.%I WHERE org_id = $1 AND created_at >= $2 AND created_at < $3', 'app_public', 'app_order');
       EXECUTE v_sql INTO (unnamed row) USING p_org_id, p_from_ts, p_to_ts;
       IF p_debug THEN
             RAISE NOTICE 'dynamic count(app_order)=%', v_rowcount;
@@ -190,10 +189,7 @@ BEGIN
       avg_order_total := round(v_avg, p_round_to);
       top_sku := v_top_sku;
       top_sku_qty := v_top_sku_qty;
-      message := format(
-          'rollup ok: gross=%s discount=%s tax=%s net=%s (discount_rate=%s tax_rate=%s)',
-          v_gross, v_discount, v_tax, v_net, v_discount_rate, v_tax_rate
-        );
+      message := format('rollup ok: gross=%s discount=%s tax=%s net=%s (discount_rate=%s tax_rate=%s)', v_gross, v_discount, v_tax, v_net, v_discount_rate, v_tax_rate);
       RETURN NEXT;
       RETURN;
   END;
