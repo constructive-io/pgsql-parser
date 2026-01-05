@@ -409,13 +409,69 @@ function dehydrateNode(node: any, options?: DehydrationOptions): any {
   return result;
 }
 
+/**
+ * Deparse a single expression AST node by wrapping it in a SELECT statement,
+ * deparsing, and stripping the SELECT prefix.
+ */
+function deparseExprNode(expr: Node, sqlDeparseOptions?: DeparserOptions): string | null {
+  try {
+    // Wrap the expression in a minimal SELECT statement
+    const wrappedStmt = {
+      SelectStmt: {
+        targetList: [
+          {
+            ResTarget: {
+              val: expr
+            }
+          }
+        ]
+      }
+    };
+    const deparsed = Deparser.deparse(wrappedStmt, sqlDeparseOptions);
+    // Strip the "SELECT " prefix (case-insensitive, handles whitespace/newlines)
+    const stripped = deparsed.replace(/^SELECT\s+/i, '').replace(/;?\s*$/, '');
+    return stripped;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Normalize whitespace for comparison purposes.
+ * This helps detect if a string field was modified vs just having different formatting.
+ */
+function normalizeForComparison(str: string): string {
+  return str.replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
 function dehydrateQuery(query: HydratedExprQuery, sqlDeparseOptions?: DeparserOptions): string {
   switch (query.kind) {
     case 'assign': {
-      // For assignments, use the target and value strings directly
-      // These may have been modified by the caller
+      // For assignments, always prefer deparsing the AST nodes if they exist.
+      // This enables AST-based transformations (e.g., schema renaming).
+      // Fall back to string fields if AST nodes are missing or deparse fails.
       const assignQuery = query as HydratedExprAssign;
-      return `${assignQuery.target} := ${assignQuery.value}`;
+      
+      let target = assignQuery.target;
+      let value = assignQuery.value;
+      
+      // For target: prefer deparsed AST if available
+      if (assignQuery.targetExpr) {
+        const deparsedTarget = deparseExprNode(assignQuery.targetExpr, sqlDeparseOptions);
+        if (deparsedTarget !== null) {
+          target = deparsedTarget;
+        }
+      }
+      
+      // For value: prefer deparsed AST if available
+      if (assignQuery.valueExpr) {
+        const deparsedValue = deparseExprNode(assignQuery.valueExpr, sqlDeparseOptions);
+        if (deparsedValue !== null) {
+          value = deparsedValue;
+        }
+      }
+      
+      return `${target} := ${value}`;
     }
     case 'sql-stmt': {
       // Deparse the modified parseResult back to SQL
@@ -432,11 +488,20 @@ function dehydrateQuery(query: HydratedExprQuery, sqlDeparseOptions?: DeparserOp
       }
       return query.original;
     }
-    case 'sql-expr':
-      // For sql-expr, return the original string
-      // Callers can modify query.original directly for simple transformations
-      // For AST-based transformations, use sql-stmt instead
+    case 'sql-expr': {
+      // For sql-expr, always prefer deparsing the AST.
+      // This enables AST-based transformations (e.g., schema renaming).
+      // Fall back to original only if deparse fails.
+      const exprQuery = query as HydratedExprSqlExpr;
+      if (exprQuery.expr) {
+        const deparsed = deparseExprNode(exprQuery.expr, sqlDeparseOptions);
+        if (deparsed !== null) {
+          return deparsed;
+        }
+      }
+      // Fall back to original if deparse fails
       return query.original;
+    }
     case 'raw':
     default:
       return query.original;

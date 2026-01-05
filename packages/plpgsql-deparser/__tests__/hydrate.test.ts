@@ -1,5 +1,5 @@
 import { loadModule, parsePlPgSQLSync } from '@libpg-query/parser';
-import { hydratePlpgsqlAst, isHydratedExpr, getOriginalQuery, PLpgSQLParseResult } from '../src';
+import { hydratePlpgsqlAst, dehydratePlpgsqlAst, deparseSync, isHydratedExpr, getOriginalQuery, PLpgSQLParseResult } from '../src';
 
 describe('hydratePlpgsqlAst', () => {
   beforeAll(async () => {
@@ -152,7 +152,144 @@ $$`;
         .toBe(result.stats.totalExpressions);
     });
   });
+
+  describe('heterogeneous deparse (AST-based transformations)', () => {
+    it('should deparse modified sql-expr AST nodes (schema renaming)', () => {
+      // Note: This test only checks RangeVar nodes in SQL expressions.
+      // Type references in DECLARE (PLpgSQL_type.typname) are strings, not AST nodes,
+      // and require separate string-based transformation.
+      const sql = `CREATE FUNCTION test_func() RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM "old-schema".users WHERE id = 1) THEN
+        RAISE NOTICE 'found';
+    END IF;
+END;
+$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const { ast: hydratedAst } = hydratePlpgsqlAst(parsed);
+
+      // Modify schema names in the hydrated AST
+      transformSchemaNames(hydratedAst, 'old-schema', 'new_schema');
+
+      // Dehydrate and deparse
+      const dehydratedAst = dehydratePlpgsqlAst(hydratedAst);
+      const deparsedBody = deparseSync(dehydratedAst);
+
+      // The deparsed body should contain the new schema name
+      expect(deparsedBody).toContain('new_schema');
+      // And should NOT contain the old schema name
+      expect(deparsedBody).not.toContain('old-schema');
+    });
+
+    it('should deparse modified assign AST nodes (schema renaming in assignments)', () => {
+      const sql = `CREATE FUNCTION test_func() RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_count integer;
+BEGIN
+    v_count := (SELECT count(*) FROM "old-schema".users);
+END;
+$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const { ast: hydratedAst } = hydratePlpgsqlAst(parsed);
+
+      // Modify schema names in the hydrated AST
+      transformSchemaNames(hydratedAst, 'old-schema', 'new_schema');
+
+      // Dehydrate and deparse
+      const dehydratedAst = dehydratePlpgsqlAst(hydratedAst);
+      const deparsedBody = deparseSync(dehydratedAst);
+
+      // The deparsed body should contain the new schema name
+      expect(deparsedBody).toContain('new_schema');
+      // And should NOT contain the old schema name
+      expect(deparsedBody).not.toContain('old-schema');
+    });
+
+    it('should deparse modified sql-stmt AST nodes (schema renaming in SQL statements)', () => {
+      const sql = `CREATE FUNCTION test_func() RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO "old-schema".logs (message) VALUES ('test');
+END;
+$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const { ast: hydratedAst } = hydratePlpgsqlAst(parsed);
+
+      // Modify schema names in the hydrated AST
+      transformSchemaNames(hydratedAst, 'old-schema', 'new_schema');
+
+      // Dehydrate and deparse
+      const dehydratedAst = dehydratePlpgsqlAst(hydratedAst);
+      const deparsedBody = deparseSync(dehydratedAst);
+
+      // The deparsed body should contain the new schema name
+      expect(deparsedBody).toContain('new_schema');
+      // And should NOT contain the old schema name
+      expect(deparsedBody).not.toContain('old-schema');
+    });
+  });
 });
+
+/**
+ * Helper function to transform schema names in a hydrated PL/pgSQL AST.
+ * This walks the AST and modifies schemaname properties wherever they appear.
+ */
+function transformSchemaNames(obj: any, oldSchema: string, newSchema: string): void {
+  if (obj === null || obj === undefined) return;
+
+  if (typeof obj === 'object') {
+    // Check for RangeVar nodes (table references) - wrapped in RangeVar key
+    if ('RangeVar' in obj && obj.RangeVar?.schemaname === oldSchema) {
+      obj.RangeVar.schemaname = newSchema;
+    }
+    
+    // Check for direct schemaname property (e.g., InsertStmt.relation, UpdateStmt.relation)
+    // These are RangeVar-like objects without the RangeVar wrapper
+    if ('schemaname' in obj && obj.schemaname === oldSchema && 'relname' in obj) {
+      obj.schemaname = newSchema;
+    }
+
+    // Check for hydrated expressions with sql-expr kind
+    if ('PLpgSQL_expr' in obj) {
+      const query = obj.PLpgSQL_expr.query;
+      if (query && typeof query === 'object') {
+        // Transform the embedded SQL AST
+        if (query.kind === 'sql-expr' && query.expr) {
+          transformSchemaNames(query.expr, oldSchema, newSchema);
+        }
+        if (query.kind === 'sql-stmt' && query.parseResult) {
+          transformSchemaNames(query.parseResult, oldSchema, newSchema);
+        }
+        if (query.kind === 'assign') {
+          if (query.valueExpr) {
+            transformSchemaNames(query.valueExpr, oldSchema, newSchema);
+          }
+          if (query.targetExpr) {
+            transformSchemaNames(query.targetExpr, oldSchema, newSchema);
+          }
+        }
+      }
+    }
+
+    for (const value of Object.values(obj)) {
+      transformSchemaNames(value, oldSchema, newSchema);
+    }
+  }
+
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      transformSchemaNames(item, oldSchema, newSchema);
+    }
+  }
+}
 
 function findExprByKind(obj: any, kind: string): any {
   if (obj === null || obj === undefined) return null;
