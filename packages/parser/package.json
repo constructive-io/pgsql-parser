@@ -1,6 +1,6 @@
 {
   "name": "pgsql-parser",
-  "version": "17.9.9",
+  "version": "17.9.10",
   "author": "Constructive <developers@constructive.io>",
   "description": "The real PostgreSQL query parser",
   "main": "index.js",

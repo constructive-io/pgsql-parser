@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [17.17.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.17.0...pgsql-deparser@17.17.1) (2026-01-05)
+
+### Bug Fixes
+
+- **deparser:** quote schema name in CreateSchemaStmt ([c427d0f](https://github.com/constructive-io/pgsql-parser/commit/c427d0f8133b58eda7f63e40b48f122d7b917dde))
+
 # [17.17.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.16.0...pgsql-deparser@17.17.0) (2026-01-01)
 
 ### Bug Fixes

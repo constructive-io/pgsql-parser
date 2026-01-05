@@ -1,6 +1,6 @@
 {
   "name": "pgsql-deparser",
-  "version": "17.17.0",
+  "version": "17.17.1",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostgreSQL AST Deparser",
   "main": "index.js",
