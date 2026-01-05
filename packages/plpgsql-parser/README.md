@@ -95,6 +95,102 @@ Converts a parsed script back to SQL.
 Options:
 - `pretty` (default: `true`) - Whether to pretty-print the output
 
+## Traverse API
+
+The package provides a visitor pattern for traversing PL/pgSQL ASTs, similar to `@pgsql/traverse` but designed for PL/pgSQL node types.
+
+### `walk(root, callback, options?)`
+
+Walks the tree of PL/pgSQL AST nodes using a visitor pattern.
+
+```typescript
+import { parse, walk, loadModule } from 'plpgsql-parser';
+import type { PLpgSQLVisitor } from 'plpgsql-parser';
+
+await loadModule();
+
+const parsed = parse(`
+  CREATE FUNCTION get_user(p_id int)
+  RETURNS text
+  LANGUAGE plpgsql
+  AS $$
+  BEGIN
+    RETURN (SELECT name FROM users WHERE id = p_id);
+  END;
+  $$;
+`);
+
+// Visit PL/pgSQL nodes
+const visitor: PLpgSQLVisitor = {
+  PLpgSQL_stmt_block: (path) => {
+    console.log('Found block at path:', path.path);
+  },
+  PLpgSQL_stmt_return: (path) => {
+    console.log('Found return statement');
+  },
+};
+
+walk(parsed.functions[0].plpgsql.hydrated, visitor);
+```
+
+Options:
+- `walkSqlExpressions` (default: `true`) - Whether to recurse into hydrated SQL expressions
+- `sqlVisitor` - SQL visitor to use when walking hydrated SQL expressions (from `@pgsql/traverse`)
+
+### `walkParsedScript(parsed, plpgsqlVisitor, sqlVisitor?)`
+
+Convenience function that walks both SQL statements and PL/pgSQL function bodies.
+
+```typescript
+import { parse, walkParsedScript, loadModule } from 'plpgsql-parser';
+
+await loadModule();
+
+const parsed = parse(`
+  CREATE TABLE users (id int);
+  CREATE FUNCTION get_user(p_id int) RETURNS text LANGUAGE plpgsql AS $$
+  BEGIN
+    RETURN (SELECT name FROM users WHERE id = p_id);
+  END;
+  $$;
+`);
+
+walkParsedScript(
+  parsed,
+  // PL/pgSQL visitor
+  {
+    PLpgSQL_stmt_return: (path) => {
+      console.log('PL/pgSQL return statement');
+    },
+  },
+  // SQL visitor (optional) - visits both top-level SQL and embedded SQL in functions
+  {
+    CreateStmt: (path) => {
+      console.log('CREATE TABLE statement');
+    },
+    RangeVar: (path) => {
+      console.log('Table reference:', path.node.relname);
+    },
+  }
+);
+```
+
+### `PLpgSQLNodePath`
+
+The path object passed to visitor functions:
+
+```typescript
+class PLpgSQLNodePath<TTag extends string = string> {
+  tag: TTag;           // Node type (e.g., 'PLpgSQL_stmt_block')
+  node: any;           // The actual node data
+  parent: PLpgSQLNodePath | null;  // Parent path
+  keyPath: readonly (string | number)[];  // Full path array
+  
+  get path(): (string | number)[];  // Copy of keyPath
+  get key(): string | number;       // Last element of path
+}
+```
+
 ## Re-exports
 
 For power users, the package re-exports underlying primitives:

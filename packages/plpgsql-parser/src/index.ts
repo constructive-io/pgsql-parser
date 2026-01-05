@@ -2,6 +2,15 @@ export * from './types';
 export { parse, parseSync, loadModule } from './parse';
 export { deparse, deparseSync } from './deparse';
 export { transform, transformSync } from './transform';
+export { 
+  walk, 
+  walkParsedScript, 
+  PLpgSQLNodePath,
+  type PLpgSQLWalker,
+  type PLpgSQLVisitor,
+  type PLpgSQLNodeTag,
+  type WalkOptions
+} from './traverse';
 
 export {
   hydratePlpgsqlAst,
