@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.4.2...plpgsql-deparser@0.5.0) (2026-01-05)
+
+### Features
+
+- **plpgsql-deparser:** enable heterogeneous deparse for AST-based transformations ([e6383c9](https://github.com/constructive-io/pgsql-parser/commit/e6383c90db389fdb80e456cb54b30121e7ef436d))
+
 ## [0.4.2](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.4.1...plpgsql-deparser@0.4.2) (2026-01-05)
 
 **Note:** Version bump only for package plpgsql-deparser
