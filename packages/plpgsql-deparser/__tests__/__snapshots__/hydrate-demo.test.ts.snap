@@ -69,7 +69,7 @@ BEGIN
             RAISE EXCEPTION 'p_round_to out of range: %', p_round_to;
       END IF;
       IF p_lock THEN
-            PERFORM SELECT pg_advisory_xact_lock(v_lock_key);
+            PERFORM pg_advisory_xact_lock(v_lock_key);
       END IF;
       IF p_debug THEN
             RAISE NOTICE 'big_kitchen_sink start=% org=% user=% from=% to=% min_total=%', v_now, p_org_id, p_user_id, p_from_ts, p_to_ts, v_min_total;
@@ -99,7 +99,7 @@ BEGIN
       SELECT
         t.orders_scanned,
         t.gross_total,
-        t.avg_total
+        t.avg_total INTO v_orders_scanned, v_gross, v_avg
       FROM totals AS t;
       IF p_apply_discount THEN
             v_rebate := round(v_gross * GREATEST(LEAST(v_discount_rate + v_jitter, 0.50), 0), p_round_to);
@@ -110,7 +110,7 @@ BEGIN
       v_net := round(((v_gross - v_discount) + v_tax) * power(10::numeric, 0), p_round_to);
       SELECT
         oi.sku,
-        CAST(sum(oi.quantity) AS bigint) AS qty
+        CAST(sum(oi.quantity) AS bigint) AS qty INTO v_top_sku, v_top_sku_qty
       FROM app_public.order_item AS oi
       JOIN app_public.app_order AS o ON o.id = oi.order_id
       WHERE

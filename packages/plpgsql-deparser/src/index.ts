@@ -1,4 +1,4 @@
-import { PLpgSQLDeparser, PLpgSQLDeparserOptions } from './plpgsql-deparser';
+import { PLpgSQLDeparser, PLpgSQLDeparserOptions, ReturnInfo, ReturnInfoKind } from './plpgsql-deparser';
 
 const deparseMethod = PLpgSQLDeparser.deparse;
 const deparseFunctionMethod = PLpgSQLDeparser.deparseFunction;
@@ -18,7 +18,7 @@ export const deparseFunction = async (
   return deparseFunctionMethod(...args);
 };
 
-export { PLpgSQLDeparser, PLpgSQLDeparserOptions };
+export { PLpgSQLDeparser, PLpgSQLDeparserOptions, ReturnInfo, ReturnInfoKind };
 export * from './types';
 export * from './hydrate-types';
 export { hydratePlpgsqlAst, dehydratePlpgsqlAst, isHydratedExpr, getOriginalQuery, DehydrationOptions } from './hydrate';
