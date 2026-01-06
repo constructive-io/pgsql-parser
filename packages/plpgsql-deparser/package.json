@@ -1,6 +1,6 @@
 {
   "name": "plpgsql-deparser",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "author": "Constructive <developers@constructive.io>",
   "description": "PL/pgSQL AST Deparser - Converts PL/pgSQL function ASTs back to SQL",
   "main": "index.js",

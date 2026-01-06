@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.2](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.1...plpgsql-deparser@0.5.2) (2026-01-06)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** handle = assignment operator in splitAssignment ([cbbc4ac](https://github.com/constructive-io/pgsql-parser/commit/cbbc4ac4f77493bf5ac539828f35229d915d9bb4))
+
 ## [0.5.1](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.0...plpgsql-deparser@0.5.1) (2026-01-06)
 
 ### Bug Fixes
