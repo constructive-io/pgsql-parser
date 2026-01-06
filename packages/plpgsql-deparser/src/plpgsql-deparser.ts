@@ -1056,20 +1056,183 @@ export class PLpgSQLDeparser {
     const kw = this.keyword;
     let sql = exec.sqlstmt ? this.deparseExpr(exec.sqlstmt) : '';
     
-    if (exec.into && exec.target) {
+    if (exec.into && exec.target !== undefined) {
+      // exec.target is a PLpgSQLDatum object (e.g., {PLpgSQL_recfield: {...}})
       const targetName = this.deparseDatumName(exec.target, context);
-      // Check if the SQL already contains INTO
-      if (!sql.toUpperCase().includes(' INTO ')) {
-        // Insert INTO clause after SELECT
-        const selectMatch = sql.match(/^(SELECT\s+.+?)(\s+FROM\s+)/i);
-        if (selectMatch) {
-          const strict = exec.strict ? kw('STRICT') + ' ' : '';
-          sql = `${selectMatch[1]} ${kw('INTO')} ${strict}${targetName}${selectMatch[2]}${sql.slice(selectMatch[0].length)}`;
-        }
+      const strict = exec.strict ? kw('STRICT') + ' ' : '';
+      const intoClause = ` ${kw('INTO')} ${strict}${targetName}`;
+      // Use depth-aware scanner to find the correct insertion point
+      // Only insert INTO at depth 0 (not inside subqueries)
+      const insertPos = this.findIntoInsertionPoint(sql);
+      if (insertPos !== -1) {
+        sql = sql.slice(0, insertPos) + intoClause + sql.slice(insertPos);
+      } else {
+        // Fallback: append at end if no suitable position found
+        sql = sql + intoClause;
       }
     }
     
     return sql;
+  }
+
+  /**
+   * Find the correct position to insert INTO clause in a SQL statement.
+   * Uses a depth-aware scanner to avoid inserting inside subqueries.
+   * Returns the position to insert INTO, or -1 if INTO already exists at depth 0.
+   */
+  private findIntoInsertionPoint(sql: string): number {
+    let depth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inDollarQuote = false;
+    let dollarQuoteTag = '';
+    let inLineComment = false;
+    let inBlockComment = false;
+    const upperSql = sql.toUpperCase();
+    const len = sql.length;
+    
+    // Clause keywords that end the SELECT target list at depth 0
+    const clauseKeywords = ['FROM', 'WHERE', 'GROUP', 'HAVING', 'WINDOW', 'ORDER', 'LIMIT', 'OFFSET', 'FETCH', 'FOR', 'UNION', 'INTERSECT', 'EXCEPT'];
+    
+    for (let i = 0; i < len; i++) {
+      const char = sql[i];
+      const nextChar = sql[i + 1] || '';
+      
+      // Handle line comments
+      if (!inSingleQuote && !inDoubleQuote && !inDollarQuote && !inBlockComment) {
+        if (char === '-' && nextChar === '-') {
+          inLineComment = true;
+          i++;
+          continue;
+        }
+      }
+      if (inLineComment) {
+        if (char === '\n') {
+          inLineComment = false;
+        }
+        continue;
+      }
+      
+      // Handle block comments
+      if (!inSingleQuote && !inDoubleQuote && !inDollarQuote && !inLineComment) {
+        if (char === '/' && nextChar === '*') {
+          inBlockComment = true;
+          i++;
+          continue;
+        }
+      }
+      if (inBlockComment) {
+        if (char === '*' && nextChar === '/') {
+          inBlockComment = false;
+          i++;
+        }
+        continue;
+      }
+      
+      // Handle dollar quotes
+      if (!inSingleQuote && !inDoubleQuote && !inBlockComment && !inLineComment) {
+        if (char === '$') {
+          let tagEnd = i + 1;
+          while (tagEnd < len && (/[a-zA-Z0-9_]/.test(sql[tagEnd]) || sql[tagEnd] === '$')) {
+            if (sql[tagEnd] === '$') {
+              tagEnd++;
+              break;
+            }
+            tagEnd++;
+          }
+          const tag = sql.slice(i, tagEnd);
+          if (tag.endsWith('$')) {
+            if (inDollarQuote && tag === dollarQuoteTag) {
+              inDollarQuote = false;
+              dollarQuoteTag = '';
+              i = tagEnd - 1;
+              continue;
+            } else if (!inDollarQuote) {
+              inDollarQuote = true;
+              dollarQuoteTag = tag;
+              i = tagEnd - 1;
+              continue;
+            }
+          }
+        }
+      }
+      if (inDollarQuote) {
+        continue;
+      }
+      
+      // Handle single quotes
+      if (!inDoubleQuote && !inBlockComment && !inLineComment && !inDollarQuote) {
+        if (char === "'") {
+          if (inSingleQuote && nextChar === "'") {
+            i++;
+            continue;
+          }
+          inSingleQuote = !inSingleQuote;
+          continue;
+        }
+      }
+      if (inSingleQuote) {
+        continue;
+      }
+      
+      // Handle double quotes (identifiers)
+      if (!inSingleQuote && !inBlockComment && !inLineComment && !inDollarQuote) {
+        if (char === '"') {
+          if (inDoubleQuote && nextChar === '"') {
+            i++;
+            continue;
+          }
+          inDoubleQuote = !inDoubleQuote;
+          continue;
+        }
+      }
+      if (inDoubleQuote) {
+        continue;
+      }
+      
+      // Track parentheses depth
+      if (char === '(') {
+        depth++;
+        continue;
+      }
+      if (char === ')') {
+        depth--;
+        continue;
+      }
+      
+      // Only look for keywords at depth 0
+      if (depth === 0) {
+        // Check if we're at a word boundary before checking keywords
+        const prevChar = i > 0 ? sql[i - 1] : ' ';
+        const isWordBoundary = /\s/.test(prevChar) || prevChar === '(' || prevChar === ')' || prevChar === ',' || i === 0;
+        
+        if (isWordBoundary) {
+          // Check if INTO already exists at depth 0
+          if (/^INTO\s/i.test(upperSql.slice(i))) {
+            return -1;
+          }
+          
+          // Check for clause keywords that end the target list
+          for (const keyword of clauseKeywords) {
+            const pattern = new RegExp(`^${keyword}\\b`, 'i');
+            if (pattern.test(upperSql.slice(i))) {
+              let insertPos = i;
+              while (insertPos > 0 && /\s/.test(sql[insertPos - 1])) {
+                insertPos--;
+              }
+              return insertPos;
+            }
+          }
+        }
+      }
+    }
+    
+    // No clause keyword found - append at end
+    let insertPos = len;
+    while (insertPos > 0 && /\s/.test(sql[insertPos - 1])) {
+      insertPos--;
+    }
+    return insertPos;
   }
 
   /**
@@ -1241,10 +1404,15 @@ export class PLpgSQLDeparser {
 
   /**
    * Deparse a PERFORM statement
+   * 
+   * PERFORM in PL/pgSQL is equivalent to SELECT but discards results.
+   * The parser stores the query as "SELECT ...", so we need to strip the SELECT keyword.
    */
   private deparsePerform(perform: PLpgSQL_stmt_perform, context: PLpgSQLDeparserContext): string {
     const kw = this.keyword;
-    const expr = perform.expr ? this.deparseExpr(perform.expr) : '';
+    let expr = perform.expr ? this.deparseExpr(perform.expr) : '';
+    // Strip leading SELECT keyword since PERFORM replaces it
+    expr = expr.replace(/^\s*SELECT\s+/i, '');
     return `${kw('PERFORM')} ${expr}`;
   }
 
@@ -1310,7 +1478,9 @@ export class PLpgSQLDeparser {
   /**
    * Get the name from a datum
    * For PLpgSQL_row with refname "(unnamed row)", expand the fields array
-   * to get the actual variable names
+   * to get the actual variable names.
+   * For PLpgSQL_recfield, construct the full qualified reference (e.g., new.is_active)
+   * by looking up the parent record name.
    */
   private deparseDatumName(datum: PLpgSQLDatum, context?: PLpgSQLDeparserContext): string {
     if ('PLpgSQL_var' in datum) {
@@ -1327,8 +1497,8 @@ export class PLpgSQLDeparser {
           // Try to resolve the varno to get the actual variable name
           const fieldDatum = context.datums[field.varno];
           if (fieldDatum) {
-            // Recursively get the name, but without context to avoid infinite loops
-            return this.deparseDatumName(fieldDatum);
+            // Recursively get the name, passing context to resolve parent records
+            return this.deparseDatumName(fieldDatum, context);
           }
           // Fall back to the field name if we can't resolve the varno
           return field.name;
@@ -1338,7 +1508,18 @@ export class PLpgSQLDeparser {
       return row.refname;
     }
     if ('PLpgSQL_recfield' in datum) {
-      return datum.PLpgSQL_recfield.fieldname;
+      const recfield = datum.PLpgSQL_recfield;
+      // Get the parent record name to construct the full field reference (e.g., new.is_active)
+      if (recfield.recparentno !== undefined && context?.datums) {
+        const parentDatum = context.datums[recfield.recparentno];
+        if (parentDatum) {
+          const parentName = this.deparseDatumName(parentDatum);
+          if (parentName) {
+            return `${parentName}.${recfield.fieldname}`;
+          }
+        }
+      }
+      return recfield.fieldname;
     }
     return '';
   }
