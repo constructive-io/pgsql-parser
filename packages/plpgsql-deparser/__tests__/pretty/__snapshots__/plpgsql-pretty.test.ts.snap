@@ -142,7 +142,7 @@ begin
           'app_public',
           'app_order'
         );
-      execute v_sql into (unnamed row) using p_org_id, p_from_ts, p_to_ts;
+      execute v_sql into v_rowcount using p_org_id, p_from_ts, p_to_ts;
       if p_debug then
             raise notice 'dynamic count(app_order)=%', v_rowcount;
       end if;
@@ -343,7 +343,7 @@ BEGIN
           'app_public',
           'app_order'
         );
-      EXECUTE v_sql INTO (unnamed row) USING p_org_id, p_from_ts, p_to_ts;
+      EXECUTE v_sql INTO v_rowcount USING p_org_id, p_from_ts, p_to_ts;
       IF p_debug THEN
             RAISE NOTICE 'dynamic count(app_order)=%', v_rowcount;
       END IF;
