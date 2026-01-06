@@ -172,7 +172,7 @@ BEGIN
       GET DIAGNOSTICS v_rowcount = ;
       v_orders_upserted := v_rowcount;
       v_sql := format('SELECT count(*)::int FROM %I.%I WHERE org_id = $1 AND created_at >= $2 AND created_at < $3', 'app_public', 'app_order');
-      EXECUTE v_sql INTO (unnamed row) USING p_org_id, p_from_ts, p_to_ts;
+      EXECUTE v_sql INTO v_rowcount USING p_org_id, p_from_ts, p_to_ts;
       IF p_debug THEN
             RAISE NOTICE 'dynamic count(app_order)=%', v_rowcount;
       END IF;

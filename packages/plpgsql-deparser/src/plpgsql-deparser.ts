@@ -769,7 +769,7 @@ export class PLpgSQLDeparser {
       parts.push(`<<${fori.label}>>`);
     }
 
-    const varName = fori.var ? this.deparseDatumName(fori.var) : 'i';
+    const varName = fori.var ? this.deparseDatumName(fori.var, context) : 'i';
     const lower = fori.lower ? this.deparseExpr(fori.lower) : '1';
     const upper = fori.upper ? this.deparseExpr(fori.upper) : '10';
     
@@ -810,7 +810,7 @@ export class PLpgSQLDeparser {
       parts.push(`<<${fors.label}>>`);
     }
 
-    const varName = fors.var ? this.deparseDatumName(fors.var) : 'rec';
+    const varName = fors.var ? this.deparseDatumName(fors.var, context) : 'rec';
     const query = fors.query ? this.deparseExpr(fors.query) : '';
     parts.push(`${kw('FOR')} ${varName} ${kw('IN')} ${query} ${kw('LOOP')}`);
 
@@ -841,7 +841,7 @@ export class PLpgSQLDeparser {
       parts.push(`<<${forc.label}>>`);
     }
 
-    const varName = forc.var ? this.deparseDatumName(forc.var) : 'rec';
+    const varName = forc.var ? this.deparseDatumName(forc.var, context) : 'rec';
     const cursorName = this.getVarName(forc.curvar, context);
     
     let forClause = `${kw('FOR')} ${varName} ${kw('IN')} ${cursorName}`;
@@ -1057,7 +1057,7 @@ export class PLpgSQLDeparser {
     let sql = exec.sqlstmt ? this.deparseExpr(exec.sqlstmt) : '';
     
     if (exec.into && exec.target) {
-      const targetName = this.deparseDatumName(exec.target);
+      const targetName = this.deparseDatumName(exec.target, context);
       // Check if the SQL already contains INTO
       if (!sql.toUpperCase().includes(' INTO ')) {
         // Insert INTO clause after SELECT
@@ -1085,7 +1085,7 @@ export class PLpgSQLDeparser {
     
     if (exec.into && exec.target) {
       const strict = exec.strict ? kw('STRICT') + ' ' : '';
-      parts.push(`${kw('INTO')} ${strict}${this.deparseDatumName(exec.target)}`);
+      parts.push(`${kw('INTO')} ${strict}${this.deparseDatumName(exec.target, context)}`);
     }
     
     if (exec.params && exec.params.length > 0) {
@@ -1107,7 +1107,7 @@ export class PLpgSQLDeparser {
       parts.push(`<<${fors.label}>>`);
     }
 
-    const varName = fors.var ? this.deparseDatumName(fors.var) : 'rec';
+    const varName = fors.var ? this.deparseDatumName(fors.var, context) : 'rec';
     let forClause = `${kw('FOR')} ${varName} ${kw('IN EXECUTE')} ${fors.query ? this.deparseExpr(fors.query) : ''}`;
     
     if (fors.params && fors.params.length > 0) {
@@ -1224,7 +1224,7 @@ export class PLpgSQLDeparser {
     
     // INTO target
     if (!fetch.is_move && fetch.target) {
-      parts.push(`${kw('INTO')} ${this.deparseDatumName(fetch.target)}`);
+      parts.push(`${kw('INTO')} ${this.deparseDatumName(fetch.target, context)}`);
     }
     
     return parts.join(' ');
@@ -1304,13 +1304,15 @@ export class PLpgSQLDeparser {
       return `$${varno}`;
     }
     
-    return this.deparseDatumName(datum);
+    return this.deparseDatumName(datum, context);
   }
 
   /**
    * Get the name from a datum
+   * For PLpgSQL_row with refname "(unnamed row)", expand the fields array
+   * to get the actual variable names
    */
-  private deparseDatumName(datum: PLpgSQLDatum): string {
+  private deparseDatumName(datum: PLpgSQLDatum, context?: PLpgSQLDeparserContext): string {
     if ('PLpgSQL_var' in datum) {
       return datum.PLpgSQL_var.refname;
     }
@@ -1318,7 +1320,22 @@ export class PLpgSQLDeparser {
       return datum.PLpgSQL_rec.refname;
     }
     if ('PLpgSQL_row' in datum) {
-      return datum.PLpgSQL_row.refname;
+      const row = datum.PLpgSQL_row;
+      // If this is an "(unnamed row)" with fields, expand the fields to get actual variable names
+      if (row.refname === '(unnamed row)' && row.fields && row.fields.length > 0 && context?.datums) {
+        const fieldNames = row.fields.map(field => {
+          // Try to resolve the varno to get the actual variable name
+          const fieldDatum = context.datums[field.varno];
+          if (fieldDatum) {
+            // Recursively get the name, but without context to avoid infinite loops
+            return this.deparseDatumName(fieldDatum);
+          }
+          // Fall back to the field name if we can't resolve the varno
+          return field.name;
+        });
+        return fieldNames.join(', ');
+      }
+      return row.refname;
     }
     if ('PLpgSQL_recfield' in datum) {
       return datum.PLpgSQL_recfield.fieldname;
