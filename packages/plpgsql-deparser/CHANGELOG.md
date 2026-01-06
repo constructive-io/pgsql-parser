@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.4...plpgsql-deparser@0.6.0) (2026-01-06)
+
+### Features
+
+- **plpgsql-deparser:** add context-based RETURN statement handling ([d8360b6](https://github.com/constructive-io/pgsql-parser/commit/d8360b62db4176aa21bad22d63c15fe58435345f))
+
 ## [0.5.4](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.3...plpgsql-deparser@0.5.4) (2026-01-06)
 
 ### Bug Fixes
