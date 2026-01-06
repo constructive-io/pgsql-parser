@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.4](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.3...plpgsql-deparser@0.5.4) (2026-01-06)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** fix PERFORM, INTO, and recfield bugs ([f791150](https://github.com/constructive-io/pgsql-parser/commit/f791150696d703e591afc3411886d598d51ecff1))
+- **plpgsql-deparser:** normalize whitespace after INTO insertion ([2769aa6](https://github.com/constructive-io/pgsql-parser/commit/2769aa67f12047abd9dee38ef0a350f2613f15c5))
+
 ## [0.5.3](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.2...plpgsql-deparser@0.5.3) (2026-01-06)
 
 ### Bug Fixes
