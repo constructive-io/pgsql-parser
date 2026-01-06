@@ -1,0 +1,424 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`schema rename mapped should transform schema names and snapshot rename map and output: rename-map 1`] = `
+{
+  "app_internal": {
+    "newSchema": "myapp_internal_v2",
+    "referenceCount": 1,
+    "references": [
+      {
+        "name": "metrics",
+        "type": "table_ref",
+      },
+    ],
+  },
+  "app_private": {
+    "newSchema": "myapp_private_v2",
+    "referenceCount": 1,
+    "references": [
+      {
+        "name": "activity_logs",
+        "type": "table_ref",
+      },
+    ],
+  },
+  "app_public": {
+    "newSchema": "myapp_v2",
+    "referenceCount": 39,
+    "references": [
+      {
+        "name": "get_user_stats",
+        "type": "function_name",
+      },
+      {
+        "name": "users",
+        "type": "table_ref",
+      },
+      {
+        "name": "orders",
+        "type": "table_ref",
+      },
+      {
+        "name": "audit_changes",
+        "type": "function_name",
+      },
+      {
+        "name": "audit_log",
+        "type": "relation",
+      },
+      {
+        "name": "update_user_status",
+        "type": "function_name",
+      },
+      {
+        "name": "users",
+        "type": "relation",
+      },
+      {
+        "name": "status_history",
+        "type": "relation",
+      },
+      {
+        "name": "cleanup_old_sessions",
+        "type": "function_name",
+      },
+      {
+        "name": "sessions",
+        "type": "relation",
+      },
+      {
+        "name": "get_active_orders",
+        "type": "function_name",
+      },
+      {
+        "name": "orders",
+        "type": "table_ref",
+      },
+      {
+        "name": "users",
+        "type": "table_ref",
+      },
+      {
+        "name": "calculate_order_total",
+        "type": "function_name",
+      },
+      {
+        "name": "order_items",
+        "type": "table_ref",
+      },
+      {
+        "name": "get_tax_rate",
+        "type": "func_call",
+      },
+      {
+        "name": "get_discount",
+        "type": "func_call",
+      },
+      {
+        "name": "get_user_dashboard",
+        "type": "function_name",
+      },
+      {
+        "name": "orders",
+        "type": "table_ref",
+      },
+      {
+        "name": "orders",
+        "type": "table_ref",
+      },
+      {
+        "name": "subscriptions",
+        "type": "table_ref",
+      },
+      {
+        "name": "sync_user_profile",
+        "type": "function_name",
+      },
+      {
+        "name": "profiles",
+        "type": "table_ref",
+      },
+      {
+        "name": "profiles",
+        "type": "relation",
+      },
+      {
+        "name": "profiles",
+        "type": "relation",
+      },
+      {
+        "name": "notify_profile_change",
+        "type": "func_call",
+      },
+      {
+        "name": "get_top_customers",
+        "type": "function_name",
+      },
+      {
+        "name": "users",
+        "type": "table_ref",
+      },
+      {
+        "name": "orders",
+        "type": "table_ref",
+      },
+      {
+        "name": "get_users_with_orders",
+        "type": "function_name",
+      },
+      {
+        "name": "users",
+        "type": "table_ref",
+      },
+      {
+        "name": "orders",
+        "type": "table_ref",
+      },
+      {
+        "name": "cross_schema_report",
+        "type": "function_name",
+      },
+      {
+        "name": "users",
+        "type": "table_ref",
+      },
+      {
+        "name": "process_batch",
+        "type": "function_name",
+      },
+      {
+        "name": "processed_items",
+        "type": "relation",
+      },
+      {
+        "name": "batch_items",
+        "type": "relation",
+      },
+      {
+        "name": "batch_items",
+        "type": "table_ref",
+      },
+      {
+        "name": "batches",
+        "type": "relation",
+      },
+    ],
+  },
+}
+`;
+
+exports[`schema rename mapped should transform schema names and snapshot rename map and output: transformed-sql 1`] = `
+"CREATE FUNCTION myapp_v2.get_user_stats(
+  p_user_id int
+) RETURNS int LANGUAGE plpgsql AS $$DECLARE
+  total_count int;
+BEGIN
+  SELECT count(*) INTO total_count
+  FROM myapp_v2.users AS u
+  JOIN myapp_v2.orders AS o ON o.user_id = u.id
+  WHERE
+    u.id = p_user_id;
+  RETURN total_count;
+END$$;
+
+CREATE FUNCTION myapp_v2.audit_changes() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN
+  INSERT INTO myapp_v2.audit_log (
+    table_name,
+    operation,
+    old_data,
+    new_data,
+    changed_at
+  ) VALUES
+    (
+      tg_table_name,
+      tg_op,
+      to_json(old),
+      to_json(new),
+      now()
+    );
+  IF tg_op = 'DELETE' THEN
+      RETURN old;
+  END IF;
+  RETURN new;
+END$$;
+
+CREATE FUNCTION myapp_v2.update_user_status(
+  p_user_id int,
+  p_status text
+) RETURNS void LANGUAGE plpgsql AS $$BEGIN
+  UPDATE myapp_v2.users SET status = p_status,updated_at = now() WHERE id = p_user_id;
+  INSERT INTO myapp_v2.status_history (
+    user_id,
+    status,
+    changed_at
+  ) VALUES
+    (
+      p_user_id,
+      p_status,
+      now()
+    );
+  RETURN;
+END$$;
+
+CREATE FUNCTION myapp_v2.cleanup_old_sessions(
+  p_days int
+) RETURNS int LANGUAGE plpgsql AS $$DECLARE
+  deleted_count int;
+BEGIN
+  DELETE FROM myapp_v2.sessions WHERE created_at < (now() - CAST(p_days || ' days' AS interval));
+  GET DIAGNOSTICS deleted_count = ;
+  RETURN deleted_count;
+END$$;
+
+CREATE FUNCTION myapp_v2.get_active_orders(
+  p_status text
+) RETURNS SETOF int LANGUAGE plpgsql AS $$BEGIN
+  RETURN QUERY SELECT o.id
+  FROM myapp_v2.orders AS o
+  JOIN myapp_v2.users AS u ON u.id = o.user_id
+  WHERE
+    o.status = p_status
+    AND u.is_active = true;
+  RETURN;
+END$$;
+
+CREATE FUNCTION myapp_v2.calculate_order_total(
+  p_order_id int
+) RETURNS numeric LANGUAGE plpgsql AS $$DECLARE
+  subtotal numeric;
+  tax_amount numeric;
+  discount numeric;
+BEGIN
+  SELECT sum(quantity * price) INTO subtotal
+  FROM myapp_v2.order_items
+  WHERE
+    order_id = p_order_id;
+  tax_amount := myapp_v2.get_tax_rate() * subtotal;
+  discount := myapp_v2.get_discount(p_order_id);
+  RETURN (subtotal + tax_amount) - discount;
+END$$;
+
+CREATE FUNCTION myapp_v2.get_user_dashboard(
+  p_user_id int
+) RETURNS TABLE (
+  metric_name text,
+  metric_value numeric
+) LANGUAGE plpgsql AS $$BEGIN
+  RETURN QUERY (SELECT
+    'total_orders'::text,
+    (count(*))::numeric
+  FROM myapp_v2.orders
+  WHERE
+    user_id = p_user_id
+  UNION
+  ALL
+  SELECT
+    'total_spent'::text,
+    CAST(COALESCE(sum(total), 0) AS numeric)
+  FROM myapp_v2.orders
+  WHERE
+    user_id = p_user_id)
+  UNION
+  ALL
+  SELECT
+    'active_subscriptions'::text,
+    (count(*))::numeric
+  FROM myapp_v2.subscriptions
+  WHERE
+    user_id = p_user_id
+    AND status = 'active';
+  RETURN;
+END$$;
+
+CREATE FUNCTION myapp_v2.sync_user_profile() RETURNS trigger LANGUAGE plpgsql AS $$DECLARE
+  profile_exists boolean;
+BEGIN
+  SELECT
+    EXISTS (SELECT 1
+    FROM myapp_v2.profiles
+    WHERE
+      user_id = new.id) INTO profile_exists;
+  IF NOT (profile_exists) THEN
+      INSERT INTO myapp_v2.profiles (
+        user_id,
+        created_at
+      ) VALUES
+        (
+          new.id,
+          now()
+        );
+  ELSE
+      UPDATE myapp_v2.profiles SET updated_at = now() WHERE user_id = new.id;
+  END IF;
+  PERFORM myapp_v2.notify_profile_change(new.id);
+  RETURN new;
+END$$;
+
+CREATE FUNCTION myapp_v2.get_top_customers(
+  p_limit int
+) RETURNS SETOF int LANGUAGE plpgsql AS $$BEGIN
+  RETURN QUERY WITH 
+    customer_totals AS (SELECT
+      user_id,
+      sum(total) AS total_spent
+    FROM myapp_v2.orders
+    WHERE
+      status = 'completed'
+    GROUP BY
+      user_id)
+  SELECT ct.user_id
+  FROM customer_totals AS ct
+  JOIN myapp_v2.users AS u ON u.id = ct.user_id
+  WHERE
+    u.is_active = true
+  ORDER BY
+    ct.total_spent DESC
+  LIMIT p_limit;
+  RETURN;
+END$$;
+
+CREATE FUNCTION myapp_v2.get_users_with_orders() RETURNS SETOF int LANGUAGE plpgsql AS $$BEGIN
+  RETURN QUERY SELECT u.id
+  FROM myapp_v2.users AS u
+  WHERE
+    EXISTS (SELECT 1
+  FROM myapp_v2.orders AS o
+  WHERE
+    o.user_id = u.id);
+  RETURN;
+END$$;
+
+CREATE FUNCTION myapp_v2.cross_schema_report(
+  p_date date
+) RETURNS TABLE (
+  source text,
+  count bigint
+) LANGUAGE plpgsql AS $$BEGIN
+  RETURN QUERY (SELECT
+    'public_users'::text,
+    count(*)
+  FROM myapp_v2.users
+  WHERE
+    created_at::date = p_date
+  UNION
+  ALL
+  SELECT
+    'private_logs'::text,
+    count(*)
+  FROM myapp_private_v2.activity_logs
+  WHERE
+    logged_at::date = p_date)
+  UNION
+  ALL
+  SELECT
+    'internal_metrics'::text,
+    count(*)
+  FROM myapp_internal_v2.metrics
+  WHERE
+    recorded_at::date = p_date;
+  RETURN;
+END$$;
+
+CREATE PROCEDURE myapp_v2.process_batch(
+  p_batch_id int
+) LANGUAGE plpgsql AS $$DECLARE
+  item RECORD;
+BEGIN
+  FOR item IN SELECT *
+  FROM myapp_v2.batch_items
+  WHERE
+    batch_id = p_batch_id LOOP
+      INSERT INTO myapp_v2.processed_items (
+        item_id,
+        processed_at
+      ) VALUES
+        (
+          item.id,
+          now()
+        );
+      UPDATE myapp_v2.batch_items SET status = 'processed' WHERE id = item.id;
+  END LOOP;
+  UPDATE myapp_v2.batches SET status = 'completed',completed_at = now() WHERE id = p_batch_id;
+  RETURN;
+END$$;"
+`;
