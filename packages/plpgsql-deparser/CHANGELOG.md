@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.1](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.0...plpgsql-deparser@0.5.1) (2026-01-06)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** handle already hydrated expressions in hydrateExpression ([2b24932](https://github.com/constructive-io/pgsql-parser/commit/2b249324c6311e3211d1a627d1d872ed70e1ab90))
+
 # [0.5.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.4.2...plpgsql-deparser@0.5.0) (2026-01-05)
 
 ### Features
