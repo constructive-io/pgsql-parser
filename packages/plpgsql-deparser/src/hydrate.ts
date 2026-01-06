@@ -316,6 +316,7 @@ function splitAssignment(query: string): { target: string; value: string } | nul
   try {
     const tokens = scanSync(query);
     let assignIndex = -1;
+    let assignTokenText = '';
     let parenDepth = 0;
     let bracketDepth = 0;
 
@@ -327,8 +328,29 @@ function splitAssignment(query: string): { target: string; value: string } | nul
       else if (token.text === '[') bracketDepth++;
       else if (token.text === ']') bracketDepth--;
 
+      // Check for := first (preferred PL/pgSQL assignment operator)
       if (token.text === ':=' && parenDepth === 0 && bracketDepth === 0) {
         assignIndex = i;
+        assignTokenText = ':=';
+        break;
+      }
+      
+      // Also check for = (valid PL/pgSQL assignment operator)
+      // But avoid => (named parameter syntax) by checking the previous token
+      if (token.text === '=' && parenDepth === 0 && bracketDepth === 0) {
+        // Make sure this isn't part of => (named parameter)
+        // or comparison operators like >=, <=, <>, !=
+        const prevToken = i > 0 ? tokens.tokens[i - 1] : null;
+        const prevText = prevToken?.text || '';
+        
+        // Skip if previous token suggests this is not an assignment
+        if (prevText === '>' || prevText === '<' || prevText === '!' || prevText === ':') {
+          continue;
+        }
+        
+        // This looks like an assignment with =
+        assignIndex = i;
+        assignTokenText = '=';
         break;
       }
     }
@@ -343,13 +365,33 @@ function splitAssignment(query: string): { target: string; value: string } | nul
 
     return { target, value };
   } catch (err) {
+    // Fallback: try to find := first, then =
     const colonIndex = query.indexOf(':=');
-    if (colonIndex === -1) {
-      return null;
+    if (colonIndex !== -1) {
+      const target = query.substring(0, colonIndex).trim();
+      const value = query.substring(colonIndex + 2).trim();
+      return { target, value };
     }
-    const target = query.substring(0, colonIndex).trim();
-    const value = query.substring(colonIndex + 2).trim();
-    return { target, value };
+    
+    // Try to find = (but be careful about >=, <=, <>, !=, =>)
+    // Find the first = that's not part of a comparison operator
+    for (let i = 0; i < query.length; i++) {
+      if (query[i] === '=') {
+        const prev = i > 0 ? query[i - 1] : '';
+        const next = i < query.length - 1 ? query[i + 1] : '';
+        
+        // Skip comparison operators
+        if (prev === '>' || prev === '<' || prev === '!' || prev === ':' || next === '>') {
+          continue;
+        }
+        
+        const target = query.substring(0, i).trim();
+        const value = query.substring(i + 1).trim();
+        return { target, value };
+      }
+    }
+    
+    return null;
   }
 }
 

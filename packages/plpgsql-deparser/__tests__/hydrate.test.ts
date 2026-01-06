@@ -24,7 +24,7 @@ $$`;
       expect(result.stats.parsedExpressions).toBeGreaterThan(0);
     });
 
-    it('should hydrate assignment expressions', () => {
+    it('should hydrate assignment expressions with :=', () => {
       const sql = `CREATE FUNCTION test_func() RETURNS integer
 LANGUAGE plpgsql
 AS $$
@@ -47,6 +47,36 @@ $$`;
         expect(assignExpr.target).toBe('v_result');
         expect(assignExpr.value).toBe('10 + 20');
         expect(assignExpr.valueExpr).toBeDefined();
+      }
+    });
+
+    it('should hydrate assignment expressions with = (not just :=)', () => {
+      // PL/pgSQL allows both := and = for assignments
+      // This test ensures = assignments are properly hydrated with valueExpr
+      const sql = `CREATE FUNCTION test_func() RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    x text;
+BEGIN
+    x = "constructive-simple-secrets".get('a', 'b');
+END;
+$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const result = hydratePlpgsqlAst(parsed);
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.stats.assignmentExpressions).toBeGreaterThan(0);
+      
+      const assignExpr = findExprByKind(result.ast, 'assign');
+      expect(assignExpr).toBeDefined();
+      if (assignExpr && assignExpr.kind === 'assign') {
+        expect(assignExpr.target).toBe('x');
+        expect(assignExpr.value).toContain('constructive-simple-secrets');
+        // Critical: valueExpr must be populated for AST-based transformations
+        expect(assignExpr.valueExpr).toBeDefined();
+        expect(assignExpr.valueExpr).not.toBeNull();
       }
     });
 
