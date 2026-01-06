@@ -1,13 +1,17 @@
 import { loadModule, parsePlPgSQLSync } from '@libpg-query/parser';
 import { deparseSync, PLpgSQLParseResult } from '../src';
+import { PLpgSQLTestUtils } from '../test-utils';
 
 describe('plpgsql-deparser bug fixes', () => {
+  let testUtils: PLpgSQLTestUtils;
+
   beforeAll(async () => {
     await loadModule();
+    testUtils = new PLpgSQLTestUtils();
   });
 
   describe('PERFORM SELECT fix', () => {
-    it('should strip SELECT keyword from PERFORM statements', () => {
+    it('should strip SELECT keyword from PERFORM statements', async () => {
       const sql = `CREATE FUNCTION test_perform() RETURNS void
 LANGUAGE plpgsql
 AS $$
@@ -16,15 +20,18 @@ BEGIN
 END;
 $$`;
 
+      // Round-trip test: parse -> deparse -> reparse -> compare ASTs
+      await testUtils.expectAstMatch('PERFORM basic', sql);
+
+      // Also verify specific output characteristics
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
       expect(deparsed).toContain('PERFORM pg_sleep');
       expect(deparsed).not.toMatch(/PERFORM\s+SELECT/i);
     });
 
-    it('should handle PERFORM with complex expressions', () => {
+    it('should handle PERFORM with complex expressions', async () => {
       const sql = `CREATE FUNCTION test_perform_complex() RETURNS void
 LANGUAGE plpgsql
 AS $$
@@ -34,14 +41,15 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('PERFORM complex', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
       expect(deparsed).not.toMatch(/PERFORM\s+SELECT/i);
     });
 
-    it('should handle PERFORM with subquery', () => {
+    it('should handle PERFORM with subquery', async () => {
       const sql = `CREATE FUNCTION test_perform_subquery() RETURNS void
 LANGUAGE plpgsql
 AS $$
@@ -50,16 +58,17 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('PERFORM subquery', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
       expect(deparsed).not.toMatch(/PERFORM\s+SELECT/i);
     });
   });
 
   describe('INTO clause depth-aware scanner', () => {
-    it('should insert INTO at correct position for simple SELECT', () => {
+    it('should insert INTO at correct position for simple SELECT', async () => {
       const sql = `CREATE FUNCTION test_into_simple() RETURNS integer
 LANGUAGE plpgsql
 AS $$
@@ -71,14 +80,15 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('INTO simple', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
       expect(deparsed).toContain('INTO');
     });
 
-    it('should not insert INTO inside subqueries', () => {
+    it('should not insert INTO inside subqueries', async () => {
       const sql = `CREATE FUNCTION test_into_subquery() RETURNS integer
 LANGUAGE plpgsql
 AS $$
@@ -90,13 +100,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('INTO subquery', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle INTO with CTE', () => {
+    it('should handle INTO with CTE', async () => {
       const sql = `CREATE FUNCTION test_into_cte() RETURNS integer
 LANGUAGE plpgsql
 AS $$
@@ -111,13 +122,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('INTO CTE', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle INTO with UNION', () => {
+    it('should handle INTO with UNION', async () => {
       const sql = `CREATE FUNCTION test_into_union() RETURNS integer
 LANGUAGE plpgsql
 AS $$
@@ -133,13 +145,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('INTO UNION', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle INTO with quoted identifiers', () => {
+    it('should handle INTO with quoted identifiers', async () => {
       const sql = `CREATE FUNCTION test_into_quoted() RETURNS text
 LANGUAGE plpgsql
 AS $$
@@ -151,13 +164,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('INTO quoted', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle INTO with dollar-quoted strings', () => {
+    it('should handle INTO with dollar-quoted strings', async () => {
       const sql = `CREATE FUNCTION test_into_dollar_quote() RETURNS text
 LANGUAGE plpgsql
 AS $$
@@ -169,13 +183,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('INTO dollar-quote', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle INTO STRICT', () => {
+    it('should handle INTO STRICT', async () => {
       const sql = `CREATE FUNCTION test_into_strict() RETURNS integer
 LANGUAGE plpgsql
 AS $$
@@ -187,16 +202,17 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('INTO STRICT', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
       expect(deparsed).toContain('STRICT');
     });
   });
 
   describe('Record field qualification (recfield)', () => {
-    it('should qualify record fields with parent record name in triggers', () => {
+    it('should qualify record fields with parent record name in triggers', async () => {
       const sql = `CREATE FUNCTION test_trigger() RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -208,13 +224,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('recfield trigger', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle OLD and NEW record references', () => {
+    it('should handle OLD and NEW record references', async () => {
       const sql = `CREATE FUNCTION test_trigger_old_new() RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -226,13 +243,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('recfield OLD NEW', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle record field assignment', () => {
+    it('should handle record field assignment', async () => {
       const sql = `CREATE FUNCTION test_record_assign() RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -244,13 +262,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('recfield assignment', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle SELECT INTO with record fields', () => {
+    it('should handle SELECT INTO with record fields', async () => {
       const sql = `CREATE FUNCTION test_select_into_record() RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -260,13 +279,14 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('recfield SELECT INTO', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
 
-    it('should handle custom record types', () => {
+    it('should handle custom record types', async () => {
       const sql = `CREATE FUNCTION test_custom_record() RETURNS void
 LANGUAGE plpgsql
 AS $$
@@ -279,15 +299,16 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('recfield custom record', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
   });
 
   describe('combined scenarios', () => {
-    it('should handle PERFORM with record fields', () => {
+    it('should handle PERFORM with record fields', async () => {
       const sql = `CREATE FUNCTION test_perform_record() RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -297,14 +318,15 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('combined PERFORM recfield', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
       expect(deparsed).not.toMatch(/PERFORM\s+SELECT/i);
     });
 
-    it('should handle SELECT INTO with subquery and record fields', () => {
+    it('should handle SELECT INTO with subquery and record fields', async () => {
       const sql = `CREATE FUNCTION test_complex_trigger() RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -319,9 +341,10 @@ BEGIN
 END;
 $$`;
 
+      await testUtils.expectAstMatch('combined INTO recfield', sql);
+
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
       const deparsed = deparseSync(parsed);
-
       expect(deparsed).toMatchSnapshot();
     });
   });
