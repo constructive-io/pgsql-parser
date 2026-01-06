@@ -1,6 +1,6 @@
 {
   "name": "plpgsql-parser",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "author": "Constructive <developers@constructive.io>",
   "description": "Combined SQL + PL/pgSQL parser with hydrated ASTs and transform API",
   "main": "index.js",

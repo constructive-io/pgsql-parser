@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.3](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.2...plpgsql-deparser@0.5.3) (2026-01-06)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** expand PLpgSQL_row fields when refname is '(unnamed row)' ([eec5a55](https://github.com/constructive-io/pgsql-parser/commit/eec5a55d24282868836daade8ab38e631acb7bb0))
+
 ## [0.5.2](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.5.1...plpgsql-deparser@0.5.2) (2026-01-06)
 
 ### Bug Fixes
