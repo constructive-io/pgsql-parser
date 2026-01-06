@@ -19,8 +19,6 @@ exports[`lowercase: big-function.sql 1`] = `
   v_sql text;
   v_rowcount int := 0;
   v_lock_key bigint := ('x' || substr(md5(p_org_id::text), 1, 16))::bit(64)::bigint;
-  sqlstate constant text;
-  sqlerrm constant text;
 begin
   begin
       if p_org_id IS NULL OR p_user_id IS NULL then
@@ -220,8 +218,6 @@ exports[`uppercase: big-function.sql 1`] = `
   v_sql text;
   v_rowcount int := 0;
   v_lock_key bigint := ('x' || substr(md5(p_org_id::text), 1, 16))::bit(64)::bigint;
-  sqlstate CONSTANT text;
-  sqlerrm CONSTANT text;
 BEGIN
   BEGIN
       IF p_org_id IS NULL OR p_user_id IS NULL THEN
