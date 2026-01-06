@@ -65,10 +65,23 @@ export interface PLpgSQLDeparserOptions {
   uppercase?: boolean;
 }
 
+/**
+ * Return type information for a PL/pgSQL function.
+ * Used to determine the correct RETURN statement syntax:
+ * - void/setof/trigger/out_params: bare RETURN is valid
+ * - scalar: RETURN NULL is required for empty returns
+ */
+export type ReturnInfoKind = 'void' | 'setof' | 'trigger' | 'scalar' | 'out_params';
+
+export interface ReturnInfo {
+  kind: ReturnInfoKind;
+}
+
 export interface PLpgSQLDeparserContext {
   indentLevel: number;
   options: PLpgSQLDeparserOptions;
   datums?: PLpgSQLDatum[];
+  returnInfo?: ReturnInfo;
 }
 
 /**
@@ -90,49 +103,62 @@ export class PLpgSQLDeparser {
 
   /**
    * Static method to deparse a PL/pgSQL parse result
+   * @param parseResult - The PL/pgSQL parse result
+   * @param options - Deparser options
+   * @param returnInfo - Optional return type info for correct RETURN statement handling
    */
-  static deparse(parseResult: PLpgSQLParseResult, options?: PLpgSQLDeparserOptions): string {
-    return new PLpgSQLDeparser(options).deparseResult(parseResult);
+  static deparse(parseResult: PLpgSQLParseResult, options?: PLpgSQLDeparserOptions, returnInfo?: ReturnInfo): string {
+    return new PLpgSQLDeparser(options).deparseResult(parseResult, returnInfo);
   }
 
   /**
    * Static method to deparse a single PL/pgSQL function body
+   * @param func - The PL/pgSQL function AST
+   * @param options - Deparser options
+   * @param returnInfo - Optional return type info for correct RETURN statement handling
    */
-  static deparseFunction(func: PLpgSQL_function, options?: PLpgSQLDeparserOptions): string {
-    return new PLpgSQLDeparser(options).deparseFunction(func);
+  static deparseFunction(func: PLpgSQL_function, options?: PLpgSQLDeparserOptions, returnInfo?: ReturnInfo): string {
+    return new PLpgSQLDeparser(options).deparseFunction(func, returnInfo);
   }
 
   /**
    * Deparse a complete PL/pgSQL parse result
+   * @param parseResult - The PL/pgSQL parse result
+   * @param returnInfo - Optional return type info for correct RETURN statement handling
    */
-  deparseResult(parseResult: PLpgSQLParseResult): string {
+  deparseResult(parseResult: PLpgSQLParseResult, returnInfo?: ReturnInfo): string {
     if (!parseResult.plpgsql_funcs || parseResult.plpgsql_funcs.length === 0) {
       return '';
     }
 
     return parseResult.plpgsql_funcs
-      .map(func => this.deparseFunctionNode(func))
+      .map(func => this.deparseFunctionNode(func, returnInfo))
       .join(this.options.newline + this.options.newline);
   }
 
   /**
    * Deparse a PLpgSQL_function node wrapper
+   * @param node - The PLpgSQL_function node wrapper
+   * @param returnInfo - Optional return type info for correct RETURN statement handling
    */
-  deparseFunctionNode(node: PLpgSQLFunctionNode): string {
+  deparseFunctionNode(node: PLpgSQLFunctionNode, returnInfo?: ReturnInfo): string {
     if ('PLpgSQL_function' in node) {
-      return this.deparseFunction(node.PLpgSQL_function);
+      return this.deparseFunction(node.PLpgSQL_function, returnInfo);
     }
     throw new Error('Unknown function node type');
   }
 
   /**
    * Deparse a PL/pgSQL function body
+   * @param func - The PL/pgSQL function AST
+   * @param returnInfo - Optional return type info for correct RETURN statement handling
    */
-  deparseFunction(func: PLpgSQL_function): string {
+  deparseFunction(func: PLpgSQL_function, returnInfo?: ReturnInfo): string {
     const context: PLpgSQLDeparserContext = {
       indentLevel: 0,
       options: this.options,
       datums: func.datums,
+      returnInfo,
     };
 
     const parts: string[] = [];
@@ -930,6 +956,13 @@ export class PLpgSQLDeparser {
 
   /**
    * Deparse a RETURN statement
+   * 
+   * PostgreSQL requires different RETURN syntax based on function type:
+   * - void/setof/trigger/out_params: bare RETURN is valid
+   * - scalar: RETURN NULL is required for empty returns
+   * 
+   * When returnInfo is provided in context, we use it to determine the correct syntax.
+   * When not provided, we fall back to heuristics that scan the function body.
    */
   private deparseReturn(ret: PLpgSQL_stmt_return, context: PLpgSQLDeparserContext): string {
     const kw = this.keyword;
@@ -943,6 +976,19 @@ export class PLpgSQLDeparser {
       return `${kw('RETURN')} ${varName}`;
     }
     
+    // Empty RETURN - need to determine if we should output bare RETURN or RETURN NULL
+    // Use context.returnInfo if available, otherwise use heuristics
+    if (context.returnInfo) {
+      // Context-based: use the provided return type info
+      if (context.returnInfo.kind === 'scalar') {
+        return `${kw('RETURN')} ${kw('NULL')}`;
+      }
+      // void, setof, trigger, out_params all use bare RETURN
+      return kw('RETURN');
+    }
+    
+    // Heuristic fallback: bare RETURN is the safest default
+    // This maintains backward compatibility for callers that don't provide returnInfo
     return kw('RETURN');
   }
 

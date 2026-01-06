@@ -36,7 +36,7 @@ begin
             raise exception 'p_round_to out of range: %', p_round_to;
       end if;
       if p_lock then
-            perform SELECT pg_advisory_xact_lock(v_lock_key);
+            perform pg_advisory_xact_lock(v_lock_key);
       end if;
       if p_debug then
             raise notice 'big_kitchen_sink start=% org=% user=% from=% to=% min_total=%', v_now, p_org_id, p_user_id, p_from_ts, p_to_ts, v_min_total;
@@ -67,7 +67,7 @@ begin
         SELECT
           t.orders_scanned,
           t.gross_total,
-          t.avg_total
+          t.avg_total into v_orders_scanned, v_gross, v_avg
                                                             FROM totals t;
       if p_apply_discount then
             v_discount := round(v_gross * GREATEST(LEAST(v_discount_rate + v_jitter, 0.50), 0), p_round_to);
@@ -78,7 +78,7 @@ begin
       v_net := round((v_gross - v_discount + v_tax) * power(10::numeric, 0), p_round_to);
       SELECT
           oi.sku,
-          sum(oi.quantity)::bigint AS qty
+          sum(oi.quantity)::bigint AS qty into v_top_sku, v_top_sku_qty
                                         FROM app_public.order_item oi
         JOIN app_public.app_order o ON o.id = oi.order_id
         WHERE o.org_id = p_org_id
@@ -237,7 +237,7 @@ BEGIN
             RAISE EXCEPTION 'p_round_to out of range: %', p_round_to;
       END IF;
       IF p_lock THEN
-            PERFORM SELECT pg_advisory_xact_lock(v_lock_key);
+            PERFORM pg_advisory_xact_lock(v_lock_key);
       END IF;
       IF p_debug THEN
             RAISE NOTICE 'big_kitchen_sink start=% org=% user=% from=% to=% min_total=%', v_now, p_org_id, p_user_id, p_from_ts, p_to_ts, v_min_total;
@@ -268,7 +268,7 @@ BEGIN
         SELECT
           t.orders_scanned,
           t.gross_total,
-          t.avg_total
+          t.avg_total INTO v_orders_scanned, v_gross, v_avg
                                                             FROM totals t;
       IF p_apply_discount THEN
             v_discount := round(v_gross * GREATEST(LEAST(v_discount_rate + v_jitter, 0.50), 0), p_round_to);
@@ -279,7 +279,7 @@ BEGIN
       v_net := round((v_gross - v_discount + v_tax) * power(10::numeric, 0), p_round_to);
       SELECT
           oi.sku,
-          sum(oi.quantity)::bigint AS qty
+          sum(oi.quantity)::bigint AS qty INTO v_top_sku, v_top_sku_qty
                                         FROM app_public.order_item oi
         JOIN app_public.app_order o ON o.id = oi.order_id
         WHERE o.org_id = p_org_id

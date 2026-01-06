@@ -12,6 +12,8 @@ jobs:
         package:
           - deparser
           - parser
+          - plpgsql-deparser
+          - plpgsql-parser
           - pgsql-cli
           - proto-parser
           - transform

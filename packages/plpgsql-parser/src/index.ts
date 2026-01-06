@@ -11,13 +11,16 @@ export {
   type PLpgSQLNodeTag,
   type WalkOptions
 } from './traverse';
+export { getReturnInfo, getReturnInfoFromParsedFunction } from './return-info';
 
 export {
   hydratePlpgsqlAst,
   dehydratePlpgsqlAst,
   deparseSync as deparsePlpgsqlBody,
   isHydratedExpr,
-  getOriginalQuery
+  getOriginalQuery,
+  ReturnInfo,
+  ReturnInfoKind
 } from 'plpgsql-deparser';
 
 export { deparse as deparseSql, Deparser } from 'pgsql-deparser';
