@@ -54,6 +54,106 @@ export function loadPLpgSQLFixtures(): PLpgSQLTestCase[] {
 
 const noop = (): undefined => undefined;
 
+/**
+ * Normalize SQL whitespace for comparison purposes.
+ * Collapses multiple whitespace characters (spaces, tabs, newlines) into single spaces,
+ * but preserves content inside string literals and dollar-quoted strings.
+ */
+const normalizeQueryWhitespace = (query: string): string => {
+  if (!query || typeof query !== 'string') return query;
+  
+  let result = '';
+  let i = 0;
+  const len = query.length;
+  
+  while (i < len) {
+    const char = query[i];
+    
+    // Handle single-quoted strings
+    if (char === "'") {
+      result += char;
+      i++;
+      while (i < len) {
+        result += query[i];
+        if (query[i] === "'" && query[i + 1] === "'") {
+          result += query[i + 1];
+          i += 2;
+        } else if (query[i] === "'") {
+          i++;
+          break;
+        } else {
+          i++;
+        }
+      }
+      continue;
+    }
+    
+    // Handle double-quoted identifiers
+    if (char === '"') {
+      result += char;
+      i++;
+      while (i < len) {
+        result += query[i];
+        if (query[i] === '"' && query[i + 1] === '"') {
+          result += query[i + 1];
+          i += 2;
+        } else if (query[i] === '"') {
+          i++;
+          break;
+        } else {
+          i++;
+        }
+      }
+      continue;
+    }
+    
+    // Handle dollar-quoted strings
+    if (char === '$') {
+      let tag = '$';
+      let j = i + 1;
+      while (j < len && (query[j].match(/[a-zA-Z0-9_]/) || query[j] === '$')) {
+        tag += query[j];
+        if (query[j] === '$') {
+          j++;
+          break;
+        }
+        j++;
+      }
+      if (tag.endsWith('$') && tag.length >= 2) {
+        result += tag;
+        i = j;
+        // Find closing tag
+        const closeIdx = query.indexOf(tag, i);
+        if (closeIdx !== -1) {
+          result += query.slice(i, closeIdx + tag.length);
+          i = closeIdx + tag.length;
+        } else {
+          result += query.slice(i);
+          i = len;
+        }
+        continue;
+      }
+    }
+    
+    // Handle whitespace - collapse to single space
+    if (/\s/.test(char)) {
+      if (result.length > 0 && !result.endsWith(' ')) {
+        result += ' ';
+      }
+      i++;
+      while (i < len && /\s/.test(query[i])) {
+        i++;
+      }
+      continue;
+    }
+    
+    result += char;
+    i++;
+  }
+  
+  return result.trim();
+};
+
 export const transform = (obj: any, props: any): any => {
   let copy: any = null;
   if (obj == null || typeof obj !== 'object') {
@@ -105,6 +205,7 @@ export const cleanPlpgsqlTree = (tree: any) => {
     location: noop,
     stmt_len: noop,
     stmt_location: noop,
+    query: normalizeQueryWhitespace,
   });
 };
 
