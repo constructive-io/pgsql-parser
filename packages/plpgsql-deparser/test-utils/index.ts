@@ -178,19 +178,27 @@ export const transform = (obj: any, props: any): any => {
     copy = {};
     for (const attr in obj) {
       if (obj.hasOwnProperty(attr)) {
+        let value: any;
         if (props.hasOwnProperty(attr)) {
           if (typeof props[attr] === 'function') {
-            copy[attr] = props[attr](obj[attr]);
+            value = props[attr](obj[attr]);
           } else if (props[attr].hasOwnProperty(obj[attr])) {
-            copy[attr] = props[attr][obj[attr]];
+            value = props[attr][obj[attr]];
           } else {
-            copy[attr] = transform(obj[attr], props);
+            value = transform(obj[attr], props);
           }
         } else {
-          copy[attr] = transform(obj[attr], props);
+          value = transform(obj[attr], props);
+        }
+        // Skip undefined values to normalize "missing vs present-but-undefined"
+        if (value !== undefined) {
+          copy[attr] = value;
         }
       } else {
-        copy[attr] = transform(obj[attr], props);
+        const value = transform(obj[attr], props);
+        if (value !== undefined) {
+          copy[attr] = value;
+        }
       }
     }
     return copy;
