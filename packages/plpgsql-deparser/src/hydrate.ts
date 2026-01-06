@@ -115,13 +115,18 @@ function hydrateNode(
 }
 
 function hydrateExpression(
-  query: string,
+  query: string | HydratedExprQuery,
   parseMode: number,
   path: string,
   options: HydrationOptions,
   errors: HydrationError[],
   stats: HydrationStats
 ): HydratedExprQuery {
+  // If query is already hydrated (from a previous hydration call), return it unchanged
+  if (isHydratedExpr(query)) {
+    return query;
+  }
+  
   if (parseMode === ParseMode.RAW_PARSE_PLPGSQL_ASSIGN1 ||
       parseMode === ParseMode.RAW_PARSE_PLPGSQL_ASSIGN2 ||
       parseMode === ParseMode.RAW_PARSE_PLPGSQL_ASSIGN3 ||
