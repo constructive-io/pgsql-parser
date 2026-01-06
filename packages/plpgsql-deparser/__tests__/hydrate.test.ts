@@ -153,6 +153,66 @@ $$`;
     });
   });
 
+  describe('idempotent hydration', () => {
+    it('should handle already hydrated AST without errors', () => {
+      const sql = `CREATE FUNCTION test_func() RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_user "my-schema".users;
+BEGIN
+    v_user := (SELECT * FROM "my-schema".users LIMIT 1);
+    RETURN;
+END;
+$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      
+      // First hydration
+      const result1 = hydratePlpgsqlAst(parsed);
+      expect(result1.errors).toHaveLength(0);
+      
+      // Second hydration on already hydrated AST should not throw
+      const result2 = hydratePlpgsqlAst(result1.ast);
+      expect(result2.errors).toHaveLength(0);
+      
+      // The AST should still be valid and deparseable
+      const dehydrated = dehydratePlpgsqlAst(result2.ast);
+      const deparsed = deparseSync(dehydrated);
+      expect(deparsed).toContain('my-schema');
+    });
+
+    it('should return already hydrated expressions unchanged', () => {
+      const sql = `CREATE FUNCTION test_func() RETURNS integer
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_result integer;
+BEGIN
+    v_result := 10 + 20;
+    RETURN v_result;
+END;
+$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      
+      // First hydration
+      const result1 = hydratePlpgsqlAst(parsed);
+      const assignExpr1 = findExprByKind(result1.ast, 'assign');
+      expect(assignExpr1).toBeDefined();
+      
+      // Second hydration
+      const result2 = hydratePlpgsqlAst(result1.ast);
+      const assignExpr2 = findExprByKind(result2.ast, 'assign');
+      
+      // The expression should be the same (unchanged)
+      expect(assignExpr2).toBeDefined();
+      expect(assignExpr2.kind).toBe('assign');
+      expect(assignExpr2.target).toBe(assignExpr1.target);
+      expect(assignExpr2.value).toBe(assignExpr1.value);
+    });
+  });
+
   describe('heterogeneous deparse (AST-based transformations)', () => {
     it('should deparse modified sql-expr AST nodes (schema renaming)', () => {
       // Note: This test only checks RangeVar nodes in SQL expressions.
