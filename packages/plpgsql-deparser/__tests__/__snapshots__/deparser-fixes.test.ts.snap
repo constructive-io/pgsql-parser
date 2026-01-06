@@ -4,7 +4,7 @@ exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should handl
 "DECLARE
   v_id integer;
 BEGIN
-  SELECT id INTO STRICT v_id                  FROM users WHERE email = 'test@example.com';
+  SELECT id INTO STRICT v_id FROM users WHERE email = 'test@example.com';
   RETURN v_id;
 END"
 `;
@@ -16,7 +16,7 @@ BEGIN
   WITH totals AS (
           SELECT sum(amount) as total FROM orders
       )
-      SELECT total INTO v_total              FROM totals;
+      SELECT total INTO v_total FROM totals;
   RETURN v_total;
 END"
 `;
@@ -25,7 +25,7 @@ exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should handl
 "DECLARE
   v_count integer;
 BEGIN
-  SELECT count(*) INTO v_count              FROM (
+  SELECT count(*) INTO v_count FROM (
           SELECT id FROM users
           UNION ALL
           SELECT id FROM admins
@@ -38,7 +38,7 @@ exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should handl
 "DECLARE
   v_result text;
 BEGIN
-  SELECT $tag$some FROM text$tag$ INTO v_result               FROM dual;
+  SELECT $tag$some FROM text$tag$ INTO v_result FROM dual;
   RETURN v_result;
 END"
 `;
@@ -47,7 +47,7 @@ exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should handl
 "DECLARE
   v_name text;
 BEGIN
-  SELECT "user-name" INTO v_name             FROM "my-schema"."user-table" WHERE id = 1;
+  SELECT "user-name" INTO v_name FROM "my-schema"."user-table" WHERE id = 1;
   RETURN v_name;
 END"
 `;
@@ -56,7 +56,7 @@ exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should inser
 "DECLARE
   v_count integer;
 BEGIN
-  SELECT count(*) INTO v_count              FROM users;
+  SELECT count(*) INTO v_count FROM users;
   RETURN v_count;
 END"
 `;
@@ -65,7 +65,7 @@ exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should not i
 "DECLARE
   v_result integer;
 BEGIN
-  SELECT (SELECT max(id) FROM orders) INTO v_result               FROM users WHERE id = 1;
+  SELECT (SELECT max(id) FROM orders) INTO v_result FROM users WHERE id = 1;
   RETURN v_result;
 END"
 `;
@@ -103,7 +103,7 @@ END"
 
 exports[`plpgsql-deparser bug fixes Record field qualification (recfield) should handle SELECT INTO with record fields 1`] = `
 "BEGIN
-  SELECT is_active INTO new.is_active                    FROM users WHERE id = NEW.user_id;
+  SELECT is_active INTO new.is_active FROM users WHERE id = NEW.user_id;
   RETURN NEW;
 END"
 `;
@@ -148,7 +148,7 @@ exports[`plpgsql-deparser bug fixes combined scenarios should handle SELECT INTO
 "DECLARE
   v_count integer;
 BEGIN
-  SELECT count(*) INTO v_count              FROM orders WHERE user_id = NEW.user_id;
+  SELECT count(*) INTO v_count FROM orders WHERE user_id = NEW.user_id;
   IF v_count > 100 THEN
       NEW.is_premium := true;
   END IF;

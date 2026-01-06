@@ -1065,10 +1065,17 @@ export class PLpgSQLDeparser {
       // Only insert INTO at depth 0 (not inside subqueries)
       const insertPos = this.findIntoInsertionPoint(sql);
       if (insertPos !== -1) {
-        sql = sql.slice(0, insertPos) + intoClause + sql.slice(insertPos);
+        // The parser strips "INTO <target>" from the query but leaves whitespace behind.
+        // We need to normalize the leading whitespace after the insertion point to avoid
+        // large gaps like "SELECT x INTO y                    FROM z"
+        const before = sql.slice(0, insertPos);
+        let after = sql.slice(insertPos);
+        // Collapse leading whitespace (but preserve a single space before the next keyword)
+        after = after.replace(/^[ \t]+/, ' ');
+        sql = before + intoClause + after;
       } else {
-        // Fallback: append at end if no suitable position found
-        sql = sql + intoClause;
+        // -1 means INTO already exists at depth 0, don't add another one
+        // (this shouldn't happen in practice since the parser strips INTO)
       }
     }
     
