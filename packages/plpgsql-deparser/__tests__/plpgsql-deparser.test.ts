@@ -53,7 +53,6 @@ describe('PLpgSQLDeparser', () => {
       'plpgsql_control-15.sql',
       'plpgsql_control-17.sql',
       'plpgsql_call-44.sql',
-      'plpgsql_array-20.sql',
     ]);
 
     it('should round-trip ALL generated fixtures (excluding known failures)', async () => {
