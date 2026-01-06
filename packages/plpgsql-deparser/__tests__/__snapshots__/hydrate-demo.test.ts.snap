@@ -49,8 +49,6 @@ exports[`hydrate demonstration with big-function.sql should parse, hydrate, modi
   v_sql text;
   v_rowcount int := 0;
   v_lock_key bigint := CAST(CAST('x' || substr(md5(p_org_id::text), 1, 16) AS pg_catalog.bit(64)) AS bigint);
-  sqlstate CONSTANT text;
-  sqlerrm CONSTANT text;
 BEGIN
   BEGIN
       IF p_org_id IS NULL

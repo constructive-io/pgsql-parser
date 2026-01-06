@@ -342,8 +342,11 @@ export class PLpgSQLDeparser {
     const localVars = datums.filter(datum => {
       if ('PLpgSQL_var' in datum) {
         const v = datum.PLpgSQL_var;
-        // Skip internal variables
-        if (v.refname === 'found' || v.refname.startsWith('__')) {
+        // Skip internal variables:
+        // - 'found' is the implicit FOUND variable
+        // - 'sqlstate' and 'sqlerrm' are implicit exception handling variables
+        // - variables starting with '__' are internal
+        if (v.refname === 'found' || v.refname === 'sqlstate' || v.refname === 'sqlerrm' || v.refname.startsWith('__')) {
           return false;
         }
         // Skip variables without lineno (usually parameters or internal)
