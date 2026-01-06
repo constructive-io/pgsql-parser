@@ -37,22 +37,14 @@ describe('PLpgSQLDeparser', () => {
     // - Tagged dollar quote reconstruction ($tag$...$tag$ not supported)
     // - Exception block handling issues
     // TODO: Fix these underlying issues and remove from allowlist
+    // Remaining known failing fixtures:
+    // - plpgsql_varprops-13.sql: nested DECLARE inside FOR loop (loop variable scope issue)
+    // - plpgsql_transaction-17.sql: CURSOR FOR loop with EXCEPTION block
+    // - plpgsql_control-15.sql: labeled block with EXIT statement
     const KNOWN_FAILING_FIXTURES = new Set([
       'plpgsql_varprops-13.sql',
-      'plpgsql_trap-1.sql',
-      'plpgsql_trap-2.sql',
-      'plpgsql_trap-3.sql',
-      'plpgsql_trap-4.sql',
-      'plpgsql_trap-5.sql',
-      'plpgsql_trap-6.sql',
-      'plpgsql_trap-7.sql',
       'plpgsql_transaction-17.sql',
-      'plpgsql_transaction-19.sql',
-      'plpgsql_transaction-20.sql',
-      'plpgsql_transaction-21.sql',
       'plpgsql_control-15.sql',
-      'plpgsql_control-17.sql',
-      'plpgsql_call-44.sql',
     ]);
 
     it('should round-trip ALL generated fixtures (excluding known failures)', async () => {

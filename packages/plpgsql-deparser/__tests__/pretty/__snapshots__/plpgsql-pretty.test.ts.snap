@@ -163,6 +163,15 @@ begin
         );
       return next;
       return;
+  exception
+      when unique_violation then
+        raise notice 'unique_violation: %', SQLERRM;
+        raise exception;
+      when others then
+        if p_debug then
+                raise notice 'error: % (%:%)', SQLERRM, SQLSTATE, SQLERRM;
+        end if;
+        raise exception;
   end;
   return;
 end"
@@ -362,6 +371,15 @@ BEGIN
         );
       RETURN NEXT;
       RETURN;
+  EXCEPTION
+      WHEN unique_violation THEN
+        RAISE NOTICE 'unique_violation: %', SQLERRM;
+        RAISE EXCEPTION;
+      WHEN others THEN
+        IF p_debug THEN
+                RAISE NOTICE 'error: % (%:%)', SQLERRM, SQLSTATE, SQLERRM;
+        END IF;
+        RAISE EXCEPTION;
   END;
   RETURN;
 END"

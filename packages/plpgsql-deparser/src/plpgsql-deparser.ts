@@ -575,12 +575,17 @@ export class PLpgSQLDeparser {
     }
 
     // Exception handlers
-    if (block.exceptions?.exc_list) {
+    // The exceptions property can be either:
+    // - { exc_list: [...] } (direct)
+    // - { PLpgSQL_exception_block: { exc_list: [...] } } (wrapped)
+    const excList = block.exceptions?.exc_list || 
+                    (block.exceptions as any)?.PLpgSQL_exception_block?.exc_list;
+    if (excList) {
       parts.push(kw('EXCEPTION'));
-      for (const exc of block.exceptions.exc_list) {
+      for (const exc of excList) {
         if ('PLpgSQL_exception' in exc) {
           const excData = exc.PLpgSQL_exception;
-          const conditions = excData.conditions?.map(c => {
+          const conditions = excData.conditions?.map((c: any) => {
             if ('PLpgSQL_condition' in c) {
               return c.PLpgSQL_condition.condname || c.PLpgSQL_condition.sqlerrstate || 'OTHERS';
             }

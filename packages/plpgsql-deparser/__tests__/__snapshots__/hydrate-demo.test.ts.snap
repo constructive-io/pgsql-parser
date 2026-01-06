@@ -190,6 +190,15 @@ BEGIN
       message := format('rollup ok: gross=%s discount=%s tax=%s net=%s (discount_rate=%s tax_rate=%s)', v_gross, v_discount, v_tax, v_net, v_discount_rate, v_tax_rate);
       RETURN NEXT;
       RETURN;
+  EXCEPTION
+      WHEN unique_violation THEN
+        RAISE NOTICE 'unique_violation: %', sqlerrm;
+        RAISE EXCEPTION;
+      WHEN others THEN
+        IF p_debug THEN
+                RAISE NOTICE 'error: % (%:%)', sqlerrm, sqlstate, sqlerrm;
+        END IF;
+        RAISE EXCEPTION;
   END;
   RETURN;
 END$$"
