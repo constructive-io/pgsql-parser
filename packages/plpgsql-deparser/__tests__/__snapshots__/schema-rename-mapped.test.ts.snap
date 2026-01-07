@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`schema rename mapped should transform schema names and snapshot rename map and output: rename-map 1`] = `
+exports[`schema rename mapped should transform schema names and snapshot schema rename map and output: schema-rename-map 1`] = `
 {
   "app_internal": {
     "newSchema": "myapp_internal_v2",
@@ -187,7 +187,7 @@ exports[`schema rename mapped should transform schema names and snapshot rename 
 }
 `;
 
-exports[`schema rename mapped should transform schema names and snapshot rename map and output: transformed-sql 1`] = `
+exports[`schema rename mapped should transform schema names and snapshot schema rename map and output: transformed-sql 1`] = `
 "CREATE FUNCTION myapp_v2.get_user_stats(
   p_user_id int
 ) RETURNS int LANGUAGE plpgsql AS $$DECLARE

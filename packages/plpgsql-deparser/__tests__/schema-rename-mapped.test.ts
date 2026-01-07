@@ -23,7 +23,7 @@ interface SchemaReference {
   location: string;
 }
 
-interface RenameMap {
+interface SchemaRenameMap {
   [oldSchema: string]: {
     newSchema: string;
     references: SchemaReference[];
@@ -43,7 +43,7 @@ describe('schema rename mapped', () => {
    */
   function collectAndTransformSqlAst(
     node: any,
-    renameMap: RenameMap,
+    schemaRenameMap: SchemaRenameMap,
     location: string
   ): void {
     if (node === null || node === undefined || typeof node !== 'object') {
@@ -52,7 +52,7 @@ describe('schema rename mapped', () => {
 
     if (Array.isArray(node)) {
       for (let i = 0; i < node.length; i++) {
-        collectAndTransformSqlAst(node[i], renameMap, `${location}[${i}]`);
+        collectAndTransformSqlAst(node[i], schemaRenameMap, `${location}[${i}]`);
       }
       return;
     }
@@ -60,30 +60,30 @@ describe('schema rename mapped', () => {
     // Handle RangeVar nodes (table references like app_public.users)
     if ('RangeVar' in node) {
       const rangeVar = node.RangeVar;
-      if (rangeVar.schemaname && renameMap[rangeVar.schemaname]) {
+      if (rangeVar.schemaname && schemaRenameMap[rangeVar.schemaname]) {
         const ref: SchemaReference = {
           type: 'table_ref',
           schema: rangeVar.schemaname,
           name: rangeVar.relname || 'unknown',
           location: `${location}.RangeVar`,
         };
-        renameMap[rangeVar.schemaname].references.push(ref);
-        rangeVar.schemaname = renameMap[rangeVar.schemaname].newSchema;
+        schemaRenameMap[rangeVar.schemaname].references.push(ref);
+        rangeVar.schemaname = schemaRenameMap[rangeVar.schemaname].newSchema;
       }
     }
 
     // Handle direct relation references (INSERT/UPDATE/DELETE statements)
     if ('relation' in node && node.relation && typeof node.relation === 'object') {
       const relation = node.relation;
-      if (relation.schemaname && renameMap[relation.schemaname]) {
+      if (relation.schemaname && schemaRenameMap[relation.schemaname]) {
         const ref: SchemaReference = {
           type: 'relation',
           schema: relation.schemaname,
           name: relation.relname || 'unknown',
           location: `${location}.relation`,
         };
-        renameMap[relation.schemaname].references.push(ref);
-        relation.schemaname = renameMap[relation.schemaname].newSchema;
+        schemaRenameMap[relation.schemaname].references.push(ref);
+        relation.schemaname = schemaRenameMap[relation.schemaname].newSchema;
       }
     }
 
@@ -93,7 +93,7 @@ describe('schema rename mapped', () => {
       if (Array.isArray(typeName.names) && typeName.names.length >= 2) {
         const firstNameNode = typeName.names[0];
         const schemaName = firstNameNode?.String?.sval;
-        if (schemaName && renameMap[schemaName]) {
+        if (schemaName && schemaRenameMap[schemaName]) {
           const secondNameNode = typeName.names[1];
           const ref: SchemaReference = {
             type: 'type_name',
@@ -101,8 +101,8 @@ describe('schema rename mapped', () => {
             name: secondNameNode?.String?.sval || 'unknown',
             location: `${location}.TypeName`,
           };
-          renameMap[schemaName].references.push(ref);
-          firstNameNode.String.sval = renameMap[schemaName].newSchema;
+          schemaRenameMap[schemaName].references.push(ref);
+          firstNameNode.String.sval = schemaRenameMap[schemaName].newSchema;
         }
       }
     }
@@ -113,7 +113,7 @@ describe('schema rename mapped', () => {
       if (Array.isArray(funcCall.funcname) && funcCall.funcname.length >= 2) {
         const firstNameNode = funcCall.funcname[0];
         const schemaName = firstNameNode?.String?.sval;
-        if (schemaName && renameMap[schemaName]) {
+        if (schemaName && schemaRenameMap[schemaName]) {
           const secondNameNode = funcCall.funcname[1];
           const ref: SchemaReference = {
             type: 'func_call',
@@ -121,8 +121,8 @@ describe('schema rename mapped', () => {
             name: secondNameNode?.String?.sval || 'unknown',
             location: `${location}.FuncCall`,
           };
-          renameMap[schemaName].references.push(ref);
-          firstNameNode.String.sval = renameMap[schemaName].newSchema;
+          schemaRenameMap[schemaName].references.push(ref);
+          firstNameNode.String.sval = schemaRenameMap[schemaName].newSchema;
         }
       }
     }
@@ -133,7 +133,7 @@ describe('schema rename mapped', () => {
       if (Array.isArray(createFunc.funcname) && createFunc.funcname.length >= 2) {
         const firstNameNode = createFunc.funcname[0];
         const schemaName = firstNameNode?.String?.sval;
-        if (schemaName && renameMap[schemaName]) {
+        if (schemaName && schemaRenameMap[schemaName]) {
           const secondNameNode = createFunc.funcname[1];
           const ref: SchemaReference = {
             type: 'function_name',
@@ -141,8 +141,8 @@ describe('schema rename mapped', () => {
             name: secondNameNode?.String?.sval || 'unknown',
             location: `${location}.CreateFunctionStmt.funcname`,
           };
-          renameMap[schemaName].references.push(ref);
-          firstNameNode.String.sval = renameMap[schemaName].newSchema;
+          schemaRenameMap[schemaName].references.push(ref);
+          firstNameNode.String.sval = schemaRenameMap[schemaName].newSchema;
         }
       }
     }
@@ -151,7 +151,7 @@ describe('schema rename mapped', () => {
     if ('names' in node && 'typemod' in node && Array.isArray(node.names) && node.names.length >= 2) {
       const firstNameNode = node.names[0];
       const schemaName = firstNameNode?.String?.sval;
-      if (schemaName && renameMap[schemaName]) {
+      if (schemaName && schemaRenameMap[schemaName]) {
         const secondNameNode = node.names[1];
         const ref: SchemaReference = {
           type: 'return_type',
@@ -159,14 +159,14 @@ describe('schema rename mapped', () => {
           name: secondNameNode?.String?.sval || 'unknown',
           location: `${location}.returnType`,
         };
-        renameMap[schemaName].references.push(ref);
-        firstNameNode.String.sval = renameMap[schemaName].newSchema;
+        schemaRenameMap[schemaName].references.push(ref);
+        firstNameNode.String.sval = schemaRenameMap[schemaName].newSchema;
       }
     }
 
     // Recurse into all object properties
     for (const [key, value] of Object.entries(node)) {
-      collectAndTransformSqlAst(value, renameMap, `${location}.${key}`);
+      collectAndTransformSqlAst(value, schemaRenameMap, `${location}.${key}`);
     }
   }
 
@@ -175,7 +175,7 @@ describe('schema rename mapped', () => {
    */
   function collectAndTransformPlpgsqlAst(
     node: any,
-    renameMap: RenameMap,
+    schemaRenameMap: SchemaRenameMap,
     location: string
   ): void {
     if (node === null || node === undefined || typeof node !== 'object') {
@@ -184,7 +184,7 @@ describe('schema rename mapped', () => {
 
     if (Array.isArray(node)) {
       for (let i = 0; i < node.length; i++) {
-        collectAndTransformPlpgsqlAst(node[i], renameMap, `${location}[${i}]`);
+        collectAndTransformPlpgsqlAst(node[i], schemaRenameMap, `${location}[${i}]`);
       }
       return;
     }
@@ -196,17 +196,17 @@ describe('schema rename mapped', () => {
 
       if (query && typeof query === 'object' && 'kind' in query) {
         if (query.kind === 'sql-stmt' && query.parseResult) {
-          collectAndTransformSqlAst(query.parseResult, renameMap, `${location}.PLpgSQL_expr.query.parseResult`);
+          collectAndTransformSqlAst(query.parseResult, schemaRenameMap, `${location}.PLpgSQL_expr.query.parseResult`);
         }
         if (query.kind === 'sql-expr' && query.expr) {
-          collectAndTransformSqlAst(query.expr, renameMap, `${location}.PLpgSQL_expr.query.expr`);
+          collectAndTransformSqlAst(query.expr, schemaRenameMap, `${location}.PLpgSQL_expr.query.expr`);
         }
         if (query.kind === 'assign') {
           if (query.targetExpr) {
-            collectAndTransformSqlAst(query.targetExpr, renameMap, `${location}.PLpgSQL_expr.query.targetExpr`);
+            collectAndTransformSqlAst(query.targetExpr, schemaRenameMap, `${location}.PLpgSQL_expr.query.targetExpr`);
           }
           if (query.valueExpr) {
-            collectAndTransformSqlAst(query.valueExpr, renameMap, `${location}.PLpgSQL_expr.query.valueExpr`);
+            collectAndTransformSqlAst(query.valueExpr, schemaRenameMap, `${location}.PLpgSQL_expr.query.valueExpr`);
           }
         }
       }
@@ -216,7 +216,7 @@ describe('schema rename mapped', () => {
     if ('PLpgSQL_type' in node) {
       const plType = node.PLpgSQL_type;
       if (plType.typname) {
-        for (const oldSchema of Object.keys(renameMap)) {
+        for (const oldSchema of Object.keys(schemaRenameMap)) {
           if (plType.typname.startsWith(oldSchema + '.')) {
             const typeName = plType.typname.substring(oldSchema.length + 1);
             const ref: SchemaReference = {
@@ -225,8 +225,8 @@ describe('schema rename mapped', () => {
               name: typeName,
               location: `${location}.PLpgSQL_type.typname`,
             };
-            renameMap[oldSchema].references.push(ref);
-            plType.typname = renameMap[oldSchema].newSchema + '.' + typeName;
+            schemaRenameMap[oldSchema].references.push(ref);
+            plType.typname = schemaRenameMap[oldSchema].newSchema + '.' + typeName;
             break;
           }
         }
@@ -235,7 +235,7 @@ describe('schema rename mapped', () => {
 
     // Recurse into all object properties
     for (const [key, value] of Object.entries(node)) {
-      collectAndTransformPlpgsqlAst(value, renameMap, `${location}.${key}`);
+      collectAndTransformPlpgsqlAst(value, schemaRenameMap, `${location}.${key}`);
     }
   }
 
@@ -244,7 +244,7 @@ describe('schema rename mapped', () => {
    */
   function transformStatement(
     sql: string,
-    renameMap: RenameMap,
+    schemaRenameMap: SchemaRenameMap,
     stmtIndex: number
   ): string {
     const sqlParsed = parseSync(sql) as any;
@@ -257,7 +257,7 @@ describe('schema rename mapped', () => {
     );
 
     // Transform outer SQL AST
-    collectAndTransformSqlAst(sqlParsed, renameMap, `stmt[${stmtIndex}]`);
+    collectAndTransformSqlAst(sqlParsed, schemaRenameMap, `stmt[${stmtIndex}]`);
 
     if (isPlpgsql) {
       try {
@@ -265,7 +265,7 @@ describe('schema rename mapped', () => {
         const { ast: hydratedAst } = hydratePlpgsqlAst(plpgsqlParsed);
 
         // Transform PL/pgSQL AST
-        collectAndTransformPlpgsqlAst(hydratedAst, renameMap, `stmt[${stmtIndex}].plpgsql`);
+        collectAndTransformPlpgsqlAst(hydratedAst, schemaRenameMap, `stmt[${stmtIndex}].plpgsql`);
 
         // Dehydrate and deparse
         const dehydratedAst = dehydratePlpgsqlAst(hydratedAst);
@@ -368,9 +368,9 @@ describe('schema rename mapped', () => {
     return statements;
   }
 
-  it('should transform schema names and snapshot rename map and output', () => {
-    // Define the rename map with schemas to transform
-    const renameMap: RenameMap = {
+  it('should transform schema names and snapshot schema rename map and output', () => {
+    // Define the schema rename map with schemas to transform
+    const schemaRenameMap: SchemaRenameMap = {
       'app_public': {
         newSchema: 'myapp_v2',
         references: [],
@@ -399,7 +399,7 @@ describe('schema rename mapped', () => {
         continue;
       }
       try {
-        const transformed = transformStatement(stmt, renameMap, i);
+        const transformed = transformStatement(stmt, schemaRenameMap, i);
         transformedStatements.push(transformed);
       } catch (err) {
         // Log the error for debugging
@@ -409,18 +409,18 @@ describe('schema rename mapped', () => {
       }
     }
 
-    // Create a summary of the rename map (without location details for cleaner snapshot)
-    const renameMapSummary: Record<string, { newSchema: string; referenceCount: number; references: Array<{ type: string; name: string }> }> = {};
-    for (const [oldSchema, data] of Object.entries(renameMap)) {
-      renameMapSummary[oldSchema] = {
+    // Create a summary of the schema rename map (without location details for cleaner snapshot)
+    const schemaRenameMapSummary: Record<string, { newSchema: string; referenceCount: number; references: Array<{ type: string; name: string }> }> = {};
+    for (const [oldSchema, data] of Object.entries(schemaRenameMap)) {
+      schemaRenameMapSummary[oldSchema] = {
         newSchema: data.newSchema,
         referenceCount: data.references.length,
         references: data.references.map(r => ({ type: r.type, name: r.name })),
       };
     }
 
-    // Snapshot the rename map
-    expect(renameMapSummary).toMatchSnapshot('rename-map');
+    // Snapshot the schema rename map
+    expect(schemaRenameMapSummary).toMatchSnapshot('schema-rename-map');
 
     // Snapshot the transformed SQL
     const finalSQL = transformedStatements.join(';\n\n') + ';';
