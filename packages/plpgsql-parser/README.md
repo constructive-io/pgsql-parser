@@ -14,16 +14,22 @@
 
 Combined SQL + PL/pgSQL parser with hydrated ASTs and transform API.
 
-> **⚠️ Experimental:** This package is currently experimental. If you're looking for just SQL parsing, see [`pgsql-parser`](https://www.npmjs.com/package/pgsql-parser). For just PL/pgSQL deparsing, see [`plpgsql-deparser`](https://www.npmjs.com/package/plpgsql-deparser).
+> **⚠️ Experimental:** This package is currently experimental. If you're looking for just SQL parsing, see [`pgsql-parser`](https://www.npmjs.com/package/pgsql-parser). For body-only PL/pgSQL deparsing, see [`plpgsql-deparser`](https://www.npmjs.com/package/plpgsql-deparser).
 
 ## Overview
 
-This package provides a unified API for parsing SQL scripts containing PL/pgSQL functions. It combines the SQL parser and PL/pgSQL parser, automatically detecting and hydrating PL/pgSQL function bodies.
+This package provides a unified API for **heterogeneous parsing and deparsing** of SQL scripts containing PL/pgSQL functions. It handles the full pipeline: parsing SQL + PL/pgSQL together, transforming ASTs, and deparsing back to complete SQL.
+
+**Use this package when you need to:**
+- Parse and deparse complete `CREATE FUNCTION` statements with PL/pgSQL bodies
+- Transform both SQL and embedded PL/pgSQL expressions (e.g., rename schemas)
+- Round-trip SQL through parse → modify → deparse
 
 Key features:
 
 - Auto-detects `CREATE FUNCTION` statements with `LANGUAGE plpgsql`
 - Hydrates PL/pgSQL function bodies into structured ASTs
+- Automatic `RETURN` statement handling based on function return type
 - Transform API for parse → modify → deparse workflows
 - Re-exports underlying primitives for power users
 

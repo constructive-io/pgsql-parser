@@ -1,7 +1,8 @@
 import { deparse as deparseSql } from 'pgsql-deparser';
 import {
   dehydratePlpgsqlAst,
-  deparseSync as deparsePlpgsql
+  deparseSync as deparsePlpgsql,
+  deparseFunctionSync as deparsePlpgsqlFunction
 } from 'plpgsql-deparser';
 import type {
   ParsedScript,
@@ -9,6 +10,7 @@ import type {
   DeparseOptions,
   ParsedFunction
 } from './types';
+import { getReturnInfoFromParsedFunction } from './return-info';
 
 function stitchBodyIntoSqlAst(
   sqlAst: any,
@@ -48,8 +50,12 @@ export async function deparse(
   
   for (const fn of functions) {
     const dehydrated = dehydratePlpgsqlAst(fn.plpgsql.hydrated);
-    const newBody = deparsePlpgsql(dehydrated);
-    stitchBodyIntoSqlAst(sqlAst, fn, newBody);
+    const returnInfo = getReturnInfoFromParsedFunction(fn);
+    const plpgsqlFunc = dehydrated.plpgsql_funcs?.[0]?.PLpgSQL_function;
+    if (plpgsqlFunc) {
+      const newBody = deparsePlpgsqlFunction(plpgsqlFunc, undefined, returnInfo);
+      stitchBodyIntoSqlAst(sqlAst, fn, newBody);
+    }
   }
   
   if (sqlAst.stmts && sqlAst.stmts.length > 0) {
@@ -77,8 +83,12 @@ export function deparseSync(
   
   for (const fn of functions) {
     const dehydrated = dehydratePlpgsqlAst(fn.plpgsql.hydrated);
-    const newBody = deparsePlpgsql(dehydrated);
-    stitchBodyIntoSqlAst(sqlAst, fn, newBody);
+    const returnInfo = getReturnInfoFromParsedFunction(fn);
+    const plpgsqlFunc = dehydrated.plpgsql_funcs?.[0]?.PLpgSQL_function;
+    if (plpgsqlFunc) {
+      const newBody = deparsePlpgsqlFunction(plpgsqlFunc, undefined, returnInfo);
+      stitchBodyIntoSqlAst(sqlAst, fn, newBody);
+    }
   }
   
   if (sqlAst.stmts && sqlAst.stmts.length > 0) {

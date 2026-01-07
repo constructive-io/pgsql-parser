@@ -16,9 +16,11 @@ PL/pgSQL AST Deparser - Converts PL/pgSQL function ASTs back to SQL strings.
 
 > **⚠️ Experimental:** This package is currently experimental. If you're looking for SQL deparsing (not PL/pgSQL), see [`pgsql-deparser`](https://www.npmjs.com/package/pgsql-deparser).
 
+> **For full SQL + PL/pgSQL deparsing:** If you need to deparse complete `CREATE FUNCTION` statements (not just function bodies), use [`plpgsql-parser`](https://www.npmjs.com/package/plpgsql-parser) instead. It handles the full heterogeneous parsing/deparsing pipeline automatically.
+
 ## Overview
 
-This package provides a deparser for PL/pgSQL (PostgreSQL's procedural language) AST structures. It works with the AST output from `parsePlPgSQL` function in `@libpg-query/parser`.
+This package provides a **body-only** deparser for PL/pgSQL (PostgreSQL's procedural language) AST structures. It converts PL/pgSQL function bodies (the `BEGIN...END` part) back to strings. It works with the AST output from `parsePlPgSQL` function in `@libpg-query/parser`.
 
 The PL/pgSQL AST is different from the regular SQL AST - it represents the internal structure of PL/pgSQL function bodies, including:
 
@@ -177,13 +179,32 @@ interface PLpgSQLDeparserOptions {
 
 ## Note on AST Structure
 
-The PL/pgSQL AST returned by `parsePlPgSQL` represents the internal structure of function bodies, not the `CREATE FUNCTION` statement itself. To get a complete function definition, you would need to:
+This package deparses **only the function body** (the `BEGIN...END` part), not the full `CREATE FUNCTION` statement.
 
-1. Parse the `CREATE FUNCTION` statement with the regular `parse()` function
-2. Extract the function body
-3. Parse the body with `parsePlPgSQL()`
-4. Deparse the body with this package
-5. Combine with the outer `CREATE FUNCTION` statement
+For full SQL + PL/pgSQL deparsing, use [`plpgsql-parser`](https://www.npmjs.com/package/plpgsql-parser):
+
+```typescript
+import { parse, deparseSync, loadModule } from 'plpgsql-parser';
+
+await loadModule();
+
+const parsed = parse(`
+  CREATE FUNCTION my_func() RETURNS void LANGUAGE plpgsql AS $$
+  BEGIN
+    RAISE NOTICE 'Hello';
+  END;
+  $$;
+`);
+
+// Full round-trip: parses SQL + PL/pgSQL, deparses back to complete SQL
+const sql = deparseSync(parsed);
+```
+
+The `plpgsql-parser` package handles:
+- Parsing the outer `CREATE FUNCTION` statement
+- Hydrating embedded SQL expressions in the PL/pgSQL body
+- Correct `RETURN` statement handling based on function return type
+- Stitching the deparsed body back into the full SQL
 
 ## License
 
