@@ -163,6 +163,18 @@ export class PLpgSQLDeparser {
 
     const parts: string[] = [];
 
+    // Extract label from action block - it should come before DECLARE
+    // In PL/pgSQL, the syntax is: <<label>> DECLARE ... BEGIN ... END label
+    let blockLabel: string | undefined;
+    if (func.action && 'PLpgSQL_stmt_block' in func.action) {
+      blockLabel = func.action.PLpgSQL_stmt_block.label;
+    }
+
+    // Output label before DECLARE if present
+    if (blockLabel) {
+      parts.push(`<<${blockLabel}>>`);
+    }
+
     // Collect loop-introduced variables before generating DECLARE section
     const loopVarLinenos = new Set<number>();
     if (func.action) {
@@ -176,8 +188,9 @@ export class PLpgSQLDeparser {
     }
 
     // Deparse the action block (BEGIN...END)
+    // Pass skipLabel=true since we already output the label
     if (func.action) {
-      parts.push(this.deparseStmt(func.action, context));
+      parts.push(this.deparseStmt(func.action, context, blockLabel ? true : false));
     }
 
     return parts.join(this.options.newline);
@@ -417,6 +430,14 @@ export class PLpgSQLDeparser {
       parts.push(kw('CONSTANT'));
     }
 
+    // Handle cursor declarations - don't output the type for cursors
+    // The syntax is: cursor_name CURSOR FOR query
+    if (v.cursor_explicit_expr) {
+      parts.push(kw('CURSOR FOR'));
+      parts.push(this.deparseExpr(v.cursor_explicit_expr));
+      return parts.join(' ');
+    }
+
     if (v.datatype) {
       parts.push(this.deparseType(v.datatype));
     }
@@ -428,12 +449,6 @@ export class PLpgSQLDeparser {
     if (v.default_val) {
       parts.push(':=');
       parts.push(this.deparseExpr(v.default_val));
-    }
-
-    // Handle cursor declarations
-    if (v.cursor_explicit_expr) {
-      parts.push(kw('CURSOR FOR'));
-      parts.push(this.deparseExpr(v.cursor_explicit_expr));
     }
 
     return parts.join(' ');
@@ -484,14 +499,15 @@ export class PLpgSQLDeparser {
 
   /**
    * Deparse a statement node
+   * @param skipLabel - If true, skip outputting the label (used when label is output before DECLARE)
    */
-  private deparseStmt(stmt: PLpgSQLStmtNode, context: PLpgSQLDeparserContext): string {
+  private deparseStmt(stmt: PLpgSQLStmtNode, context: PLpgSQLDeparserContext, skipLabel?: boolean): string {
     const nodeType = Object.keys(stmt)[0];
     const nodeData = (stmt as any)[nodeType];
 
     switch (nodeType) {
       case 'PLpgSQL_stmt_block':
-        return this.deparseBlock(nodeData, context);
+        return this.deparseBlock(nodeData, context, skipLabel);
       case 'PLpgSQL_stmt_assign':
         return this.deparseAssign(nodeData, context);
       case 'PLpgSQL_stmt_if':
@@ -553,13 +569,14 @@ export class PLpgSQLDeparser {
 
   /**
    * Deparse a block statement (BEGIN...END)
+   * @param skipLabel - If true, skip outputting the label (used when label is output before DECLARE)
    */
-  private deparseBlock(block: PLpgSQL_stmt_block, context: PLpgSQLDeparserContext): string {
+  private deparseBlock(block: PLpgSQL_stmt_block, context: PLpgSQLDeparserContext, skipLabel?: boolean): string {
     const kw = this.keyword;
     const parts: string[] = [];
 
-    // Label
-    if (block.label) {
+    // Label - skip if already output before DECLARE
+    if (block.label && !skipLabel) {
       parts.push(`<<${block.label}>>`);
     }
 
@@ -1558,13 +1575,20 @@ export class PLpgSQLDeparser {
     if ('PLpgSQL_row' in datum) {
       const row = datum.PLpgSQL_row;
       // If this is an "(unnamed row)" with fields, expand the fields to get actual variable names
-      if (row.refname === '(unnamed row)' && row.fields && row.fields.length > 0 && context?.datums) {
+      if (row.refname === '(unnamed row)' && row.fields && row.fields.length > 0) {
         const fieldNames = row.fields.map(field => {
+          // If the field name contains a dot (qualified reference like lbl.a), use it directly
+          // This preserves block-qualified variable references
+          if (field.name && field.name.includes('.')) {
+            return field.name;
+          }
           // Try to resolve the varno to get the actual variable name
-          const fieldDatum = context.datums[field.varno];
-          if (fieldDatum) {
-            // Recursively get the name, passing context to resolve parent records
-            return this.deparseDatumName(fieldDatum, context);
+          if (context?.datums) {
+            const fieldDatum = context.datums[field.varno];
+            if (fieldDatum) {
+              // Recursively get the name, passing context to resolve parent records
+              return this.deparseDatumName(fieldDatum, context);
+            }
           }
           // Fall back to the field name if we can't resolve the varno
           return field.name;

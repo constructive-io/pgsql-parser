@@ -33,18 +33,13 @@ describe('PLpgSQLDeparser', () => {
 
   describe('round-trip tests using generated.json', () => {
     // Known failing fixtures due to pre-existing deparser issues:
-    // - Schema qualification loss (pg_catalog.pg_class%rowtype[] -> pg_class%rowtype[])
-    // - Tagged dollar quote reconstruction ($tag$...$tag$ not supported)
-    // - Exception block handling issues
     // TODO: Fix these underlying issues and remove from allowlist
     // Remaining known failing fixtures:
-    // - plpgsql_varprops-13.sql: nested DECLARE inside FOR loop (loop variable scope issue)
-    // - plpgsql_transaction-17.sql: CURSOR FOR loop with EXCEPTION block
-    // - plpgsql_control-15.sql: labeled block with EXIT statement
+    // - plpgsql_varprops-13.sql: nested DECLARE inside FOR loop - variables declared inside
+    //   the loop body are hoisted to the top-level DECLARE section, changing semantics
+    //   (variables should be reinitialized on each loop iteration)
     const KNOWN_FAILING_FIXTURES = new Set([
       'plpgsql_varprops-13.sql',
-      'plpgsql_transaction-17.sql',
-      'plpgsql_control-15.sql',
     ]);
 
     it('should round-trip ALL generated fixtures (excluding known failures)', async () => {
