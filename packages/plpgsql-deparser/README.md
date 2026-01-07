@@ -175,6 +175,50 @@ interface PLpgSQLDeparserOptions {
 }
 ```
 
+## Return Context
+
+For correct `RETURN` statement handling, you can pass return type information:
+
+```typescript
+import { deparseSync, ReturnInfo } from 'plpgsql-deparser';
+
+// Without return info, the deparser uses conservative defaults
+const body1 = deparseSync(parseResult);
+
+// With return info, the deparser emits correct RETURN vs RETURN NULL
+const returnInfo: ReturnInfo = { kind: 'setof' };
+const body2 = deparseSync(parseResult, {}, returnInfo);
+```
+
+Supported return kinds: `'void'`, `'scalar'`, `'setof'`, `'trigger'`, `'out_params'`
+
+## Hydration Utilities
+
+The deparser includes utilities for working with "hydrated" PL/pgSQL ASTs, where embedded SQL expressions are parsed into SQL AST nodes for transformation.
+
+```typescript
+import { 
+  hydratePlpgsqlAst, 
+  dehydratePlpgsqlAst,
+  isHydratedExpr,
+  getOriginalQuery 
+} from 'plpgsql-deparser';
+
+// Hydrate: convert PLpgSQL_expr.query strings into SQL AST nodes
+const hydrated = hydratePlpgsqlAst(plpgsqlFunction);
+
+// Now you can traverse and modify embedded SQL expressions as AST nodes
+// (e.g., rename schemas, rewrite table references)
+
+// Dehydrate: convert SQL AST nodes back to query strings
+const dehydrated = dehydratePlpgsqlAst(hydrated);
+
+// Then deparse to get the final function body
+const body = deparseFunctionSync(dehydrated);
+```
+
+The `isHydratedExpr()` helper checks if an expression has been hydrated, and `getOriginalQuery()` retrieves the original query string from a hydrated expression.
+
 ## Note on AST Structure
 
 The PL/pgSQL AST returned by `parsePlPgSQL` represents the internal structure of function bodies, not the `CREATE FUNCTION` statement itself. To get a complete function definition, you would need to:

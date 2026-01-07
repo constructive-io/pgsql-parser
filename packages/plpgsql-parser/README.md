@@ -191,6 +191,78 @@ class PLpgSQLNodePath<TTag extends string = string> {
 }
 ```
 
+## Return Type Helpers
+
+Extract return type information from `CreateFunctionStmt` for correct RETURN statement handling:
+
+```typescript
+import { parse, getReturnInfoFromParsedFunction, loadModule } from 'plpgsql-parser';
+
+await loadModule();
+
+const parsed = parse(`
+  CREATE FUNCTION get_users() RETURNS SETOF users LANGUAGE plpgsql AS $$
+  BEGIN
+    RETURN QUERY SELECT * FROM users;
+    RETURN;
+  END;
+  $$;
+`);
+
+const returnInfo = getReturnInfoFromParsedFunction(parsed.functions[0]);
+console.log(returnInfo.kind); // 'setof'
+```
+
+The helper detects: `'void'`, `'scalar'`, `'setof'`, `'trigger'`, `'out_params'`
+
+## Schema Rename Example
+
+Transform schema names across both SQL and embedded PL/pgSQL expressions:
+
+```typescript
+import { parse, walk, walkParsedScript, deparseSync, loadModule } from 'plpgsql-parser';
+import { walk as walkSql } from '@pgsql/traverse';
+
+await loadModule();
+
+const schemaMap = { app_public: 'myapp_v2', app_private: 'myapp_internal' };
+
+function renameSchema(node: any) {
+  if (node.schemaname && schemaMap[node.schemaname]) {
+    node.schemaname = schemaMap[node.schemaname];
+  }
+}
+
+const parsed = parse(`
+  CREATE FUNCTION app_public.get_user(p_id int)
+  RETURNS app_public.users
+  LANGUAGE plpgsql AS $$
+  BEGIN
+    RETURN (SELECT * FROM app_public.users WHERE id = p_id);
+  END;
+  $$;
+`);
+
+// Rename schemas in outer SQL AST (function name, return type)
+walkSql(parsed.sql, {
+  RangeVar: (path) => renameSchema(path.node),
+  TypeName: (path) => {
+    const names = path.node.names;
+    if (names?.[0]?.String?.sval && schemaMap[names[0].String.sval]) {
+      names[0].String.sval = schemaMap[names[0].String.sval];
+    }
+  },
+});
+
+// Rename schemas in PL/pgSQL embedded SQL (SELECT, INSERT, etc.)
+walkParsedScript(parsed, {}, {
+  RangeVar: (path) => renameSchema(path.node),
+});
+
+const output = deparseSync(parsed);
+// All app_public references are now myapp_v2
+```
+
 ## Re-exports
 
 For power users, the package re-exports underlying primitives:
@@ -201,6 +273,8 @@ For power users, the package re-exports underlying primitives:
 - `deparsePlpgsqlBody` - PL/pgSQL deparser from `plpgsql-deparser`
 - `hydratePlpgsqlAst` - Hydration utility from `plpgsql-deparser`
 - `dehydratePlpgsqlAst` - Dehydration utility from `plpgsql-deparser`
+- `getReturnInfo` - Extract return type from `CreateFunctionStmt`
+- `ReturnInfo`, `ReturnInfoKind` - Return type info types
 
 ## License
 
