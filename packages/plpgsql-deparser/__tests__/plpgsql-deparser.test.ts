@@ -32,14 +32,15 @@ describe('PLpgSQLDeparser', () => {
   });
 
   describe('round-trip tests using generated.json', () => {
-    // Known failing fixtures due to pre-existing deparser issues:
-    // TODO: Fix these underlying issues and remove from allowlist
-    // Remaining known failing fixtures:
-    // - plpgsql_varprops-13.sql: nested DECLARE inside FOR loop - variables declared inside
-    //   the loop body are hoisted to the top-level DECLARE section, changing semantics
-    //   (variables should be reinitialized on each loop iteration)
-    const KNOWN_FAILING_FIXTURES = new Set([
-      'plpgsql_varprops-13.sql',
+    // All 190 fixtures now pass round-trip testing!
+    // Previously failing fixtures that have been fixed:
+    // - Schema qualification (pg_catalog prefix preserved)
+    // - Exception block handling
+    // - Cursor FOR loops
+    // - Labeled blocks with EXIT statements
+    // - Nested DECLARE inside FOR loops (lineno-based scope tracking)
+    const KNOWN_FAILING_FIXTURES = new Set<string>([
+      // No known failures - all fixtures pass!
     ]);
 
     it('should round-trip ALL generated fixtures (excluding known failures)', async () => {
