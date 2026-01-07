@@ -111,4 +111,102 @@ describe('plpgsql-parser', () => {
       expect(result).toContain('\n');
     });
   });
+
+  describe('automatic return info handling', () => {
+    it('should preserve bare RETURN for SETOF functions', () => {
+      const setofSql = `
+        CREATE FUNCTION get_users()
+        RETURNS SETOF users
+        LANGUAGE plpgsql AS $$
+        BEGIN
+          RETURN QUERY SELECT * FROM users;
+          RETURN;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(setofSql);
+      const result = deparseSync(parsed);
+      
+      // SETOF functions should keep bare RETURN (not RETURN NULL)
+      expect(result).toMatch(/RETURN\s*;/);
+      expect(result).not.toMatch(/RETURN\s+NULL\s*;/);
+    });
+
+    it('should emit RETURN NULL for scalar functions with empty return', () => {
+      const scalarSql = `
+        CREATE FUNCTION get_value()
+        RETURNS int
+        LANGUAGE plpgsql AS $$
+        BEGIN
+          RETURN;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(scalarSql);
+      const result = deparseSync(parsed);
+      
+      // Scalar functions with empty RETURN should become RETURN NULL
+      expect(result).toMatch(/RETURN\s+NULL\s*;/);
+    });
+
+    it('should preserve bare RETURN for void functions', () => {
+      const voidSql = `
+        CREATE FUNCTION do_something()
+        RETURNS void
+        LANGUAGE plpgsql AS $$
+        BEGIN
+          RAISE NOTICE 'done';
+          RETURN;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(voidSql);
+      const result = deparseSync(parsed);
+      
+      // Void functions should keep bare RETURN
+      expect(result).toMatch(/RETURN\s*;/);
+      expect(result).not.toMatch(/RETURN\s+NULL\s*;/);
+    });
+
+    it('should preserve bare RETURN for trigger functions', () => {
+      const triggerSql = `
+        CREATE FUNCTION my_trigger()
+        RETURNS trigger
+        LANGUAGE plpgsql AS $$
+        BEGIN
+          RETURN NEW;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(triggerSql);
+      const result = deparseSync(parsed);
+      
+      // Trigger functions should work correctly (case-insensitive check)
+      expect(result.toLowerCase()).toContain('return new');
+    });
+
+    it('should preserve bare RETURN for OUT parameter functions', () => {
+      const outParamSql = `
+        CREATE FUNCTION get_info(OUT result text)
+        RETURNS text
+        LANGUAGE plpgsql AS $$
+        BEGIN
+          result := 'hello';
+          RETURN;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(outParamSql);
+      const result = deparseSync(parsed);
+      
+      // OUT parameter functions should keep bare RETURN
+      expect(result).toMatch(/RETURN\s*;/);
+      expect(result).not.toMatch(/RETURN\s+NULL\s*;/);
+    });
+  });
 });
