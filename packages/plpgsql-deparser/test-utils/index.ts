@@ -279,15 +279,31 @@ function getErrorMessage(type: ParseErrorType): string {
 }
 
 function extractBodyFromSql(sql: string): { body: string; prefix: string; suffix: string } | null {
-  const dollarQuoteMatch = sql.match(/^([\s\S]*?\$\$)([\s\S]*?)(\$\$[\s\S]*)$/);
-  if (dollarQuoteMatch) {
-    return {
-      prefix: dollarQuoteMatch[1],
-      body: dollarQuoteMatch[2],
-      suffix: dollarQuoteMatch[3],
-    };
+  // Match tagged dollar quotes like $proc$, $body$, $func$, etc. or plain $$
+  // The tag is optional: $tag$ or $$
+  // We need to find the FIRST dollar quote and match it with the LAST occurrence of the same tag
+  const dollarQuoteStartMatch = sql.match(/(\$[\w]*\$)/);
+  if (!dollarQuoteStartMatch) {
+    return null;
   }
-  return null;
+  
+  const tag = dollarQuoteStartMatch[1];
+  const escapedTag = tag.replace(/\$/g, '\\$');
+  
+  // Find the first occurrence of the tag and the last occurrence
+  const firstIndex = sql.indexOf(tag);
+  const lastIndex = sql.lastIndexOf(tag);
+  
+  if (firstIndex === lastIndex) {
+    // Only one occurrence - can't extract body
+    return null;
+  }
+  
+  return {
+    prefix: sql.substring(0, firstIndex + tag.length),
+    body: sql.substring(firstIndex + tag.length, lastIndex),
+    suffix: sql.substring(lastIndex),
+  };
 }
 
 function reconstructSql(originalSql: string, newBody: string): string {
