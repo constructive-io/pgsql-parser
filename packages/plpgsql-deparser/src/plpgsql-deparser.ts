@@ -342,8 +342,11 @@ export class PLpgSQLDeparser {
     const localVars = datums.filter(datum => {
       if ('PLpgSQL_var' in datum) {
         const v = datum.PLpgSQL_var;
-        // Skip internal variables
-        if (v.refname === 'found' || v.refname.startsWith('__')) {
+        // Skip internal variables:
+        // - 'found' is the implicit FOUND variable
+        // - 'sqlstate' and 'sqlerrm' are implicit exception handling variables
+        // - variables starting with '__' are internal
+        if (v.refname === 'found' || v.refname === 'sqlstate' || v.refname === 'sqlerrm' || v.refname.startsWith('__')) {
           return false;
         }
         // Skip variables without lineno (usually parameters or internal)
@@ -457,8 +460,13 @@ export class PLpgSQLDeparser {
   private deparseType(typeNode: PLpgSQLTypeNode): string {
     if ('PLpgSQL_type' in typeNode) {
       let typname = typeNode.PLpgSQL_type.typname;
-      // Clean up type names (remove pg_catalog prefix and quotes)
-      typname = typname.replace(/^pg_catalog\./, '').replace(/"/g, '');
+      // Remove quotes
+      typname = typname.replace(/"/g, '');
+      // Strip pg_catalog. prefix for built-in types, but preserve schema qualification
+      // for %rowtype and %type references where the schema is part of the table/variable reference
+      if (!typname.includes('%rowtype') && !typname.includes('%type')) {
+        typname = typname.replace(/^pg_catalog\./, '');
+      }
       return typname.trim();
     }
     return '';
@@ -567,12 +575,17 @@ export class PLpgSQLDeparser {
     }
 
     // Exception handlers
-    if (block.exceptions?.exc_list) {
+    // The exceptions property can be either:
+    // - { exc_list: [...] } (direct)
+    // - { PLpgSQL_exception_block: { exc_list: [...] } } (wrapped)
+    const excList = block.exceptions?.exc_list || 
+                    (block.exceptions as any)?.PLpgSQL_exception_block?.exc_list;
+    if (excList) {
       parts.push(kw('EXCEPTION'));
-      for (const exc of block.exceptions.exc_list) {
+      for (const exc of excList) {
         if ('PLpgSQL_exception' in exc) {
           const excData = exc.PLpgSQL_exception;
-          const conditions = excData.conditions?.map(c => {
+          const conditions = excData.conditions?.map((c: any) => {
             if ('PLpgSQL_condition' in c) {
               return c.PLpgSQL_condition.condname || c.PLpgSQL_condition.sqlerrstate || 'OTHERS';
             }

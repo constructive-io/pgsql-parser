@@ -213,6 +213,9 @@ export const cleanPlpgsqlTree = (tree: any) => {
     location: noop,
     stmt_len: noop,
     stmt_location: noop,
+    // varno values are assigned based on position in datums array and can change
+    // when implicit variables (like sqlstate/sqlerrm) are filtered out during deparse
+    varno: noop,
     query: normalizeQueryWhitespace,
   });
 };

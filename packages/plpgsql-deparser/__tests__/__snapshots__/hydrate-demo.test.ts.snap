@@ -49,8 +49,6 @@ exports[`hydrate demonstration with big-function.sql should parse, hydrate, modi
   v_sql text;
   v_rowcount int := 0;
   v_lock_key bigint := CAST(CAST('x' || substr(md5(p_org_id::text), 1, 16) AS pg_catalog.bit(64)) AS bigint);
-  sqlstate CONSTANT text;
-  sqlerrm CONSTANT text;
 BEGIN
   BEGIN
       IF p_org_id IS NULL
@@ -192,6 +190,15 @@ BEGIN
       message := format('rollup ok: gross=%s discount=%s tax=%s net=%s (discount_rate=%s tax_rate=%s)', v_gross, v_discount, v_tax, v_net, v_discount_rate, v_tax_rate);
       RETURN NEXT;
       RETURN;
+  EXCEPTION
+      WHEN unique_violation THEN
+        RAISE NOTICE 'unique_violation: %', sqlerrm;
+        RAISE EXCEPTION;
+      WHEN others THEN
+        IF p_debug THEN
+                RAISE NOTICE 'error: % (%:%)', sqlerrm, sqlstate, sqlerrm;
+        END IF;
+        RAISE EXCEPTION;
   END;
   RETURN;
 END$$"
