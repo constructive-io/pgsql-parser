@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.2](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.6.1...plpgsql-deparser@0.6.2) (2026-01-07)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** filter out implicit sqlstate/sqlerrm variables ([aec8d3d](https://github.com/constructive-io/pgsql-parser/commit/aec8d3dc608e6b22d7f6337469fb106c41160265))
+- **plpgsql-deparser:** fix 2 more failing fixtures (189/190 now pass) ([707e36e](https://github.com/constructive-io/pgsql-parser/commit/707e36e7d8214ca9748f7b8fc621b334c40736ab))
+- **plpgsql-deparser:** fix EXCEPTION block handling in deparser ([64c900c](https://github.com/constructive-io/pgsql-parser/commit/64c900c001818867026225f81b7068bc1d939a6e))
+- **plpgsql-deparser:** preserve schema qualification in %rowtype/%type references ([13cff51](https://github.com/constructive-io/pgsql-parser/commit/13cff5116616464ded51df21c28d2d61383aefbe))
+- **plpgsql-deparser:** support nested DECLARE blocks inside FOR loops ([4029221](https://github.com/constructive-io/pgsql-parser/commit/402922177ff159b8cdf8652fcdfdd9dc9066f571))
+- **test-utils:** filter out varno values during AST comparison ([9d79484](https://github.com/constructive-io/pgsql-parser/commit/9d79484b92b4482d17dc51ace93f99f906602d57))
+
 ## [0.6.1](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.6.0...plpgsql-deparser@0.6.1) (2026-01-06)
 
 **Note:** Version bump only for package plpgsql-deparser

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.5.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-parser@0.4.1...plpgsql-parser@0.5.0) (2026-01-07)
+
+### Features
+
+- **plpgsql-parser:** automatically compute return info for correct RETURN handling ([af1a5b4](https://github.com/constructive-io/pgsql-parser/commit/af1a5b42f61ffdbef4ccd5043e47a7e30b268fcc))
+
 ## [0.4.1](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-parser@0.4.0...plpgsql-parser@0.4.1) (2026-01-06)
 
 **Note:** Version bump only for package plpgsql-parser
