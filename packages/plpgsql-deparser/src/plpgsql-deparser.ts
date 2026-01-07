@@ -82,6 +82,10 @@ export interface PLpgSQLDeparserContext {
   options: PLpgSQLDeparserOptions;
   datums?: PLpgSQLDatum[];
   returnInfo?: ReturnInfo;
+  /** Set of linenos for loop-introduced variables (to exclude from DECLARE) */
+  loopVarLinenos?: Set<number>;
+  /** Map of block lineno to the set of datum indices that belong to that block */
+  blockDatumMap?: Map<number, Set<number>>;
 }
 
 /**
@@ -154,11 +158,30 @@ export class PLpgSQLDeparser {
    * @param returnInfo - Optional return type info for correct RETURN statement handling
    */
   deparseFunction(func: PLpgSQL_function, returnInfo?: ReturnInfo): string {
+    // Collect loop-introduced variables before generating DECLARE section
+    const loopVarLinenos = new Set<number>();
+    if (func.action) {
+      this.collectLoopVariables(func.action, loopVarLinenos);
+    }
+
+    // Build the block-to-datum mapping for nested DECLARE sections
+    const blockDatumMap = this.buildBlockDatumMap(func.datums, func.action, loopVarLinenos);
+
+    // Collect all datum indices that belong to nested blocks (to exclude from top-level)
+    const nestedDatumIndices = new Set<number>();
+    for (const indices of blockDatumMap.values()) {
+      for (const idx of indices) {
+        nestedDatumIndices.add(idx);
+      }
+    }
+
     const context: PLpgSQLDeparserContext = {
       indentLevel: 0,
       options: this.options,
       datums: func.datums,
       returnInfo,
+      loopVarLinenos,
+      blockDatumMap,
     };
 
     const parts: string[] = [];
@@ -175,14 +198,14 @@ export class PLpgSQLDeparser {
       parts.push(`<<${blockLabel}>>`);
     }
 
-    // Collect loop-introduced variables before generating DECLARE section
-    const loopVarLinenos = new Set<number>();
-    if (func.action) {
-      this.collectLoopVariables(func.action, loopVarLinenos);
-    }
-
-    // Deparse DECLARE section (local variables, excluding loop variables)
-    const declareSection = this.deparseDeclareSection(func.datums, context, loopVarLinenos);
+    // Deparse DECLARE section (local variables, excluding loop variables and nested block variables)
+    const declareSection = this.deparseDeclareSection(
+      func.datums,
+      context,
+      loopVarLinenos,
+      undefined,  // includedIndices - not used for top-level
+      nestedDatumIndices  // excludedIndices - exclude datums that belong to nested blocks
+    );
     if (declareSection) {
       parts.push(declareSection);
     }
@@ -340,19 +363,220 @@ export class PLpgSQLDeparser {
   }
 
   /**
+   * Build a mapping of block linenos to the datum indices that belong to each block.
+   * This is used to emit DECLARE sections at the correct nesting level.
+   * 
+   * The algorithm:
+   * 1. Get the top-level block's lineno (the BEGIN line of the function body)
+   * 2. Collect all nested PLpgSQL_stmt_block linenos from the AST
+   * 3. For each datum with a lineno GREATER than the top-level block's lineno:
+   *    - Assign it to the nested block whose lineno is the smallest value greater than the datum's lineno
+   * 4. Datums with lineno <= top-level block lineno belong to the top-level DECLARE (not added to map)
+   */
+  private buildBlockDatumMap(
+    datums: PLpgSQLDatum[] | undefined,
+    action: PLpgSQLStmtNode | undefined,
+    loopVarLinenos: Set<number>
+  ): Map<number, Set<number>> {
+    const blockDatumMap = new Map<number, Set<number>>();
+    
+    if (!datums || !action) {
+      return blockDatumMap;
+    }
+
+    // Get the top-level block's lineno
+    let topLevelBlockLineno: number | undefined;
+    if ('PLpgSQL_stmt_block' in action) {
+      topLevelBlockLineno = action.PLpgSQL_stmt_block.lineno;
+    }
+
+    // Collect all nested block linenos (excluding the top-level block)
+    const nestedBlockLinenos: number[] = [];
+    this.collectNestedBlockLinenos(action, nestedBlockLinenos, true);
+    nestedBlockLinenos.sort((a, b) => a - b);
+
+    // For each datum, find which block it belongs to
+    datums.forEach((datum, index) => {
+      let lineno: number | undefined;
+      
+      if ('PLpgSQL_var' in datum) {
+        lineno = datum.PLpgSQL_var.lineno;
+      } else if ('PLpgSQL_rec' in datum) {
+        lineno = datum.PLpgSQL_rec.lineno;
+      } else if ('PLpgSQL_row' in datum) {
+        lineno = datum.PLpgSQL_row.lineno;
+      }
+
+      // Skip datums without lineno or loop variables
+      if (lineno === undefined || loopVarLinenos.has(lineno)) {
+        return;
+      }
+
+      // Only consider datums declared AFTER the top-level BEGIN for nested blocks
+      // Datums declared before the top-level BEGIN belong to the top-level DECLARE
+      // If topLevelBlockLineno is undefined, we can't determine scope, so keep all at top-level
+      if (topLevelBlockLineno === undefined || lineno <= topLevelBlockLineno) {
+        return; // This datum belongs to top-level DECLARE
+      }
+
+      // Find the block this datum belongs to (the next BEGIN after the datum's lineno)
+      for (const blockLineno of nestedBlockLinenos) {
+        if (blockLineno > lineno) {
+          // This datum belongs to this block
+          if (!blockDatumMap.has(blockLineno)) {
+            blockDatumMap.set(blockLineno, new Set());
+          }
+          blockDatumMap.get(blockLineno)!.add(index);
+          return;
+        }
+      }
+      // If no nested block found, datum belongs to top-level (not added to map)
+    });
+
+    return blockDatumMap;
+  }
+
+  /**
+   * Collect linenos of all nested PLpgSQL_stmt_block nodes in the AST.
+   * @param isTopLevel - If true, skip the current block (it's the top-level block)
+   */
+  private collectNestedBlockLinenos(
+    stmt: PLpgSQLStmtNode,
+    linenos: number[],
+    isTopLevel: boolean = false
+  ): void {
+    if ('PLpgSQL_stmt_block' in stmt) {
+      const block = stmt.PLpgSQL_stmt_block;
+      // Only add nested blocks, not the top-level block
+      if (!isTopLevel && block.lineno !== undefined) {
+        linenos.push(block.lineno);
+      }
+      if (block.body) {
+        for (const s of block.body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_fori' in stmt) {
+      const fori = stmt.PLpgSQL_stmt_fori;
+      if (fori.body) {
+        for (const s of fori.body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_fors' in stmt) {
+      const fors = stmt.PLpgSQL_stmt_fors;
+      if (fors.body) {
+        for (const s of fors.body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_forc' in stmt) {
+      const forc = stmt.PLpgSQL_stmt_forc;
+      if (forc.body) {
+        for (const s of forc.body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_foreach_a' in stmt) {
+      const foreach = stmt.PLpgSQL_stmt_foreach_a;
+      if (foreach.body) {
+        for (const s of foreach.body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_loop' in stmt) {
+      const loop = stmt.PLpgSQL_stmt_loop;
+      if (loop.body) {
+        for (const s of loop.body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_while' in stmt) {
+      const whileStmt = stmt.PLpgSQL_stmt_while;
+      if (whileStmt.body) {
+        for (const s of whileStmt.body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_if' in stmt) {
+      const ifStmt = stmt.PLpgSQL_stmt_if;
+      if (ifStmt.then_body) {
+        for (const s of ifStmt.then_body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+      if (ifStmt.elsif_list) {
+        for (const elsif of ifStmt.elsif_list) {
+          if ('PLpgSQL_if_elsif' in elsif && elsif.PLpgSQL_if_elsif.stmts) {
+            for (const s of elsif.PLpgSQL_if_elsif.stmts) {
+              this.collectNestedBlockLinenos(s, linenos, false);
+            }
+          }
+        }
+      }
+      if (ifStmt.else_body) {
+        for (const s of ifStmt.else_body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_case' in stmt) {
+      const caseStmt = stmt.PLpgSQL_stmt_case;
+      if (caseStmt.case_when_list) {
+        for (const when of caseStmt.case_when_list) {
+          if ('PLpgSQL_case_when' in when && when.PLpgSQL_case_when.stmts) {
+            for (const s of when.PLpgSQL_case_when.stmts) {
+              this.collectNestedBlockLinenos(s, linenos, false);
+            }
+          }
+        }
+      }
+      if (caseStmt.have_else && caseStmt.else_stmts) {
+        for (const s of caseStmt.else_stmts) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    } else if ('PLpgSQL_stmt_dynfors' in stmt) {
+      const dynfors = stmt.PLpgSQL_stmt_dynfors;
+      if (dynfors.body) {
+        for (const s of dynfors.body) {
+          this.collectNestedBlockLinenos(s, linenos, false);
+        }
+      }
+    }
+  }
+
+  /**
    * Deparse the DECLARE section
+   * @param datums - All datums from the function
+   * @param context - Deparser context
+   * @param loopVarLinenos - Set of linenos for loop-introduced variables to exclude
+   * @param includedIndices - Optional set of datum indices to include (for nested blocks).
+   *                          If provided, only datums at these indices are included.
+   * @param excludedIndices - Optional set of datum indices to exclude (for top-level).
+   *                          If provided, datums at these indices are excluded.
    */
   private deparseDeclareSection(
     datums: PLpgSQLDatum[] | undefined,
     context: PLpgSQLDeparserContext,
-    loopVarLinenos: Set<number> = new Set()
+    loopVarLinenos: Set<number> = new Set(),
+    includedIndices?: Set<number>,
+    excludedIndices?: Set<number>
   ): string {
     if (!datums || datums.length === 0) {
       return '';
     }
 
     // Filter out internal variables (like 'found', parameters, etc.) and loop variables
-    const localVars = datums.filter(datum => {
+    const localVars = datums.filter((datum, index) => {
+      // If includedIndices is provided, only include datums at those indices
+      if (includedIndices !== undefined && !includedIndices.has(index)) {
+        return false;
+      }
+      // If excludedIndices is provided, exclude datums at those indices
+      if (excludedIndices !== undefined && excludedIndices.has(index)) {
+        return false;
+      }
+
       if ('PLpgSQL_var' in datum) {
         const v = datum.PLpgSQL_var;
         // Skip internal variables:
@@ -578,6 +802,20 @@ export class PLpgSQLDeparser {
     // Label - skip if already output before DECLARE
     if (block.label && !skipLabel) {
       parts.push(`<<${block.label}>>`);
+    }
+
+    // Check if this block has any datums assigned to it (nested DECLARE)
+    if (block.lineno !== undefined && context.blockDatumMap?.has(block.lineno)) {
+      const includedIndices = context.blockDatumMap.get(block.lineno)!;
+      const declareSection = this.deparseDeclareSection(
+        context.datums,
+        context,
+        context.loopVarLinenos || new Set(),
+        includedIndices
+      );
+      if (declareSection) {
+        parts.push(declareSection);
+      }
     }
 
     parts.push(kw('BEGIN'));
