@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.7.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.6.2...plpgsql-deparser@0.7.0) (2026-01-08)
+
+### Features
+
+- **plpgsql-deparser:** add PLpgSQL_type hydration support ([42ac2e2](https://github.com/constructive-io/pgsql-parser/commit/42ac2e28fe3284049045a7596928e791b7491b2e))
+
 ## [0.6.2](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.6.1...plpgsql-deparser@0.6.2) (2026-01-07)
 
 ### Bug Fixes
