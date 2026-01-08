@@ -213,9 +213,15 @@ describe('schema rename mapped', () => {
     }
 
     // Handle PLpgSQL_type nodes (variable type declarations)
+    // With hydration, the typname is now a HydratedTypeName object with a typeNameNode
+    // that can be transformed using the SQL AST visitor
     if ('PLpgSQL_type' in node) {
       const plType = node.PLpgSQL_type;
-      if (plType.typname) {
+      if (plType.typname && typeof plType.typname === 'object' && plType.typname.kind === 'type-name') {
+        // Transform the TypeName AST node using the SQL visitor
+        collectAndTransformSqlAst(plType.typname.typeNameNode, schemaRenameMap, `${location}.PLpgSQL_type.typname`);
+      } else if (plType.typname && typeof plType.typname === 'string') {
+        // Fallback for non-hydrated typnames (simple types without schema qualification)
         for (const oldSchema of Object.keys(schemaRenameMap)) {
           if (plType.typname.startsWith(oldSchema + '.')) {
             const typeName = plType.typname.substring(oldSchema.length + 1);

@@ -21,4 +21,4 @@ export const deparseFunction = async (
 export { PLpgSQLDeparser, PLpgSQLDeparserOptions, ReturnInfo, ReturnInfoKind };
 export * from './types';
 export * from './hydrate-types';
-export { hydratePlpgsqlAst, dehydratePlpgsqlAst, isHydratedExpr, getOriginalQuery, DehydrationOptions } from './hydrate';
+export { hydratePlpgsqlAst, dehydratePlpgsqlAst, isHydratedExpr, isHydratedTypeName, getOriginalQuery, DehydrationOptions } from './hydrate';
