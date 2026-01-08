@@ -11,7 +11,7 @@
  * CREATE FUNCTION statement.
  */
 
-import { Deparser as SqlDeparser } from 'pgsql-deparser';
+import { Deparser as SqlDeparser, QuoteUtils } from 'pgsql-deparser';
 import {
   PLpgSQLParseResult,
   PLpgSQLFunctionNode,
@@ -695,20 +695,121 @@ export class PLpgSQLDeparser {
 
   /**
    * Deparse a type reference
+   * 
+   * For schema-qualified types (containing a dot), uses QuoteUtils from pgsql-deparser
+   * for proper identifier quoting. For simple types, preserves the original format
+   * to maintain round-trip consistency.
    */
   private deparseType(typeNode: PLpgSQLTypeNode): string {
     if ('PLpgSQL_type' in typeNode) {
       let typname = typeNode.PLpgSQL_type.typname;
-      // Remove quotes
-      typname = typname.replace(/"/g, '');
+      
       // Strip pg_catalog. prefix for built-in types, but preserve schema qualification
       // for %rowtype and %type references where the schema is part of the table/variable reference
       if (!typname.includes('%rowtype') && !typname.includes('%type')) {
-        typname = typname.replace(/^pg_catalog\./, '');
+        typname = typname.replace(/^"?pg_catalog"?\./, '');
       }
-      return typname.trim();
+      
+      // For %rowtype and %type references, preserve as-is after stripping quotes
+      // These are special PL/pgSQL type references that shouldn't be re-quoted
+      if (typname.includes('%rowtype') || typname.includes('%type')) {
+        // Strip quotes and return as-is
+        return typname.replace(/"/g, '').trim();
+      }
+      
+      // Check if this is a schema-qualified type (contains a dot outside of quotes)
+      // Only apply QuoteUtils for schema-qualified types to ensure consistent quoting
+      // For simple types, preserve the original format for round-trip consistency
+      const isSchemaQualified = this.isSchemaQualifiedType(typname);
+      
+      if (!isSchemaQualified) {
+        // Simple type - just strip quotes and return as-is
+        return typname.replace(/"/g, '').trim();
+      }
+      
+      // Schema-qualified type - apply proper quoting
+      const trimmedTypname = typname.trim();
+      
+      // Handle array types - extract the array suffix (e.g., [], [3], [][])
+      // Array notation should not be quoted, only the base type
+      const arrayMatch = trimmedTypname.match(/(\[[\d]*\])+$/);
+      const arraySuffix = arrayMatch ? arrayMatch[0] : '';
+      const baseTypeName = arraySuffix ? trimmedTypname.slice(0, -arraySuffix.length) : trimmedTypname;
+      
+      // Parse the base type name into parts, handling quoted identifiers
+      // Type names can be: "schema"."type", schema.type, or just type
+      const parts = this.parseQualifiedTypeName(baseTypeName);
+      
+      // Use QuoteUtils to properly quote the type name parts
+      const quotedType = QuoteUtils.quoteTypeDottedName(parts);
+      
+      // Re-add the array suffix (unquoted)
+      return quotedType + arraySuffix;
     }
     return '';
+  }
+
+  /**
+   * Check if a type name is schema-qualified (contains a dot outside of quotes).
+   */
+  private isSchemaQualifiedType(typname: string): boolean {
+    let inQuotes = false;
+    for (let i = 0; i < typname.length; i++) {
+      const ch = typname[i];
+      if (ch === '"') {
+        if (inQuotes && typname[i + 1] === '"') {
+          i++; // Skip escaped quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === '.' && !inQuotes) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Parse a qualified type name into its component parts.
+   * Handles both quoted ("schema"."type") and unquoted (schema.type) identifiers.
+   * 
+   * @param typname - The type name string, possibly with quotes and dots
+   * @returns Array of unquoted identifier parts
+   */
+  private parseQualifiedTypeName(typname: string): string[] {
+    const parts: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < typname.length; i++) {
+      const ch = typname[i];
+      
+      if (ch === '"') {
+        if (inQuotes && typname[i + 1] === '"') {
+          // Escaped quote ("") inside quoted identifier
+          current += '"';
+          i++; // Skip the next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === '.' && !inQuotes) {
+        // Dot outside quotes - separator
+        if (current) {
+          parts.push(current.trim());
+          current = '';
+        }
+      } else {
+        current += ch;
+      }
+    }
+    
+    // Add the last part
+    if (current) {
+      parts.push(current.trim());
+    }
+    
+    return parts;
   }
 
   /**
