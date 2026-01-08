@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.1](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.0...plpgsql-deparser@0.7.1) (2026-01-08)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** use QuoteUtils for schema-qualified type names ([cd117b6](https://github.com/constructive-io/pgsql-parser/commit/cd117b6d1df18de732873dcbf9ce7ec13efa71cf))
+
 # [0.7.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.6.2...plpgsql-deparser@0.7.0) (2026-01-08)
 
 ### Features
