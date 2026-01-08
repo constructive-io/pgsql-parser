@@ -47,6 +47,20 @@ export type HydratedExprQuery =
   | HydratedExprSqlExpr
   | HydratedExprAssign;
 
+/**
+ * Hydrated PLpgSQL_type typname field.
+ * The typname string (e.g., "schema.typename") is parsed into a TypeName AST node.
+ */
+export interface HydratedTypeName {
+  kind: 'type-name';
+  /** The original typname string */
+  original: string;
+  /** The parsed TypeName AST node (from parsing SELECT NULL::typename) */
+  typeNameNode: Node;
+  /** Optional suffix like %rowtype or %type that was stripped before parsing */
+  suffix?: string;
+}
+
 export interface HydratedPLpgSQL_expr {
   query: HydratedExprQuery;
 }
@@ -77,4 +91,6 @@ export interface HydrationStats {
   assignmentExpressions: number;
   sqlExpressions: number;
   rawExpressions: number;
+  /** Number of PLpgSQL_type nodes with hydrated typname */
+  typeNameExpressions: number;
 }

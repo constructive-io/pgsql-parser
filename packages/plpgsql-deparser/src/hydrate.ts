@@ -7,6 +7,7 @@ import {
   HydratedExprSqlExpr,
   HydratedExprSqlStmt,
   HydratedExprAssign,
+  HydratedTypeName,
   HydrationOptions,
   HydrationResult,
   HydrationError,
@@ -54,6 +55,7 @@ export function hydratePlpgsqlAst(
     assignmentExpressions: 0,
     sqlExpressions: 0,
     rawExpressions: 0,
+    typeNameExpressions: 0,
   };
 
   const hydratedAst = hydrateNode(ast, '', opts, errors, stats);
@@ -107,11 +109,118 @@ function hydrateNode(
     };
   }
 
+  // Handle PLpgSQL_type nodes (variable type declarations)
+  // Parse the typname string into a TypeName AST node
+  if ('PLpgSQL_type' in node) {
+    const plType = node.PLpgSQL_type;
+    if (plType.typname && typeof plType.typname === 'string') {
+      const hydratedTypename = hydrateTypeName(
+        plType.typname,
+        `${path}.PLpgSQL_type.typname`,
+        errors,
+        stats
+      );
+
+      return {
+        PLpgSQL_type: {
+          ...plType,
+          typname: hydratedTypename,
+        },
+      };
+    }
+  }
+
   const result: any = {};
   for (const [key, value] of Object.entries(node)) {
     result[key] = hydrateNode(value, `${path}.${key}`, options, errors, stats);
   }
   return result;
+}
+
+/**
+ * Extract the TypeName node from a parsed cast expression.
+ * Given a parse result from "SELECT NULL::typename", extracts the TypeName node.
+ */
+function extractTypeNameFromCast(result: ParseResult): Node | undefined {
+  const stmt = result.stmts?.[0]?.stmt as any;
+  if (stmt?.SelectStmt?.targetList?.[0]?.ResTarget?.val?.TypeCast?.typeName) {
+    return stmt.SelectStmt.targetList[0].ResTarget.val.TypeCast.typeName;
+  }
+  return undefined;
+}
+
+/**
+ * Hydrate a PLpgSQL_type typname string into a HydratedTypeName.
+ * 
+ * Parses the typname string (e.g., "schema.typename") into a TypeName AST node
+ * by wrapping it in a cast expression: SELECT NULL::typename
+ * 
+ * Handles special suffixes like %rowtype and %type by stripping them before
+ * parsing and preserving them in the result.
+ */
+function hydrateTypeName(
+  typname: string,
+  path: string,
+  errors: HydrationError[],
+  stats: HydrationStats
+): HydratedTypeName | string {
+  // Handle %rowtype and %type suffixes - these can't be parsed as SQL types
+  let suffix: string | undefined;
+  let baseTypname = typname;
+  
+  const suffixMatch = typname.match(/(%rowtype|%type)$/i);
+  if (suffixMatch) {
+    suffix = suffixMatch[1];
+    baseTypname = typname.substring(0, typname.length - suffix.length);
+  }
+  
+  // Check if this is a schema-qualified type (contains a dot)
+  // We need to be careful with quoted identifiers - "schema".type or schema."type"
+  // A simple heuristic: if there's a dot not inside quotes, it's schema-qualified
+  const hasSchemaQualification = /^[^"]*\.|"[^"]*"\./i.test(baseTypname);
+  
+  // Skip hydration for simple built-in types without schema qualification
+  // These don't benefit from AST transformation
+  if (!hasSchemaQualification) {
+    return typname;
+  }
+  
+  // Remove pg_catalog prefix for built-in types (but only if no suffix)
+  let parseTypname = baseTypname;
+  if (!suffix) {
+    parseTypname = parseTypname.replace(/^pg_catalog\./, '');
+  }
+  
+  try {
+    // Parse the type name by wrapping it in a cast expression
+    // Keep quotes intact for proper parsing of special identifiers
+    const sql = `SELECT NULL::${parseTypname}`;
+    const parseResult = parseSync(sql);
+    const typeNameNode = extractTypeNameFromCast(parseResult);
+    
+    if (typeNameNode) {
+      stats.typeNameExpressions++;
+      return {
+        kind: 'type-name',
+        original: typname,
+        typeNameNode,
+        suffix,
+      };
+    }
+    
+    // If we couldn't extract the TypeName, throw to trigger error handling
+    throw new Error('Could not extract TypeName from cast expression');
+  } catch (err) {
+    // If parsing fails, record the error and throw
+    const error: HydrationError = {
+      path,
+      original: typname,
+      parseMode: ParseMode.RAW_PARSE_TYPE_NAME,
+      error: err instanceof Error ? err.message : String(err),
+    };
+    errors.push(error);
+    throw new Error(`Failed to hydrate PLpgSQL_type typname "${typname}": ${error.error}`);
+  }
 }
 
 function hydrateExpression(
@@ -404,6 +513,18 @@ export function isHydratedExpr(query: any): query is HydratedExprQuery {
   );
 }
 
+/**
+ * Check if a typname value is a hydrated type name object.
+ */
+export function isHydratedTypeName(typname: any): typname is HydratedTypeName {
+  return Boolean(
+    typname &&
+    typeof typname === 'object' &&
+    'kind' in typname &&
+    typname.kind === 'type-name'
+  );
+}
+
 export function getOriginalQuery(query: string | HydratedExprQuery): string {
   if (typeof query === 'string') {
     return query;
@@ -449,6 +570,28 @@ function dehydrateNode(node: any, options?: DehydrationOptions): any {
     };
   }
 
+  // Handle PLpgSQL_type nodes with hydrated typname
+  if ('PLpgSQL_type' in node) {
+    const plType = node.PLpgSQL_type;
+    const typname = plType.typname;
+    
+    let dehydratedTypname: string;
+    if (typeof typname === 'string') {
+      dehydratedTypname = typname;
+    } else if (isHydratedTypeName(typname)) {
+      dehydratedTypname = dehydrateTypeName(typname, options?.sqlDeparseOptions);
+    } else {
+      dehydratedTypname = String(typname);
+    }
+
+    return {
+      PLpgSQL_type: {
+        ...plType,
+        typname: dehydratedTypname,
+      },
+    };
+  }
+
   const result: any = {};
   for (const [key, value] of Object.entries(node)) {
     result[key] = dehydrateNode(value, options);
@@ -481,6 +624,56 @@ function deparseExprNode(expr: Node, sqlDeparseOptions?: DeparserOptions): strin
   } catch {
     return null;
   }
+}
+
+/**
+ * Deparse a TypeName AST node back to a string.
+ * Wraps the TypeName in a cast expression, deparses, and extracts the type name.
+ */
+function deparseTypeNameNode(typeNameNode: Node, sqlDeparseOptions?: DeparserOptions): string | null {
+  try {
+    // Wrap the TypeName in a cast expression: SELECT NULL::typename
+    // We use 'as any' because the Node type is a union type and we know
+    // this is specifically a TypeName node from extractTypeNameFromCast
+    const wrappedStmt = {
+      SelectStmt: {
+        targetList: [
+          {
+            ResTarget: {
+              val: {
+                TypeCast: {
+                  arg: { A_Const: { isnull: true } },
+                  typeName: typeNameNode as any
+                }
+              }
+            }
+          }
+        ]
+      }
+    } as any;
+    const deparsed = Deparser.deparse(wrappedStmt, sqlDeparseOptions);
+    // Extract the type name from "SELECT NULL::typename"
+    const match = deparsed.match(/SELECT\s+NULL::(.+)/i);
+    if (match) {
+      return match[1].trim().replace(/;$/, '');
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Dehydrate a HydratedTypeName back to a string.
+ * Deparses the TypeName AST node and appends any suffix (%rowtype, %type).
+ */
+function dehydrateTypeName(typname: HydratedTypeName, sqlDeparseOptions?: DeparserOptions): string {
+  const deparsed = deparseTypeNameNode(typname.typeNameNode, sqlDeparseOptions);
+  if (deparsed !== null) {
+    return deparsed + (typname.suffix || '');
+  }
+  // Fall back to original if deparse fails
+  return typname.original;
 }
 
 /**

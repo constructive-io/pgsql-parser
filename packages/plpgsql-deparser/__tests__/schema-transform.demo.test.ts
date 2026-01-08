@@ -158,9 +158,15 @@ describe('schema transform demo', () => {
     }
 
     // Handle PLpgSQL_type nodes (variable type declarations)
+    // With hydration, the typname is now a HydratedTypeName object with a typeNameNode
+    // that can be transformed using the SQL AST visitor
     if ('PLpgSQL_type' in node) {
       const plType = node.PLpgSQL_type;
-      if (plType.typname && plType.typname.startsWith(oldSchema + '.')) {
+      if (plType.typname && typeof plType.typname === 'object' && plType.typname.kind === 'type-name') {
+        // Transform the TypeName AST node using the SQL visitor
+        transformSchemaInSqlAst(plType.typname.typeNameNode, oldSchema, newSchema);
+      } else if (plType.typname && typeof plType.typname === 'string' && plType.typname.startsWith(oldSchema + '.')) {
+        // Fallback for non-hydrated typnames (simple types without schema qualification)
         plType.typname = plType.typname.replace(oldSchema + '.', newSchema + '.');
       }
     }
