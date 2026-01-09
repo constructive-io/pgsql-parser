@@ -211,18 +211,9 @@ describe('plpgsql-parser', () => {
   });
 
   describe('SELECT INTO statement parsing', () => {
-    // This test documents a bug in @libpg-query/parser where PL/pgSQL functions
-    // containing SELECT INTO statements fail to parse, causing the function
-    // to not be recognized as a PL/pgSQL function and preventing hydration.
-    // 
-    // Bug: parsePlPgSQLSync throws "Unexpected non-whitespace character after JSON"
-    // when the function body contains SELECT INTO statements.
-    //
-    // This causes inconsistent behavior:
-    // - Functions with DELETE/INSERT/UPDATE: parse successfully, get hydrated
-    // - Functions with SELECT INTO: fail to parse, not recognized as PL/pgSQL
-    //
-    // Related issue: https://github.com/pganalyze/libpg_query/issues/XXX
+    // Regression tests to ensure PL/pgSQL functions containing SELECT INTO
+    // statements are correctly parsed and hydrated. These tests verify that
+    // SELECT INTO works consistently with other DML statements like DELETE.
 
     it('should parse function with SELECT INTO statement', () => {
       const selectIntoSql = `
@@ -239,8 +230,6 @@ describe('plpgsql-parser', () => {
       
       const parsed = parse(selectIntoSql);
       
-      // This currently fails because @libpg-query/parser cannot parse
-      // PL/pgSQL functions with SELECT INTO statements
       expect(parsed.functions).toHaveLength(1);
       expect(parsed.functions[0].kind).toBe('plpgsql-function');
       expect(parsed.functions[0].plpgsql.hydrated).toBeDefined();
@@ -261,8 +250,6 @@ describe('plpgsql-parser', () => {
       
       const parsed = parse(selectIntoSchemaSql);
       
-      // This currently fails because @libpg-query/parser cannot parse
-      // PL/pgSQL functions with SELECT INTO statements
       expect(parsed.functions).toHaveLength(1);
       expect(parsed.functions[0].kind).toBe('plpgsql-function');
     });
@@ -283,15 +270,13 @@ describe('plpgsql-parser', () => {
       const parsed = parse(selectIntoSql);
       const result = deparseSync(parsed);
       
-      // When this works, the deparsed SQL should have consistent quoting
-      // (either all quoted or all unquoted based on QuoteUtils rules)
+      // Deparsed SQL should have consistent quoting based on QuoteUtils rules
       expect(result).toContain('SELECT');
       expect(result).toContain('INTO');
       expect(result).toContain('v_result');
     });
 
-    // Contrast: DELETE statements parse correctly
-    it('should parse function with DELETE statement (works correctly)', () => {
+    it('should parse function with DELETE statement', () => {
       const deleteSql = `
         CREATE FUNCTION delete_data()
         RETURNS void
@@ -304,7 +289,6 @@ describe('plpgsql-parser', () => {
       
       const parsed = parse(deleteSql);
       
-      // DELETE statements work correctly
       expect(parsed.functions).toHaveLength(1);
       expect(parsed.functions[0].kind).toBe('plpgsql-function');
       expect(parsed.functions[0].plpgsql.hydrated).toBeDefined();
