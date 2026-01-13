@@ -208,6 +208,27 @@ exports[`lowercase: simple-function.sql 1`] = `
 end"
 `;
 
+exports[`lowercase: trigger-function.sql 1`] = `
+"begin
+  if TG_OP = 'INSERT' then
+      NEW.created_at := now();
+      return NEW;
+  elsif TG_OP = 'UPDATE' then
+      if OLD.id IS DISTINCT FROM NEW.id then
+            raise exception 'IMMUTABLE_FIELD';
+      end if;
+      NEW.updated_at := now();
+      return NEW;
+  elsif TG_OP = 'DELETE' then
+      return OLD;
+  end if;
+  if NOT FOUND then
+      raise exception 'NOT_FOUND';
+  end if;
+  return NEW;
+end"
+`;
+
 exports[`uppercase: big-function.sql 1`] = `
 "DECLARE
   v_orders_scanned int := 0;
@@ -413,5 +434,26 @@ END"
 exports[`uppercase: simple-function.sql 1`] = `
 "BEGIN
   RETURN a + b;
+END"
+`;
+
+exports[`uppercase: trigger-function.sql 1`] = `
+"BEGIN
+  IF TG_OP = 'INSERT' THEN
+      NEW.created_at := now();
+      RETURN NEW;
+  ELSIF TG_OP = 'UPDATE' THEN
+      IF OLD.id IS DISTINCT FROM NEW.id THEN
+            RAISE EXCEPTION 'IMMUTABLE_FIELD';
+      END IF;
+      NEW.updated_at := now();
+      RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+  END IF;
+  IF NOT FOUND THEN
+      RAISE EXCEPTION 'NOT_FOUND';
+  END IF;
+  RETURN NEW;
 END"
 `;
