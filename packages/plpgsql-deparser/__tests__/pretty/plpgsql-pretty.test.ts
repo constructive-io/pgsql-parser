@@ -5,6 +5,7 @@ const prettyTest = new PlpgsqlPrettyTest([
   'simple-function.sql',
   'if-else-function.sql',
   'loop-function.sql',
+  'trigger-function.sql',
 ]);
 
 prettyTest.generateTests();
