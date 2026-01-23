@@ -194,7 +194,7 @@ exports[`schema rename mapped should transform schema names and snapshot schema 
   total_count int;
 BEGIN
   SELECT count(*) INTO total_count
-  FROM myapp_v2.users AS u
+      FROM myapp_v2.users AS u
   JOIN myapp_v2.orders AS o ON o.user_id = u.id
   WHERE
     u.id = p_user_id;
@@ -270,7 +270,7 @@ CREATE FUNCTION myapp_v2.calculate_order_total(
   discount numeric;
 BEGIN
   SELECT sum(quantity * price) INTO subtotal
-  FROM myapp_v2.order_items
+      FROM myapp_v2.order_items
   WHERE
     order_id = p_order_id;
   tax_amount := myapp_v2.get_tax_rate() * subtotal;

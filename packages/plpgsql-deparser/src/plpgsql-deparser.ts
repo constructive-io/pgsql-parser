@@ -1485,8 +1485,23 @@ export class PLpgSQLDeparser {
         // large gaps like "SELECT x INTO y                    FROM z"
         const before = sql.slice(0, insertPos);
         let after = sql.slice(insertPos);
-        // Collapse leading whitespace (but preserve a single space before the next keyword)
-        after = after.replace(/^[ \t]+/, ' ');
+        // Normalize whitespace after INTO insertion
+        // The parser strips "INTO <target>" but leaves whitespace behind, which can cause
+        // weird formatting like "SELECT x INTO y                    FROM z"
+        // We collapse all whitespace to either a single space or a newline with standard indent
+        const leadingWsMatch = after.match(/^(\s+)/);
+        if (leadingWsMatch) {
+          const ws = leadingWsMatch[1];
+          const hasNewline = /\n/.test(ws);
+          if (hasNewline) {
+            // If original had newlines, use a newline with standard 4-space indent
+            // This normalizes any weird indentation left by the parser
+            after = after.replace(/^\s+/, '\n    ');
+          } else {
+            // If original was just spaces/tabs, collapse to single space
+            after = after.replace(/^[ \t]+/, ' ');
+          }
+        }
         sql = before + intoClause + after;
       } else {
         // -1 means INTO already exists at depth 0, don't add another one

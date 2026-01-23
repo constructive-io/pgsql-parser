@@ -307,6 +307,69 @@ $$`;
     });
   });
 
+  describe('OUT parameters with SELECT INTO multiple variables', () => {
+    it('should handle SELECT INTO multiple OUT parameters', async () => {
+      const sql = `CREATE FUNCTION test_out_params_select_into(
+  p_user_id uuid,
+  OUT id uuid,
+  OUT user_id uuid,
+  OUT access_token text,
+  OUT access_token_expires_at timestamptz,
+  OUT is_verified boolean,
+  OUT totp_enabled boolean
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_token_id uuid;
+  v_plaintext_token text;
+BEGIN
+  v_plaintext_token := encode(gen_random_bytes(48), 'hex');
+  v_token_id := uuid_generate_v5(uuid_ns_url(), v_plaintext_token);
+  
+  INSERT INTO tokens (id, user_id, access_token_hash)
+  VALUES (v_token_id, p_user_id, digest(v_plaintext_token, 'sha256'));
+  
+  SELECT tkn.id, tkn.user_id, v_plaintext_token, tkn.access_token_expires_at, tkn.is_verified, tkn.totp_enabled
+  INTO id, user_id, access_token, access_token_expires_at, is_verified, totp_enabled
+  FROM tokens AS tkn
+  WHERE tkn.id = v_token_id;
+  
+  RETURN;
+END$$`;
+
+      await testUtils.expectAstMatch('OUT params SELECT INTO', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      // Verify multiple INTO targets are present
+      expect(deparsed).toMatch(/INTO\s+id\s*,\s*user_id\s*,\s*access_token/i);
+    });
+
+    it('should handle SELECT INTO STRICT with multiple OUT parameters', async () => {
+      const sql = `CREATE FUNCTION test_out_params_strict(
+  p_id uuid,
+  OUT name text,
+  OUT email text
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+  SELECT u.name, u.email INTO STRICT name, email
+  FROM users u
+  WHERE u.id = p_id;
+END$$`;
+
+      await testUtils.expectAstMatch('OUT params STRICT', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('STRICT');
+      // Verify multiple INTO targets are present
+      expect(deparsed).toMatch(/INTO\s+STRICT\s+name\s*,\s*email/i);
+    });
+  });
+
   describe('combined scenarios', () => {
     it('should handle PERFORM with record fields', async () => {
       const sql = `CREATE FUNCTION test_perform_record() RETURNS trigger

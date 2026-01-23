@@ -98,7 +98,7 @@ BEGIN
         t.orders_scanned,
         t.gross_total,
         t.avg_total INTO v_orders_scanned, v_gross, v_avg
-      FROM totals AS t;
+          FROM totals AS t;
       IF p_apply_discount THEN
             v_rebate := round(v_gross * GREATEST(LEAST(v_discount_rate + v_jitter, 0.50), 0), p_round_to);
       ELSE
@@ -109,7 +109,7 @@ BEGIN
       SELECT
         oi.sku,
         CAST(sum(oi.quantity) AS bigint) AS qty INTO v_top_sku, v_top_sku_qty
-      FROM app_public.order_item AS oi
+          FROM app_public.order_item AS oi
       JOIN app_public.app_order AS o ON o.id = oi.order_id
       WHERE
         o.org_id = p_org_id
