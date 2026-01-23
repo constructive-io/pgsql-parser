@@ -88,7 +88,7 @@ BEGIN
   INSERT INTO tokens (id, user_id, access_token_hash)
     VALUES (v_token_id, p_user_id, digest(v_plaintext_token, 'sha256'));
   SELECT tkn.id, tkn.user_id, v_plaintext_token, tkn.access_token_expires_at, tkn.is_verified, tkn.totp_enabled INTO id, user_id, access_token, access_token_expires_at, is_verified, totp_enabled
-                                                                                         FROM tokens AS tkn
+      FROM tokens AS tkn
     WHERE tkn.id = v_token_id;
   RETURN;
 END"
