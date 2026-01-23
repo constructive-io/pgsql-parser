@@ -162,3 +162,47 @@ LANGUAGE plpgsql AS $$
 BEGIN
   RAISE NOTICE '%', p_message;
 END$$;
+
+-- Test 15: OUT parameters with SELECT INTO multiple variables
+-- This pattern is used in auth functions (sign_in, sign_up) where we need to
+-- populate multiple OUT parameters from a single SELECT statement
+CREATE FUNCTION test_out_params_select_into(
+  p_user_id uuid,
+  OUT id uuid,
+  OUT user_id uuid,
+  OUT access_token text,
+  OUT access_token_expires_at timestamptz,
+  OUT is_verified boolean,
+  OUT totp_enabled boolean
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_token_id uuid;
+  v_plaintext_token text;
+BEGIN
+  v_plaintext_token := encode(gen_random_bytes(48), 'hex');
+  v_token_id := uuid_generate_v5(uuid_ns_url(), v_plaintext_token);
+  
+  INSERT INTO tokens (id, user_id, access_token_hash)
+  VALUES (v_token_id, p_user_id, digest(v_plaintext_token, 'sha256'));
+  
+  SELECT tkn.id, tkn.user_id, v_plaintext_token, tkn.access_token_expires_at, tkn.is_verified, tkn.totp_enabled
+  INTO id, user_id, access_token, access_token_expires_at, is_verified, totp_enabled
+  FROM tokens AS tkn
+  WHERE tkn.id = v_token_id;
+  
+  RETURN;
+END$$;
+
+-- Test 16: OUT parameters with SELECT INTO and STRICT
+CREATE FUNCTION test_out_params_strict(
+  p_id uuid,
+  OUT name text,
+  OUT email text
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+  SELECT u.name, u.email INTO STRICT name, email
+  FROM users u
+  WHERE u.id = p_id;
+END$$;
