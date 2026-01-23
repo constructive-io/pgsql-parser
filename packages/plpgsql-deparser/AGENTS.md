@@ -49,13 +49,43 @@ The round-trip test (`__tests__/plpgsql-deparser.test.ts`):
 3. Compares the AST from original parse with the AST from reparsed output
 4. Reports any failures (AST mismatches or reparse failures)
 
-### Step 4: Commit Both Files
+### Step 4: Add Snapshot Tests (Optional but Recommended)
 
-Always commit both the fixture file AND the generated.json together:
+For important deparser fixes, add explicit test cases with snapshots to `__tests__/deparser-fixes.test.ts`:
+
+```typescript
+it('should handle [description]', async () => {
+  const sql = `CREATE FUNCTION test_example(...)
+LANGUAGE plpgsql AS $$
+BEGIN
+  -- your test case
+END$$`;
+
+  await testUtils.expectAstMatch('description', sql);
+
+  const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+  const deparsed = deparseSync(parsed);
+  expect(deparsed).toMatchSnapshot();
+  // Add specific assertions
+  expect(deparsed).toContain('expected output');
+});
+```
+
+Then run tests with snapshot update:
+
+```bash
+pnpm test --updateSnapshot
+```
+
+### Step 5: Commit All Files
+
+Always commit the fixture file, generated.json, test file, AND snapshots together:
 
 ```bash
 git add __fixtures__/plpgsql/plpgsql_deparser_fixes.sql
 git add __fixtures__/plpgsql-generated/generated.json
+git add packages/plpgsql-deparser/__tests__/deparser-fixes.test.ts
+git add packages/plpgsql-deparser/__tests__/__snapshots__/deparser-fixes.test.ts.snap
 git commit -m "test: add fixtures for [description]"
 ```
 
