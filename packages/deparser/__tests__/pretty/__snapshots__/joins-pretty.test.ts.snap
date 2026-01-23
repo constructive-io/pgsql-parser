@@ -1,0 +1,44 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: pretty/joins-1.sql 1`] = `"SELECT * FROM public.posts AS t0 JOIN public.users ON t0.author_id = users.id"`;
+
+exports[`non-pretty: pretty/joins-2.sql 1`] = `"SELECT * FROM public.posts AS t0 LEFT JOIN public.comments ON t0.id = comments.post_id"`;
+
+exports[`non-pretty: pretty/joins-3.sql 1`] = `"SELECT * FROM public.posts AS t0 JOIN public.users ON t0.author_id = users.id LEFT JOIN public.categories ON t0.category_id = categories.id"`;
+
+exports[`non-pretty: pretty/joins-4.sql 1`] = `"SELECT t0.id, t0.title, users.name FROM public.posts AS t0 JOIN public.users ON t0.author_id = users.id"`;
+
+exports[`non-pretty: pretty/joins-5.sql 1`] = `"SELECT id FROM public.users"`;
+
+exports[`pretty: pretty/joins-1.sql 1`] = `
+"SELECT *
+FROM public.posts AS t0
+JOIN public.users ON t0.author_id = users.id"
+`;
+
+exports[`pretty: pretty/joins-2.sql 1`] = `
+"SELECT *
+FROM public.posts AS t0
+LEFT JOIN public.comments ON t0.id = comments.post_id"
+`;
+
+exports[`pretty: pretty/joins-3.sql 1`] = `
+"SELECT *
+FROM public.posts AS t0
+JOIN public.users ON t0.author_id = users.id
+LEFT JOIN public.categories ON t0.category_id = categories.id"
+`;
+
+exports[`pretty: pretty/joins-4.sql 1`] = `
+"SELECT
+  t0.id,
+  t0.title,
+  users.name
+FROM public.posts AS t0
+JOIN public.users ON t0.author_id = users.id"
+`;
+
+exports[`pretty: pretty/joins-5.sql 1`] = `
+"SELECT id
+FROM public.users"
+`;
