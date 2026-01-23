@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.3](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.2...plpgsql-deparser@0.7.3) (2026-01-23)
+
+### Bug Fixes
+
+- normalize whitespace after INTO clause insertion ([6cfb699](https://github.com/constructive-io/pgsql-parser/commit/6cfb699fc7df8d4479233ff86c300b3ad1b5c547))
+- update pretty test snapshots for whitespace normalization ([f9012e0](https://github.com/constructive-io/pgsql-parser/commit/f9012e03f517e9bfbf017f62f6ffc471709ca9cb))
+
 ## [0.7.2](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.1...plpgsql-deparser@0.7.2) (2026-01-13)
 
 **Note:** Version bump only for package plpgsql-deparser

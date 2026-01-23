@@ -1,6 +1,6 @@
 {
   "name": "pgsql-types",
-  "version": "17.1.2",
+  "version": "17.1.3",
   "author": "Constructive <developers@constructive.io>",
   "description": "Narrowed PostgreSQL AST type definitions with specific Node unions",
   "main": "index.js",
