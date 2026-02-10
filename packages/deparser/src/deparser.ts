@@ -3209,6 +3209,8 @@ export class Deparser implements DeparserVisitor {
     if (!node.frameOptions) return null;
 
     const frameOptions = node.frameOptions;
+    const EXCLUDE_MASK = 0x8000 | 0x10000 | 0x20000;
+    const baseFrameOptions = frameOptions & ~EXCLUDE_MASK;
     const frameParts: string[] = [];
 
     if (frameOptions & 0x01) { // FRAMEOPTION_NONDEFAULT
@@ -3226,26 +3228,26 @@ export class Deparser implements DeparserVisitor {
     const boundsParts: string[] = [];
 
     // Handle specific frameOptions values that have known mappings
-    if (frameOptions === 789) {
+    if (baseFrameOptions === 789) {
       boundsParts.push('CURRENT ROW');
       boundsParts.push('AND UNBOUNDED FOLLOWING');
-    } else if (frameOptions === 1077) {
+    } else if (baseFrameOptions === 1077) {
       boundsParts.push('UNBOUNDED PRECEDING');
       boundsParts.push('AND CURRENT ROW');
-    } else if (frameOptions === 18453) {
+    } else if (baseFrameOptions === 18453) {
       if (node.startOffset && node.endOffset) {
         boundsParts.push(`${this.visit(node.startOffset, context)} PRECEDING`);
         boundsParts.push(`AND ${this.visit(node.endOffset, context)} FOLLOWING`);
       }
-    } else if (frameOptions === 1557) {
+    } else if (baseFrameOptions === 1557) {
       boundsParts.push('CURRENT ROW');
       boundsParts.push('AND CURRENT ROW');
-    } else if (frameOptions === 16917) {
+    } else if (baseFrameOptions === 16917) {
       boundsParts.push('CURRENT ROW');
       if (node.endOffset) {
         boundsParts.push(`AND ${this.visit(node.endOffset, context)} FOLLOWING`);
       }
-    } else if (frameOptions === 1058) {
+    } else if (baseFrameOptions === 1058) {
       return null;
     } else {
       // Handle start bound - prioritize explicit offset values over bit flags
@@ -3290,6 +3292,15 @@ export class Deparser implements DeparserVisitor {
     if (boundsParts.length > 0) {
       frameParts.push('BETWEEN');
       frameParts.push(boundsParts.join(' '));
+    }
+
+    // EXCLUDE clause
+    if (frameOptions & 0x8000) { // FRAMEOPTION_EXCLUDE_CURRENT_ROW
+      frameParts.push('EXCLUDE CURRENT ROW');
+    } else if (frameOptions & 0x10000) { // FRAMEOPTION_EXCLUDE_GROUP
+      frameParts.push('EXCLUDE GROUP');
+    } else if (frameOptions & 0x20000) { // FRAMEOPTION_EXCLUDE_TIES
+      frameParts.push('EXCLUDE TIES');
     }
 
     return frameParts.join(' ');
