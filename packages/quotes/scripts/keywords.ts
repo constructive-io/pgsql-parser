@@ -1,6 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
-import readline from "node:readline";
+import fs from 'node:fs';
+import path from 'node:path';
+import readline from 'node:readline';
 
 function ask(question: string): Promise<string> {
   const rl = readline.createInterface({
@@ -18,15 +18,15 @@ function ask(question: string): Promise<string> {
 
 function requireNonEmpty(value: string | undefined, label: string): string {
   if (!value) {
-    console.error(`❌ Missing ${label}.`);
+    console.error(`Missing ${label}.`);
     process.exit(1);
   }
   return value;
 }
 
 function expandTilde(p: string): string {
-  if (p.startsWith("~/")) {
-    return path.join(process.env.HOME || "", p.slice(2));
+  if (p.startsWith('~/')) {
+    return path.join(process.env.HOME || '', p.slice(2));
   }
   return p;
 }
@@ -37,21 +37,21 @@ async function main() {
   // kwlist.h path is required (CLI arg or prompt), output defaults to src/kwlist.ts
   let kwlistPathInput = kwlistArg;
   if (!kwlistPathInput) {
-    console.log("e.g. ~/code/postgres/postgres/src/include/parser/kwlist.h");
-    kwlistPathInput = requireNonEmpty(await ask("Path to PostgreSQL kwlist.h"), "kwlist.h path");
+    console.log('e.g. ~/code/postgres/postgres/src/include/parser/kwlist.h');
+    kwlistPathInput = requireNonEmpty(await ask('Path to PostgreSQL kwlist.h'), 'kwlist.h path');
   }
 
-  const outPathInput = outArg ?? path.resolve(__dirname, "../../quotes/src/kwlist.ts");
+  const outPathInput = outArg ?? path.resolve(__dirname, '../src/kwlist.ts');
 
   const kwlistPath = path.resolve(expandTilde(kwlistPathInput));
   const outPath = path.resolve(outPathInput);
 
   if (!fs.existsSync(kwlistPath)) {
-    console.error(`❌ kwlist.h not found: ${kwlistPath}`);
+    console.error(`kwlist.h not found: ${kwlistPath}`);
     process.exit(1);
   }
 
-  const src = fs.readFileSync(kwlistPath, "utf8");
+  const src = fs.readFileSync(kwlistPath, 'utf8');
 
   // PG_KEYWORD("word", TOKEN, KIND_KEYWORD, ...)
   const re = /^PG_KEYWORD\("([^"]+)",\s*[^,]+,\s*([A-Z_]+)_KEYWORD\b/gm;
@@ -86,7 +86,7 @@ export type KeywordKind =
   | "RESERVED_KEYWORD";
 
 export const kwlist = ${JSON.stringify(keywordsByKind, null, 2)
-    .replace(/"([A-Z_]+)"/g, "$1")} as const;
+    .replace(/"([A-Z_]+)"/g, '$1')} as const;
 
 export const RESERVED_KEYWORDS: Set<string> = new Set(kwlist.RESERVED_KEYWORD ?? []);
 export const UNRESERVED_KEYWORDS: Set<string> = new Set(kwlist.UNRESERVED_KEYWORD ?? []);
@@ -103,8 +103,8 @@ export function keywordKindOf(word: string): KeywordKind {
 }
 `;
 
-  fs.writeFileSync(outPath, ts, "utf8");
-  console.log(`✅ Wrote ${outPath}`);
+  fs.writeFileSync(outPath, ts, 'utf8');
+  console.log(`Wrote ${outPath}`);
   console.log(`   Source: ${kwlistPath}`);
 }
 

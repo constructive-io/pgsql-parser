@@ -58,6 +58,7 @@
     "makage": "^0.1.8"
   },
   "dependencies": {
+    "@pgsql/quotes": "workspace:*",
     "@pgsql/types": "^17.6.2"
   }
 }
