@@ -41,7 +41,7 @@ async function main() {
     kwlistPathInput = requireNonEmpty(await ask("Path to PostgreSQL kwlist.h"), "kwlist.h path");
   }
 
-  const outPathInput = outArg ?? path.resolve(__dirname, "../../quotes/src/kwlist.ts");
+  const outPathInput = outArg ?? path.resolve(__dirname, "../src/kwlist.ts");
 
   const kwlistPath = path.resolve(expandTilde(kwlistPathInput));
   const outPath = path.resolve(outPathInput);
