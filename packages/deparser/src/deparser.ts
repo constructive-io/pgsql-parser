@@ -1,7 +1,7 @@
 import { Node } from '@pgsql/types';
 import { DeparserContext, DeparserVisitor } from './visitors/base';
 import { SqlFormatter } from './utils/sql-formatter';
-import { QuoteUtils } from './utils/quote-utils';
+import { QuoteUtils } from '@pgsql/quotes';
 import { ListUtils } from './utils/list-utils';
 import * as t from '@pgsql/types';
 

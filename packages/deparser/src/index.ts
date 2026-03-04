@@ -11,4 +11,4 @@ export const deparse = async (...args: Parameters<typeof deparseMethod>): Promis
 };
 
 export { Deparser, DeparserOptions };
-export { QuoteUtils } from './utils/quote-utils';
+export { QuoteUtils } from '@pgsql/quotes';
