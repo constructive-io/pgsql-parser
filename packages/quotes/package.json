@@ -1,0 +1,47 @@
+{
+  "name": "@pgsql/quotes",
+  "version": "17.0.1",
+  "author": "Constructive <developers@constructive.io>",
+  "description": "PostgreSQL identifier quoting and keyword classification utilities",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
+  "homepage": "https://github.com/constructive-io/pgsql-parser",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/constructive-io/pgsql-parser"
+  },
+  "bugs": {
+    "url": "https://github.com/constructive-io/pgsql-parser/issues"
+  },
+  "scripts": {
+    "copy": "makage assets",
+    "clean": "makage clean dist",
+    "prepublishOnly": "npm run build",
+    "build": "npm run clean && tsc && tsc -p tsconfig.esm.json && npm run copy",
+    "build:dev": "npm run clean && tsc --declarationMap && tsc -p tsconfig.esm.json && npm run copy",
+    "lint": "eslint . --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "keywords": "ts-node scripts/keywords.ts"
+  },
+  "devDependencies": {
+    "makage": "^0.1.8"
+  },
+  "dependencies": {},
+  "keywords": [
+    "sql",
+    "postgres",
+    "postgresql",
+    "pg",
+    "quote",
+    "identifier",
+    "keyword",
+    "quoting"
+  ]
+}

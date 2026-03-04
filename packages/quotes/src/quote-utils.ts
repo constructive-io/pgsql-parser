@@ -1,4 +1,4 @@
-import { keywordKindOf } from '../kwlist';
+import { keywordKindOf } from './kwlist';
 
 export class QuoteUtils {
   static escape(literal: string): string {
@@ -260,5 +260,5 @@ export class QuoteUtils {
     if (!parts || parts.length === 0) return '';
     return parts.map(part => QuoteUtils.quoteIdentifierTypeName(part)).join('.');
   }
-  
+
 }
