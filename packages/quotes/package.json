@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/quotes",
-  "version": "17.0.1",
+  "version": "17.1.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostgreSQL identifier quoting and keyword classification utilities",
   "main": "index.js",
@@ -33,7 +33,6 @@
   "devDependencies": {
     "makage": "^0.1.8"
   },
-  "dependencies": {},
   "keywords": [
     "sql",
     "postgres",
