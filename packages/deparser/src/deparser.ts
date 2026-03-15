@@ -563,9 +563,7 @@ export class Deparser implements DeparserVisitor {
         output.push('VALUES');
         const lists = ListUtils.unwrapList(node.valuesLists).map(list => {
           const values = ListUtils.unwrapList(list).map(val => this.visit(val as Node, context));
-          // Put each value on its own line for pretty printing
-          const indentedValues = values.map(val => context.indent(val));
-          return '(\n' + indentedValues.join(',\n') + '\n)';
+          return context.parens(values.join(', '));
         });
         const indentedTuples = lists.map(tuple => {
           if (this.containsMultilineStringLiteral(tuple)) {
@@ -1892,7 +1890,7 @@ export class Deparser implements DeparserVisitor {
         return output.join(' ');
       }
 
-      let result = mods(typeName, args);
+      let result = mods(QuoteUtils.quoteIdentifierTypeName(typeName), args);
 
       if (node.arrayBounds && node.arrayBounds.length > 0) {
         result += formatArrayBounds(node.arrayBounds);
@@ -3066,6 +3064,10 @@ export class Deparser implements DeparserVisitor {
             return this.visit(elem, context);
           });
           output.push(`(${exclusionElements.join(', ')})`);
+        }
+        if (node.where_clause) {
+          output.push('WHERE');
+          output.push(context.parens(this.visit(node.where_clause as any, context)));
         }
         break;
     }
