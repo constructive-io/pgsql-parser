@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [17.18.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.18.0...pgsql-deparser@17.18.1) (2026-03-15)
+
+### Bug Fixes
+
+- **ci:** add back pg-proto-parser to test matrix, include merge artifacts from main ([7ddf9d9](https://github.com/constructive-io/pgsql-parser/commit/7ddf9d9453ee39743497f0d920cf6ae72516369b))
+- **deparser:** emit EXCLUDE clause in window frame specifications ([fc7911a](https://github.com/constructive-io/pgsql-parser/commit/fc7911aa623169e085f4ed48beda6288e769f1d3))
+- **deparser:** fix 5 bugs causing 30 test failures ([9136a4a](https://github.com/constructive-io/pgsql-parser/commit/9136a4abc826eeb7a423aa10961c07329d79c131))
+
 # [17.18.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.17.2...pgsql-deparser@17.18.0) (2026-03-04)
 
 ### Bug Fixes

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.30.5](https://github.com/constructive-io/pgsql-parser/compare/pg-proto-parser@1.30.4...pg-proto-parser@1.30.5) (2026-03-15)
+
+### Bug Fixes
+
+- **pg-proto-parser:** update snapshot header for Jest 30, add missing @pgsql/types devDependency ([ab1057b](https://github.com/constructive-io/pgsql-parser/commit/ab1057b7b9f7610378e347903c96c9bcb5e0d36a))
+
 ## [1.30.4](https://github.com/constructive-io/pgsql-parser/compare/pg-proto-parser@1.30.3...pg-proto-parser@1.30.4) (2025-12-27)
 
 **Note:** Version bump only for package pg-proto-parser

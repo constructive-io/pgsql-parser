@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [17.8.14](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/utils@17.8.13...@pgsql/utils@17.8.14) (2026-03-15)
+
+**Note:** Version bump only for package @pgsql/utils
+
 ## [17.8.13](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/utils@17.8.12...@pgsql/utils@17.8.13) (2026-03-04)
 
 **Note:** Version bump only for package @pgsql/utils
