@@ -11447,3 +11447,4 @@ export class Deparser implements DeparserVisitor {
     return stringLiteralRegex.test(content);
   }
 }
+
