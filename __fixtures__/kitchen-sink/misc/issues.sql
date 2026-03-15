@@ -76,6 +76,12 @@ select "AA" from "table_name";
 -- https://github.com/constructive-io/pgsql-parser/issues/217
 SELECT CAST(t.date AT TIME ZONE $$America/New_York$$ AS text)::date FROM tbl t;
 
+-- https://github.com/constructive-io/pgsql-parser/issues/285
+-- TypeCast with unary minus loses parentheses around inner expression
+-- (- (a - b))::numeric becomes CAST(- a - b AS numeric) which changes the math
+SELECT (- (-10 - -12))::numeric AS delta;
+SELECT (- (a.actual_eur - a.budget_eur))::numeric AS delta_eur FROM accounts a;
+
 -- https://github.com/constructive-io/pgsql-parser/issues/287
 -- EXCLUDE constraint with WHERE clause (partial exclusion constraint)
 -- The deparser drops the WHERE clause from EXCLUDE USING ... WHERE (...)
