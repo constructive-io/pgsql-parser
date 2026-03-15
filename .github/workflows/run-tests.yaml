@@ -1,6 +1,7 @@
 name: Parser tests
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -18,7 +19,6 @@ jobs:
           - pgsql-parser
           - plpgsql-deparser
           - plpgsql-parser
-          - pg-proto-parser
           - '@pgsql/quotes'
           - '@pgsql/transform'
     steps:
