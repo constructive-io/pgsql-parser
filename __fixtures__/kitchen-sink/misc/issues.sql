@@ -75,3 +75,14 @@ select "AA" from "table_name";
 
 -- https://github.com/constructive-io/pgsql-parser/issues/217
 SELECT CAST(t.date AT TIME ZONE $$America/New_York$$ AS text)::date FROM tbl t;
+
+-- https://github.com/constructive-io/pgsql-parser/issues/287
+-- EXCLUDE constraint with WHERE clause (partial exclusion constraint)
+-- The deparser drops the WHERE clause from EXCLUDE USING ... WHERE (...)
+CREATE TABLE test_exclude_where (
+  id uuid PRIMARY KEY,
+  database_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  EXCLUDE USING btree (database_id WITH =)
+    WHERE (status = 'pending')
+);

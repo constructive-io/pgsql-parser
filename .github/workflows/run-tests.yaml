@@ -1,24 +1,28 @@
 name: Parser tests
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   parser-tests:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         package:
-          - deparser
-          - parser
+          - pgsql-deparser
+          - pgsql-parser
           - plpgsql-deparser
           - plpgsql-parser
-          - pgsql-cli
-          - proto-parser
-          - transform
-          - traverse
-          - utils
+          - pg-proto-parser
+          - '@pgsql/quotes'
+          - '@pgsql/transform'
     steps:
       - name: checkout
         uses: actions/checkout@v3
