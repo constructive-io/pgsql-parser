@@ -46,4 +46,3 @@ jobs:
 
       - name: test
         run: pnpm --filter ${{ matrix.package }} test
-# CI trigger
