@@ -21327,6 +21327,7 @@
   "misc/issues-15.sql": "select \"A\" from \"table_name\"",
   "misc/issues-16.sql": "select \"AA\" from \"table_name\"",
   "misc/issues-17.sql": "SELECT CAST(t.date AT TIME ZONE $$America/New_York$$ AS text)::date FROM tbl t",
+  "misc/issues-18.sql": "CREATE TABLE test_exclude_where (\n  id uuid PRIMARY KEY,\n  database_id uuid NOT NULL,\n  status text NOT NULL DEFAULT 'pending',\n  EXCLUDE USING btree (database_id WITH =)\n    WHERE (status = 'pending')\n)",
   "misc/inflection-1.sql": "CREATE SCHEMA inflection",
   "misc/inflection-2.sql": "GRANT USAGE ON SCHEMA inflection TO PUBLIC",
   "misc/inflection-3.sql": "ALTER DEFAULT PRIVILEGES IN SCHEMA inflection \n GRANT EXECUTE ON FUNCTIONS  TO PUBLIC",
