@@ -19,6 +19,7 @@ jobs:
           - pgsql-parser
           - plpgsql-deparser
           - plpgsql-parser
+          - pg-proto-parser
           - '@pgsql/quotes'
           - '@pgsql/transform'
     steps:
