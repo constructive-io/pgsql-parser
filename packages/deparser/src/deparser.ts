@@ -720,10 +720,17 @@ export class Deparser implements DeparserVisitor {
 
           return context.format([leftExpr, operator, rightExpr]);
         }else if (rexpr) {
-          return context.format([
-            this.deparseOperatorName(name, context),
-            this.visit(rexpr, context)
-          ]);
+          // Unary operator (e.g., unary minus: - expr)
+          const operator = this.deparseOperatorName(name, context);
+          let rightExpr = this.visit(rexpr, context);
+
+          // Wrap in parentheses if rexpr is a binary A_Expr to preserve semantics
+          // e.g., -(a - b) must stay -(a - b), not become -a - b
+          if (rexpr && 'A_Expr' in rexpr && rexpr.A_Expr?.kind === 'AEXPR_OP' && rexpr.A_Expr?.lexpr) {
+            rightExpr = context.parens(rightExpr);
+          }
+
+          return context.format([operator, rightExpr]);
         }
         break;
       case 'AEXPR_OP_ANY':
