@@ -10,15 +10,15 @@ jobs:
     strategy:
       matrix:
         package:
-          - deparser
-          - parser
+          - pgsql-deparser
+          - pgsql-parser
           - plpgsql-deparser
           - plpgsql-parser
-          - pgsql-cli
-          - proto-parser
-          - transform
-          - traverse
-          - utils
+          - '@pgsql/cli'
+          - pg-proto-parser
+          - '@pgsql/transform'
+          - '@pgsql/traverse'
+          - '@pgsql/utils'
     steps:
       - name: checkout
         uses: actions/checkout@v3
