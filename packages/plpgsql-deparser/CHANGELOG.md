@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.6](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.5...plpgsql-deparser@0.7.6) (2026-03-15)
+
+**Note:** Version bump only for package plpgsql-deparser
+
 ## [0.7.5](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.4...plpgsql-deparser@0.7.5) (2026-03-15)
 
 ### Bug Fixes

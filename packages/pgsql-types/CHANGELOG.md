@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [17.1.6](https://github.com/constructive-io/pgsql-parser/compare/pgsql-types@17.1.5...pgsql-types@17.1.6) (2026-03-15)
+
+**Note:** Version bump only for package pgsql-types
+
 ## [17.1.5](https://github.com/constructive-io/pgsql-parser/compare/pgsql-types@17.1.4...pgsql-types@17.1.5) (2026-03-15)
 
 **Note:** Version bump only for package pgsql-types

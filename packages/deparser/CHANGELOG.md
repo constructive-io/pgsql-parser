@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [17.18.2](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.18.1...pgsql-deparser@17.18.2) (2026-03-15)
+
+### Bug Fixes
+
+- **deparser:** preserve parentheses around binary expressions in unary operators ([f1c577a](https://github.com/constructive-io/pgsql-parser/commit/f1c577aab64ef0cd083363869d2746b4374484ad)), closes [#285](https://github.com/constructive-io/pgsql-parser/issues/285)
+
 ## [17.18.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.18.0...pgsql-deparser@17.18.1) (2026-03-15)
 
 ### Bug Fixes
