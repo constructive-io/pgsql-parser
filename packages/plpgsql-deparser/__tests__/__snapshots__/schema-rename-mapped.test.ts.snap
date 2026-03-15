@@ -209,13 +209,7 @@ CREATE FUNCTION myapp_v2.audit_changes() RETURNS trigger LANGUAGE plpgsql AS $$B
     new_data,
     changed_at
   ) VALUES
-    (
-      tg_table_name,
-      tg_op,
-      to_json(old),
-      to_json(new),
-      now()
-    );
+    (tg_table_name, tg_op, to_json(old), to_json(new), now());
   IF tg_op = 'DELETE' THEN
       RETURN old;
   END IF;
@@ -232,11 +226,7 @@ CREATE FUNCTION myapp_v2.update_user_status(
     status,
     changed_at
   ) VALUES
-    (
-      p_user_id,
-      p_status,
-      now()
-    );
+    (p_user_id, p_status, now());
   RETURN;
 END$$;
 
@@ -323,10 +313,7 @@ BEGIN
         user_id,
         created_at
       ) VALUES
-        (
-          new.id,
-          now()
-        );
+        (new.id, now());
   ELSE
       UPDATE myapp_v2.profiles SET updated_at = now() WHERE user_id = new.id;
   END IF;
@@ -412,10 +399,7 @@ BEGIN
         item_id,
         processed_at
       ) VALUES
-        (
-          item.id,
-          now()
-        );
+        (item.id, now());
       UPDATE myapp_v2.batch_items SET status = 'processed' WHERE id = item.id;
   END LOOP;
   UPDATE myapp_v2.batches SET status = 'completed',completed_at = now() WHERE id = p_batch_id;
