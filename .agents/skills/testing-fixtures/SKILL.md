@@ -24,6 +24,7 @@ __fixtures__/
   plpgsql/                # PL/pgSQL fixture SQL files
   plpgsql-generated/
     generated.json        # Auto-generated: PL/pgSQL fixtures
+
 packages/deparser/
   __tests__/
     kitchen-sink/         # Auto-generated test files from kitchen-sink fixtures
@@ -36,6 +37,13 @@ packages/deparser/
   test-utils/
     index.ts              # Core test utilities (expectParseDeparse, FixtureTestUtils, TestUtils)
     PrettyTest.ts         # Pretty-print test helper
+packages/plpgsql-deparser/
+  scripts/
+    make-fixtures.ts      # Extracts PL/pgSQL statements -> plpgsql-generated/generated.json
+packages/transform/
+  scripts/
+    make-kitchen-sink.ts  # Generates transform kitchen-sink tests
+    test-ast.ts           # AST round-trip validation for transform
 ```
 
 ## How Fixtures Work
@@ -136,29 +144,61 @@ This generates two tests per case (pretty and non-pretty) and uses Jest snapshot
 3. Run `npx jest` to verify all tests pass
 4. Commit the `.sql` file, `generated.json`, and any new generated test files in `__tests__/kitchen-sink/`
 
+## PL/pgSQL Fixtures (`plpgsql-deparser`)
+
+The PL/pgSQL deparser has its own fixture pipeline:
+
+```bash
+cd packages/plpgsql-deparser && npm run fixtures
+```
+
+This runs `scripts/make-fixtures.ts` which:
+- Reads SQL files from `__fixtures__/plpgsql/`
+- Parses with `libpg-query`, filters to `CreateFunctionStmt` (language plpgsql) and `DoStmt`
+- Validates each statement parses as PL/pgSQL via `parsePlPgSQLSync()`
+- Writes to `__fixtures__/plpgsql-generated/generated.json`
+
+## Transform Kitchen-Sink (`transform`)
+
+The transform package has its own kitchen-sink and AST test scripts:
+
+```bash
+cd packages/transform
+npm run kitchen-sink   # generate transform-specific kitchen-sink tests
+npm run test:ast       # run AST round-trip validation
+```
+
 ## Package Scripts Reference
 
-From `packages/deparser/package.json`:
+### `packages/deparser` (primary fixture pipeline)
 
 | Script | Command | Description |
 |--------|---------|-------------|
 | `fixtures` | `ts-node scripts/make-fixtures.ts` | Regenerate `generated.json` |
 | `fixtures:kitchen-sink` | `ts-node scripts/make-kitchen-sink.ts` | Regenerate kitchen-sink test files |
 | `kitchen-sink` | `npm run fixtures && npm run fixtures:kitchen-sink` | Both steps combined |
-| `fixtures:ast` | `ts-node scripts/make-fixtures-ast.ts` | Generate AST JSON fixtures (from legacy) |
-| `fixtures:sql` | `ts-node scripts/make-fixtures-sql.ts` | Generate SQL fixtures via native deparse (from legacy) |
-| `fixtures:upstream-diff` | `ts-node scripts/make-upstream-diff.ts` | Generate diff of upstream vs deparsed |
+| `fixtures:ast` | `ts-node scripts/make-fixtures-ast.ts` | Generate AST JSON fixtures |
+| `fixtures:sql` | `ts-node scripts/make-fixtures-sql.ts` | Generate SQL fixtures via native deparse |
+| `fixtures:upstream-diff` | `ts-node scripts/make-upstream-diff.ts` | Generate diff comparing upstream (libpg-query) vs our deparser output |
 | `test` | `jest` | Run all tests |
 | `test:watch` | `jest --watch` | Run tests in watch mode |
 
-## Build & Lint
+### `packages/plpgsql-deparser`
 
-```bash
-# From repo root
-pnpm install
-pnpm run build
+| Script | Command | Description |
+|--------|---------|-------------|
+| `fixtures` | `ts-node scripts/make-fixtures.ts` | Extract PL/pgSQL fixtures to `plpgsql-generated/generated.json` |
 
-# From packages/deparser
-npm run build      # tsc (CJS + ESM) + asset copy
-npm run lint       # eslint --fix
-```
+### `packages/transform`
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `kitchen-sink` | `ts-node scripts/make-kitchen-sink.ts` | Generate transform kitchen-sink tests |
+| `test:ast` | `ts-node scripts/test-ast.ts` | AST round-trip validation |
+
+### `packages/parser`
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `prepare-versions` | `ts-node scripts/prepare-versions.ts` | Generate version-specific sub-packages from `config/versions.json` |
+| `test:ast` | `ts-node scripts/test-ast.ts` | AST round-trip validation |
