@@ -1446,8 +1446,13 @@ export class Deparser implements DeparserVisitor {
 
     // Handle EXTRACT function with SQL syntax
     if (node.funcformat === 'COERCE_SQL_SYNTAX' && name === 'pg_catalog.extract' && args.length >= 2) {
-      const field = this.visit(args[0], context);
+      let field = this.visit(args[0], context);
       const source = this.visit(args[1], context);
+      // EXTRACT requires an unquoted uppercase keyword (EPOCH, YEAR, etc.)
+      // but A_Const sval deparsing wraps it in single quotes — strip and uppercase
+      if (field.startsWith("'") && field.endsWith("'")) {
+        field = field.slice(1, -1).toUpperCase();
+      }
       return `EXTRACT(${field} FROM ${source})`;
     }
 
