@@ -1,6 +1,9 @@
-import { scanComments, ScannedElement } from '../src/scanner';
+import { scanComments, ScannedElement, initWasm } from '../src/scanner';
 
 describe('scanComments', () => {
+  beforeAll(async () => {
+    await initWasm();
+  });
   describe('line comments', () => {
     it('extracts a simple line comment', () => {
       const sql = '-- hello world\nSELECT 1;';

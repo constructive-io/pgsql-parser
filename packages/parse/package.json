@@ -40,8 +40,8 @@
     "round-trip"
   ],
   "dependencies": {
+    "@libpg-query/parser": "^17.6.3",
     "@pgsql/types": "^17.6.2",
-    "libpg-query": "17.7.3",
     "pgsql-deparser": "workspace:*"
   },
   "devDependencies": {

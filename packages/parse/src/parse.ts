@@ -4,7 +4,7 @@
  * parse result's stmts array.
  */
 
-import { parse as libParse, parseSync as libParseSync } from 'libpg-query';
+import { parse as libParse, parseSync as libParseSync } from '@libpg-query/parser';
 import { ParseResult, RawStmt } from '@pgsql/types';
 import { scanComments, ScannedElement } from './scanner';
 import { EnhancedParseResult, EnhancedStmt } from './types';

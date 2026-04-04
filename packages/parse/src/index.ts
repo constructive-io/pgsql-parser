@@ -22,8 +22,14 @@ export { deparseEnhanced, deparseEnhancedSync, Deparser, DeparserOptions } from 
 // Re-export standard deparse for non-enhanced use
 export { deparse, deparseSync } from 'pgsql-deparser';
 
-// Re-export loadModule from libpg-query
-export { loadModule } from 'libpg-query';
+// Unified loadModule that initializes both the library's WASM
+// (for parse/deparse) and our scanner's WASM (for _wasm_scan).
+import { loadModule as libLoadModule } from '@libpg-query/parser';
+import { initWasm } from './scanner';
+
+export async function loadModule(): Promise<void> {
+  await Promise.all([libLoadModule(), initWasm()]);
+}
 
 // Types
 export {

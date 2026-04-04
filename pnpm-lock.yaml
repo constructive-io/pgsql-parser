@@ -91,12 +91,12 @@ importers:
 
   packages/parse:
     dependencies:
+      '@libpg-query/parser':
+        specifier: ^17.6.3
+        version: 17.6.3
       '@pgsql/types':
         specifier: ^17.6.2
         version: 17.6.2
-      libpg-query:
-        specifier: 17.7.3
-        version: 17.7.3
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
