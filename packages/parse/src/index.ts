@@ -1,9 +1,9 @@
 /**
  * pgsql-parse — Comment and whitespace preserving PostgreSQL parser.
  *
- * Drop-in enhancement over pgsql-parser that preserves SQL comments
- * (-- line and /* block *​/) and vertical whitespace (blank lines)
- * through parse→deparse round trips.
+ * Drop-in enhancement over pgsql-parser that preserves SQL -- line
+ * comments and vertical whitespace (blank lines) through
+ * parse→deparse round trips.
  *
  * Synthetic AST nodes:
  * - RawComment: represents a SQL comment
@@ -22,14 +22,8 @@ export { deparseEnhanced, deparseEnhancedSync, Deparser, DeparserOptions } from 
 // Re-export standard deparse for non-enhanced use
 export { deparse, deparseSync } from 'pgsql-deparser';
 
-// Unified loadModule that initializes both the library's WASM
-// (for parse/deparse) and our scanner's WASM (for _wasm_scan).
-import { loadModule as libLoadModule } from '@libpg-query/parser';
-import { initWasm } from './scanner';
-
-export async function loadModule(): Promise<void> {
-  await Promise.all([libLoadModule(), initWasm()]);
-}
+// Re-export loadModule from @libpg-query/parser
+export { loadModule } from '@libpg-query/parser';
 
 // Types
 export {

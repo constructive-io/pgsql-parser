@@ -1,8 +1,9 @@
-import { scanComments, ScannedElement, initWasm } from '../src/scanner';
+import { scanComments, ScannedElement } from '../src/scanner';
+import { loadModule } from '@libpg-query/parser';
 
 describe('scanComments', () => {
   beforeAll(async () => {
-    await initWasm();
+    await loadModule();
   });
   describe('line comments', () => {
     it('extracts a simple line comment', () => {
@@ -33,38 +34,6 @@ describe('scanComments', () => {
       const comments = elements.filter(e => e.kind === 'comment');
       expect(comments).toHaveLength(1);
       expect(comments[0].value.text).toBe(' inline comment');
-    });
-  });
-
-  describe('block comments', () => {
-    it('extracts a simple block comment', () => {
-      const sql = '/* block */ SELECT 1;';
-      const elements = scanComments(sql);
-      const comments = elements.filter(e => e.kind === 'comment');
-      expect(comments).toHaveLength(1);
-      expect(comments[0].value).toMatchObject({
-        type: 'block',
-        text: ' block ',
-        start: 0,
-        end: 11,
-      });
-    });
-
-    it('handles nested block comments', () => {
-      const sql = '/* outer /* inner */ still outer */ SELECT 1;';
-      const elements = scanComments(sql);
-      const comments = elements.filter(e => e.kind === 'comment');
-      expect(comments).toHaveLength(1);
-      expect(comments[0].value.text).toBe(' outer /* inner */ still outer ');
-    });
-
-    it('handles multi-line block comments', () => {
-      const sql = '/*\n  multi\n  line\n*/ SELECT 1;';
-      const elements = scanComments(sql);
-      const comments = elements.filter(e => e.kind === 'comment');
-      expect(comments).toHaveLength(1);
-      expect(comments[0].value.text).toContain('multi');
-      expect(comments[0].value.text).toContain('line');
     });
   });
 

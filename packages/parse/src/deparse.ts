@@ -21,11 +21,7 @@ import {
  * Deparse a single RawComment node back to SQL comment text.
  */
 function deparseComment(comment: RawComment): string {
-  if (comment.type === 'line') {
-    return `--${comment.text}`;
-  }
-  // Block comment
-  return `/*${comment.text}*/`;
+  return `--${comment.text}`;
 }
 
 /**

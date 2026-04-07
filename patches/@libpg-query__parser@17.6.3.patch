@@ -1,0 +1,36 @@
+diff --git a/wasm/index.cjs b/wasm/index.cjs
+index 51d8d9cc5e9bfde17076071d796c862efecd8c67..290d7e2923846fee0fbac98c524a7f9fdc2326d0 100644
+--- a/wasm/index.cjs
++++ b/wasm/index.cjs
+@@ -72,6 +72,13 @@ function ptrToString(ptr) {
+     }
+     return wasmModule.UTF8ToString(ptr);
+ }
++// Fix unescaped control characters inside JSON string values from _wasm_scan.
++// The C-level JSON builder does not escape \n, \r, \t in token text fields.
++function fixScanJson(str) {
++    return str.replace(/"(?:[^"\\]|\\.)*"/g, function(m) {
++        return m.replace(/\t/g, '\\t').replace(/\r/g, '\\r').replace(/\n/g, '\\n');
++    });
++}
+ exports.parse = awaitInit(async (query) => {
+     const queryPtr = stringToPtr(query);
+     let resultPtr = 0;
+@@ -289,7 +296,7 @@ exports.scan = awaitInit(async (query) => {
+         if (resultStr.startsWith('syntax error') || resultStr.startsWith('deparse error') || resultStr.startsWith('ERROR')) {
+             throw new Error(resultStr);
+         }
+-        return JSON.parse(resultStr);
++        return JSON.parse(fixScanJson(resultStr));
+     }
+     finally {
+         wasmModule._free(queryPtr);
+@@ -310,7 +317,7 @@ function scanSync(query) {
+         if (resultStr.startsWith('syntax error') || resultStr.startsWith('deparse error') || resultStr.startsWith('ERROR')) {
+             throw new Error(resultStr);
+         }
+-        return JSON.parse(resultStr);
++        return JSON.parse(fixScanJson(resultStr));
+     }
+     finally {
+         wasmModule._free(queryPtr);

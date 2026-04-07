@@ -6,9 +6,9 @@ import { ParseResult, RawStmt } from '@pgsql/types';
  * to preserve comments through parse→deparse round trips.
  */
 export interface RawComment {
-  /** 'line' for -- comments, 'block' for /* comments */
-  type: 'line' | 'block';
-  /** The comment text (without delimiters) */
+  /** Always 'line' — only -- comments are supported */
+  type: 'line';
+  /** The comment text (without the -- delimiter) */
   text: string;
   /** Byte offset in the original source (for ordering) */
   location: number;

@@ -22,15 +22,6 @@ describe('parse (enhanced)', () => {
       expect(comments[0].RawComment.text).toBe(' this is a comment');
     });
 
-    it('preserves block comments before statements', () => {
-      const sql = '/* block comment */\nSELECT 1;';
-      const result = parseSync(sql);
-      const comments = result.stmts.filter(isRawComment);
-      expect(comments).toHaveLength(1);
-      expect(comments[0].RawComment.type).toBe('block');
-      expect(comments[0].RawComment.text).toBe(' block comment ');
-    });
-
     it('preserves vertical whitespace between statements', () => {
       const sql = 'SELECT 1;\n\n\nSELECT 2;';
       const result = parseSync(sql);
@@ -68,14 +59,6 @@ COMMIT;`;
       expect(comments.length).toBeGreaterThanOrEqual(2);
       expect(comments[0].RawComment.text).toContain('Deploy');
       expect(comments[1].RawComment.text).toContain('requires');
-    });
-
-    it('handles nested block comments', () => {
-      const sql = '/* outer /* inner */ still outer */ SELECT 1;';
-      const result = parseSync(sql);
-      const comments = result.stmts.filter(isRawComment);
-      expect(comments).toHaveLength(1);
-      expect(comments[0].RawComment.text).toContain('inner');
     });
 
     it('does not pick up comments inside string literals', () => {
@@ -125,14 +108,6 @@ describe('deparseEnhanced', () => {
     expect(output).toContain('SELECT 1');
   });
 
-  it('deparses with block comments preserved', () => {
-    const sql = '/* block */ SELECT 1;';
-    const result = parseSync(sql);
-    const output = deparseEnhanced(result);
-    expect(output).toContain('/* block */');
-    expect(output).toContain('SELECT 1');
-  });
-
   it('round-trips comments through parse→deparse', () => {
     const sql = `-- header comment
 SELECT 1;
@@ -145,28 +120,6 @@ SELECT 2;`;
     expect(output).toContain('-- section break');
     expect(output).toContain('SELECT 1');
     expect(output).toContain('SELECT 2');
-  });
-
-  it('round-trips block comments through parse→deparse', () => {
-    const sql = `/* header */
-SELECT 1;
-
-/* footer */
-SELECT 2;`;
-    const result = parseSync(sql);
-    const output = deparseEnhanced(result);
-    expect(output).toContain('/* header */');
-    expect(output).toContain('/* footer */');
-  });
-
-  it('preserves multiple comment types', () => {
-    const sql = `-- line comment
-/* block comment */
-SELECT 1;`;
-    const result = parseSync(sql);
-    const output = deparseEnhanced(result);
-    expect(output).toContain('-- line comment');
-    expect(output).toContain('/* block comment */');
   });
 
   it('idempotent: parse→deparse→parse→deparse produces same output', () => {
@@ -189,14 +142,9 @@ COMMIT;`;
 });
 
 describe('kitchen sink', () => {
-  it('handles a complex SQL file with all comment types', () => {
+  it('handles a complex SQL file with line comments', () => {
     const sql = `-- Deploy schemas/my-app/tables/users to pg
 -- requires: schemas/my-app/schema
-
-/* 
- * This file creates the users table
- * with all required columns.
- */
 
 BEGIN;
 
@@ -207,7 +155,7 @@ CREATE TABLE my_app.users (
   email text UNIQUE
 );
 
-/* Add an index for lookups */
+-- Add an index for lookups
 CREATE INDEX idx_users_email ON my_app.users (email);
 
 -- Grant permissions
@@ -221,9 +169,8 @@ COMMIT;`;
     // All comments should survive
     expect(output).toContain('-- Deploy schemas/my-app/tables/users to pg');
     expect(output).toContain('-- requires: schemas/my-app/schema');
-    expect(output).toContain('This file creates the users table');
     expect(output).toContain('-- Create the main users table');
-    expect(output).toContain('/* Add an index for lookups */');
+    expect(output).toContain('-- Add an index for lookups');
     expect(output).toContain('-- Grant permissions');
 
     // All statements should survive
