@@ -133,7 +133,7 @@ begin
           top_sku_qty      = EXCLUDED.top_sku_qty,
           note             = COALESCE(EXCLUDED.note, app_public.order_rollup.note),
           updated_at       = now();
-      get diagnostics v_rowcount = ;
+      get diagnostics v_rowcount = row_count;
       v_orders_upserted := v_rowcount;
       v_sql := format(
           'SELECT count(*)::int FROM %I.%I WHERE org_id = $1 AND created_at >= $2 AND created_at < $3',
@@ -362,7 +362,7 @@ BEGIN
           top_sku_qty      = EXCLUDED.top_sku_qty,
           note             = COALESCE(EXCLUDED.note, app_public.order_rollup.note),
           updated_at       = now();
-      GET DIAGNOSTICS v_rowcount = ;
+      GET DIAGNOSTICS v_rowcount = ROW_COUNT;
       v_orders_upserted := v_rowcount;
       v_sql := format(
           'SELECT count(*)::int FROM %I.%I WHERE org_id = $1 AND created_at >= $2 AND created_at < $3',

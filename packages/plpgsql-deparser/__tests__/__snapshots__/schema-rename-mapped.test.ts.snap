@@ -236,7 +236,7 @@ CREATE FUNCTION myapp_v2.cleanup_old_sessions(
   deleted_count int;
 BEGIN
   DELETE FROM myapp_v2.sessions WHERE created_at < (now() - CAST(p_days || ' days' AS interval));
-  GET DIAGNOSTICS deleted_count = ;
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
   RETURN deleted_count;
 END$$;
 

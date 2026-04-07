@@ -161,6 +161,54 @@ exports[`plpgsql-deparser bug fixes Record field qualification (recfield) should
 END"
 `;
 
+exports[`plpgsql-deparser bug fixes blocks inside control structures should handle block inside CASE WHEN 1`] = `
+"BEGIN
+  CASE p_status
+      WHEN 'retry' THEN
+        BEGIN
+                PERFORM retry_operation();
+        EXCEPTION
+                WHEN others THEN
+                  RAISE EXCEPTION 'retry failed';
+        END;
+      WHEN 'skip' THEN
+        RAISE NOTICE 'skipping';
+  END CASE;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes blocks inside control structures should handle block inside IF THEN branch 1`] = `
+"BEGIN
+  IF 1 > 0 THEN
+      BEGIN
+            PERFORM positive_handler();
+      EXCEPTION
+            WHEN others THEN
+              RAISE NOTICE 'error in positive handler';
+      END;
+  ELSE
+      RETURN 0;
+  END IF;
+  RETURN 1;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes blocks inside control structures should handle block inside LOOP body 1`] = `
+"BEGIN
+  LOOP
+      BEGIN
+            PERFORM process_next();
+      EXCEPTION
+            WHEN others THEN
+              RAISE NOTICE 'skipping bad record';
+      END;
+      EXIT WHEN NOT FOUND;
+  END LOOP;
+  RETURN;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes combined scenarios should handle PERFORM with record fields 1`] = `
 "BEGIN
   PERFORM notify_change(NEW.id, NEW.status);
@@ -177,5 +225,217 @@ BEGIN
       NEW.is_premium := true;
   END IF;
   RETURN NEW;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes deep nesting and sequential blocks should handle block inside exception handler 1`] = `
+"BEGIN
+  BEGIN
+      PERFORM risky();
+  EXCEPTION
+      WHEN others THEN
+        BEGIN
+                PERFORM log_error();
+        EXCEPTION
+                WHEN others THEN
+                  RAISE NOTICE 'even logging failed';
+        END;
+  END;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes deep nesting and sequential blocks should handle triple-nested blocks 1`] = `
+"BEGIN
+  BEGIN
+      BEGIN
+            PERFORM deep_call();
+      END;
+      RAISE NOTICE 'middle';
+  END;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes deep nesting and sequential blocks should handle two sequential nested blocks 1`] = `
+"BEGIN
+  BEGIN
+      PERFORM step_one();
+  END;
+  BEGIN
+      PERFORM step_two();
+  END;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes nested block compositions (END; bug class) should handle labeled nested block 1`] = `
+"BEGIN
+  <<inner>>
+  BEGIN
+      PERFORM do_work();
+  END inner;
+  RETURN TRUE;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes nested block compositions (END; bug class) should handle nested block followed by IF 1`] = `
+"BEGIN
+  BEGIN
+      PERFORM setup_something();
+  END;
+  IF FOUND THEN
+      RETURN TRUE;
+  END IF;
+  RETURN FALSE;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes nested block compositions (END; bug class) should handle nested block followed by PERFORM 1`] = `
+"DECLARE
+  v_count integer;
+BEGIN
+  BEGIN
+      v_count := 42;
+  END;
+  PERFORM log_result(v_count);
+  RETURN v_count;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes nested block compositions (END; bug class) should handle nested block followed by RAISE 1`] = `
+"BEGIN
+  BEGIN
+      PERFORM risky_operation();
+  END;
+  RAISE NOTICE 'Operation completed';
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes nested block compositions (END; bug class) should handle nested block followed by RETURN 1`] = `
+"DECLARE
+  v_result integer;
+BEGIN
+  BEGIN
+      v_result := 1;
+  END;
+  RETURN v_result;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes nested block compositions (END; bug class) should handle nested block followed by assignment 1`] = `
+"DECLARE
+  v_status text;
+BEGIN
+  BEGIN
+      PERFORM init();
+  END;
+  v_status := 'complete';
+  RETURN v_status;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes real-world patterns should handle multi-step sign-in pattern 1`] = `
+"DECLARE
+  v_user RECORD;
+  v_secret RECORD;
+BEGIN
+  SELECT * INTO v_user FROM users WHERE email = v_email;
+  IF NOT FOUND THEN
+      RAISE EXCEPTION 'USER_NOT_FOUND';
+  END IF;
+  SELECT * INTO v_secret FROM secrets WHERE user_id = v_user.id;
+  IF NOT FOUND THEN
+      RAISE EXCEPTION 'NO_CREDENTIALS';
+  END IF;
+  IF v_secret.locked_at IS NOT NULL THEN
+      RAISE EXCEPTION 'ACCOUNT_LOCKED';
+  END IF;
+  RETURN v_user;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes real-world patterns should handle permission bitnum trigger pattern 1`] = `
+"DECLARE
+  bitlen int;
+  v_len int;
+BEGIN
+  v_len := 32;
+  BEGIN
+      bitlen := bit_length(NEW.bitstr);
+  EXCEPTION
+      WHEN others THEN
+        bitlen := 0;
+  END;
+  IF bitlen = 0 THEN
+      NEW.bitstr := lpad('', v_len, '0');
+  END IF;
+  RETURN NEW;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes untested statement types should handle ASSERT statement 1`] = `
+"BEGIN
+  ASSERT p_x > 0, 'x must be positive';
+  RETURN p_x;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes untested statement types should handle CALL statement 1`] = `
+"BEGIN
+  CALL my_procedure(1, 'hello');
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes untested statement types should handle FOR integer loop 1`] = `
+"BEGIN
+  FOR i IN 1..10 LOOP
+      PERFORM process(i);
+  END LOOP;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes untested statement types should handle FOR query loop 1`] = `
+"DECLARE
+  rec RECORD;
+BEGIN
+  FOR rec IN SELECT id, name FROM my_table LOOP
+      PERFORM handle(rec);
+  END LOOP;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes untested statement types should handle RETURN NEXT with OUT parameters 1`] = `
+"BEGIN
+  FOR i IN 1..5 LOOP
+      x := i;
+      y := 'item_' || i::text;
+      RETURN NEXT;
+  END LOOP;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes untested statement types should handle RETURN QUERY 1`] = `
+"BEGIN
+  RETURN QUERY SELECT id, name FROM my_table WHERE active = TRUE;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes untested statement types should handle labeled FOR loop with EXIT 1`] = `
+"DECLARE
+  rec RECORD;
+BEGIN
+  <<row_loop>>
+  FOR rec IN SELECT id, name FROM items LOOP
+      EXIT row_loop WHEN rec.id IS NULL;
+      PERFORM process(rec);
+  END LOOP row_loop;
+  RETURN;
 END"
 `;

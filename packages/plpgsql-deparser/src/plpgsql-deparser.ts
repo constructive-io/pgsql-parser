@@ -2034,8 +2034,30 @@ export class PLpgSQLDeparser {
   /**
    * Get the diagnostic item kind name
    */
-  private getDiagItemKindName(kind: number | undefined): string {
+  private getDiagItemKindName(kind: number | string | undefined): string {
     if (kind === undefined) return '';
+    
+    // The parser may return kind as a string name (e.g. "ROW_COUNT") or as a
+    // numeric enum value.  Handle both forms so the deparser works regardless.
+    if (typeof kind === 'string') {
+      // Map string names to their SQL keyword equivalents
+      const stringMap: Record<string, string> = {
+        'ROW_COUNT': 'ROW_COUNT',
+        'PG_CONTEXT': 'PG_CONTEXT',
+        'PG_EXCEPTION_CONTEXT': 'PG_EXCEPTION_CONTEXT',
+        'PG_EXCEPTION_DETAIL': 'PG_EXCEPTION_DETAIL',
+        'PG_EXCEPTION_HINT': 'PG_EXCEPTION_HINT',
+        'RETURNED_SQLSTATE': 'RETURNED_SQLSTATE',
+        'COLUMN_NAME': 'COLUMN_NAME',
+        'CONSTRAINT_NAME': 'CONSTRAINT_NAME',
+        'PG_DATATYPE_NAME': 'PG_DATATYPE_NAME',
+        'MESSAGE_TEXT': 'MESSAGE_TEXT',
+        'TABLE_NAME': 'TABLE_NAME',
+        'SCHEMA_NAME': 'SCHEMA_NAME',
+      };
+      const mapped = stringMap[kind];
+      return mapped ? this.keyword(mapped) : '';
+    }
     
     switch (kind) {
       case DiagItemKind.PLPGSQL_GETDIAG_ROW_COUNT:

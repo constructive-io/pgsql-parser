@@ -206,3 +206,302 @@ BEGIN
   FROM users u
   WHERE u.id = p_id;
 END$$;
+
+-- =============================================================================
+-- Edge Case Tests: Nested Block Compositions (END; bug class)
+-- These test the exact bug class where END; of a nested block could be
+-- confused with statement keywords that follow it.
+-- =============================================================================
+
+-- Test 17: Nested block followed by RETURN (the original END; bug pattern)
+CREATE FUNCTION test_nested_block_return() RETURNS integer
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result integer;
+BEGIN
+  BEGIN
+    v_result := 1;
+  END;
+  RETURN v_result;
+END$$;
+
+-- Test 18: Nested block followed by IF
+CREATE FUNCTION test_nested_block_if() RETURNS boolean
+LANGUAGE plpgsql AS $$
+BEGIN
+  BEGIN
+    PERFORM setup_something();
+  END;
+  IF FOUND THEN
+    RETURN TRUE;
+  END IF;
+  RETURN FALSE;
+END$$;
+
+-- Test 19: Nested block followed by RAISE
+CREATE FUNCTION test_nested_block_raise() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  BEGIN
+    PERFORM risky_operation();
+  END;
+  RAISE NOTICE 'Operation completed';
+  RETURN;
+END$$;
+
+-- Test 20: Nested block followed by PERFORM
+CREATE FUNCTION test_nested_block_perform() RETURNS integer
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_count integer;
+BEGIN
+  BEGIN
+    v_count := 42;
+  END;
+  PERFORM log_result(v_count);
+  RETURN v_count;
+END$$;
+
+-- Test 21: Nested block followed by assignment
+CREATE FUNCTION test_nested_block_assign() RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_status text;
+BEGIN
+  BEGIN
+    PERFORM init();
+  END;
+  v_status := 'complete';
+  RETURN v_status;
+END$$;
+
+-- Test 22: Labeled nested block
+CREATE FUNCTION test_labeled_nested_block() RETURNS boolean
+LANGUAGE plpgsql AS $$
+BEGIN
+  <<inner>>
+  BEGIN
+    PERFORM do_work();
+  END inner;
+  RETURN TRUE;
+END$$;
+
+-- =============================================================================
+-- Edge Case Tests: Blocks Inside Control Structures
+-- =============================================================================
+
+-- Test 23: Block inside IF THEN branch with exception handler
+CREATE FUNCTION test_block_in_if() RETURNS integer
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF 1 > 0 THEN
+    BEGIN
+      PERFORM positive_handler();
+    EXCEPTION
+      WHEN others THEN
+        RAISE NOTICE 'error in positive handler';
+    END;
+  ELSE
+    RETURN 0;
+  END IF;
+  RETURN 1;
+END$$;
+
+-- Test 24: Block inside LOOP body with exception handler
+CREATE FUNCTION test_block_in_loop() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  LOOP
+    BEGIN
+      PERFORM process_next();
+    EXCEPTION
+      WHEN others THEN
+        RAISE NOTICE 'skipping bad record';
+    END;
+    EXIT WHEN NOT FOUND;
+  END LOOP;
+  RETURN;
+END$$;
+
+-- Test 25: Block inside CASE WHEN
+CREATE FUNCTION test_block_in_case(p_status text) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  CASE p_status
+    WHEN 'retry' THEN
+      BEGIN
+        PERFORM retry_operation();
+      EXCEPTION
+        WHEN others THEN
+          RAISE EXCEPTION 'retry failed';
+      END;
+    WHEN 'skip' THEN
+      RAISE NOTICE 'skipping';
+  END CASE;
+  RETURN;
+END$$;
+
+-- =============================================================================
+-- Edge Case Tests: Deep Nesting & Sequential Blocks
+-- =============================================================================
+
+-- Test 26: Two sequential nested blocks
+CREATE FUNCTION test_sequential_blocks() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  BEGIN
+    PERFORM step_one();
+  END;
+  BEGIN
+    PERFORM step_two();
+  END;
+  RETURN;
+END$$;
+
+-- Test 27: Triple-nested blocks
+CREATE FUNCTION test_triple_nested() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  BEGIN
+    BEGIN
+      PERFORM deep_call();
+    END;
+    RAISE NOTICE 'middle';
+  END;
+  RETURN;
+END$$;
+
+-- Test 28: Block inside exception handler action
+CREATE FUNCTION test_block_in_exception() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM risky();
+EXCEPTION
+  WHEN others THEN
+    BEGIN
+      PERFORM log_error();
+    EXCEPTION
+      WHEN others THEN
+        RAISE NOTICE 'even logging failed';
+    END;
+END$$;
+
+-- =============================================================================
+-- Edge Case Tests: Untested Statement Types
+-- =============================================================================
+
+-- Test 29: FOR integer loop
+CREATE FUNCTION test_for_integer_loop() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  FOR i IN 1..10 LOOP
+    PERFORM process(i);
+  END LOOP;
+  RETURN;
+END$$;
+
+-- Test 30: FOR query loop
+CREATE FUNCTION test_for_query_loop() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  rec record;
+BEGIN
+  FOR rec IN SELECT id, name FROM my_table LOOP
+    PERFORM handle(rec);
+  END LOOP;
+  RETURN;
+END$$;
+
+-- Test 31: Labeled FOR loop with EXIT
+CREATE FUNCTION test_labeled_for_loop() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  rec record;
+BEGIN
+  <<row_loop>>
+  FOR rec IN SELECT id, name FROM items LOOP
+    EXIT row_loop WHEN rec.id IS NULL;
+    PERFORM process(rec);
+  END LOOP row_loop;
+  RETURN;
+END$$;
+
+-- Test 32: RETURN NEXT in set-returning function with OUT parameters
+CREATE FUNCTION test_return_next_out(OUT x integer, OUT y text) RETURNS SETOF record
+LANGUAGE plpgsql AS $$
+BEGIN
+  FOR i IN 1..5 LOOP
+    x := i;
+    y := 'item_' || i::text;
+    RETURN NEXT;
+  END LOOP;
+  RETURN;
+END$$;
+
+-- Test 33: RETURN QUERY
+CREATE FUNCTION test_return_query_simple() RETURNS SETOF record
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN QUERY SELECT id, name FROM my_table WHERE active = TRUE;
+END$$;
+
+-- Test 34: ASSERT statement
+CREATE FUNCTION test_assert(p_x integer) RETURNS integer
+LANGUAGE plpgsql AS $$
+BEGIN
+  ASSERT p_x > 0, 'x must be positive';
+  RETURN p_x;
+END$$;
+
+-- Test 35: CALL statement
+CREATE FUNCTION test_call_statement() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  CALL my_procedure(1, 'hello');
+  RETURN;
+END$$;
+
+-- =============================================================================
+-- Edge Case Tests: Real-World Patterns
+-- =============================================================================
+
+-- Test 36: Permission bitnum trigger pattern (the function that exposed the END; bug)
+CREATE FUNCTION test_permission_bitnum_trigger() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+  bitlen int;
+  v_len int;
+BEGIN
+  v_len := 32;
+  BEGIN
+    bitlen := bit_length(NEW.bitstr);
+  EXCEPTION
+    WHEN others THEN
+      bitlen := 0;
+  END;
+  IF bitlen = 0 THEN
+    NEW.bitstr := lpad('', v_len, '0');
+  END IF;
+  RETURN NEW;
+END$$;
+
+-- Test 37: Multi-step sign-in pattern (deeply nested IF chains)
+CREATE FUNCTION test_signin_pattern(v_email text) RETURNS record
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_user record;
+  v_secret record;
+BEGIN
+  SELECT * INTO v_user FROM users WHERE email = v_email;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'USER_NOT_FOUND';
+  END IF;
+  SELECT * INTO v_secret FROM secrets WHERE user_id = v_user.id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'NO_CREDENTIALS';
+  END IF;
+  IF v_secret.locked_at IS NOT NULL THEN
+    RAISE EXCEPTION 'ACCOUNT_LOCKED';
+  END IF;
+  RETURN v_user;
+END$$;
