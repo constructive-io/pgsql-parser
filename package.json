@@ -23,6 +23,11 @@
     "bump-versions": "ts-node scripts/bump-versions.ts",
     "update-workspace": "makage update-workspace"
   },
+  "pnpm": {
+    "patchedDependencies": {
+      "@libpg-query/parser@17.6.3": "patches/@libpg-query__parser@17.6.3.patch"
+    }
+  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.12.7",
