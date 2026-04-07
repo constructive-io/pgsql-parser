@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  '@libpg-query/parser@17.6.3':
-    hash: a1ce53a422f883279798878b2ef331b9fd3c091072971c33994f93d12bbc6c5d
-    path: patches/@libpg-query__parser@17.6.3.patch
-
 importers:
 
   .:
@@ -98,7 +93,7 @@ importers:
     dependencies:
       '@libpg-query/parser':
         specifier: ^17.6.3
-        version: 17.6.3(patch_hash=a1ce53a422f883279798878b2ef331b9fd3c091072971c33994f93d12bbc6c5d)
+        version: 17.6.3
       '@pgsql/types':
         specifier: ^17.6.2
         version: 17.6.2
@@ -219,7 +214,7 @@ importers:
     devDependencies:
       '@libpg-query/parser':
         specifier: ^17.6.3
-        version: 17.6.3(patch_hash=a1ce53a422f883279798878b2ef331b9fd3c091072971c33994f93d12bbc6c5d)
+        version: 17.6.3
       libpg-query:
         specifier: 17.7.3
         version: 17.7.3
@@ -232,7 +227,7 @@ importers:
     dependencies:
       '@libpg-query/parser':
         specifier: ^17.6.3
-        version: 17.6.3(patch_hash=a1ce53a422f883279798878b2ef331b9fd3c091072971c33994f93d12bbc6c5d)
+        version: 17.6.3
       '@pgsql/traverse':
         specifier: workspace:*
         version: link:../traverse/dist
@@ -4601,7 +4596,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@libpg-query/parser@17.6.3(patch_hash=a1ce53a422f883279798878b2ef331b9fd3c091072971c33994f93d12bbc6c5d)':
+  '@libpg-query/parser@17.6.3':
     dependencies:
       '@launchql/protobufjs': 7.2.6
       '@pgsql/types': 17.6.2
