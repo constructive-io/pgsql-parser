@@ -207,17 +207,31 @@ export const transform = (obj: any, props: any): any => {
   throw new Error("Unable to copy obj! Its type isn't supported.");
 };
 
+// Props object for cleanPlpgsqlTree, defined as a variable so the query handler
+// can reference it for recursive descent when 'query' is an object (e.g.
+// PLpgSQL_stmt_return_query.query wraps a PLpgSQL_expr, while PLpgSQL_expr.query
+// is the actual SQL string).
+const cleanProps: Record<string, any> = {
+  lineno: noop,
+  location: noop,
+  stmt_len: noop,
+  stmt_location: noop,
+  // varno values are assigned based on position in datums array and can change
+  // when implicit variables (like sqlstate/sqlerrm) are filtered out during deparse
+  varno: noop,
+  query: (val: any): any => {
+    if (typeof val === 'string') {
+      return normalizeQueryWhitespace(val);
+    }
+    // Not a string (e.g. PLpgSQL_stmt_return_query.query is an object wrapping
+    // PLpgSQL_expr) — continue recursing so the inner PLpgSQL_expr.query string
+    // gets normalized.
+    return transform(val, cleanProps);
+  },
+};
+
 export const cleanPlpgsqlTree = (tree: any) => {
-  return transform(tree, {
-    lineno: noop,
-    location: noop,
-    stmt_len: noop,
-    stmt_location: noop,
-    // varno values are assigned based on position in datums array and can change
-    // when implicit variables (like sqlstate/sqlerrm) are filtered out during deparse
-    varno: noop,
-    query: normalizeQueryWhitespace,
-  });
+  return transform(tree, cleanProps);
 };
 
 type ParseErrorType = 

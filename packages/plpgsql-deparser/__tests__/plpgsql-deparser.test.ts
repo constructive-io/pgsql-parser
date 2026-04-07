@@ -40,14 +40,7 @@ describe('PLpgSQLDeparser', () => {
     // - Labeled blocks with EXIT statements
     // - Nested DECLARE inside FOR loops (lineno-based scope tracking)
     const KNOWN_FAILING_FIXTURES = new Set<string>([
-      // Pre-existing schema rename deparser issues (whitespace in query expressions)
-      'plpgsql_schema_rename-4.sql',
-      'plpgsql_schema_rename-5.sql',
-      'plpgsql_schema_rename-7.sql',
-      'plpgsql_schema_rename-9.sql',
-      'plpgsql_schema_rename-10.sql',
-      'plpgsql_schema_rename-11.sql',
-      'plpgsql_schema_rename-12.sql',
+      // No known failures - all fixtures pass!
     ]);
 
     it('should round-trip ALL generated fixtures (excluding known failures)', async () => {
