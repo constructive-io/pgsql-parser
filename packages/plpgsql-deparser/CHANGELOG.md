@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.7](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.6...plpgsql-deparser@0.7.7) (2026-04-07)
+
+### Bug Fixes
+
+- resolve 7 plpgsql_schema_rename fixture failures ([9656922](https://github.com/constructive-io/pgsql-parser/commit/9656922e20c7c84c2656788eaa83fd9e04844ea4))
+
 ## [0.7.6](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.5...plpgsql-deparser@0.7.6) (2026-03-15)
 
 **Note:** Version bump only for package plpgsql-deparser

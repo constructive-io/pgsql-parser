@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [17.18.3](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.18.2...pgsql-deparser@17.18.3) (2026-04-07)
+
+### Bug Fixes
+
+- strip quotes and uppercase EXTRACT field name in deparser ([8726ce6](https://github.com/constructive-io/pgsql-parser/commit/8726ce6ee4585bf7bfae27611216cfdea61c7c6b)), closes [constructive-io/constructive-db#748](https://github.com/constructive-io/constructive-db/issues/748)
+
 ## [17.18.2](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.18.1...pgsql-deparser@17.18.2) (2026-03-15)
 
 ### Bug Fixes
