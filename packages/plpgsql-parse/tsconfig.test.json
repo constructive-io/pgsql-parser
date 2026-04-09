@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "paths": {
+      "pgsql-deparser": ["../deparser/src/index.ts"],
+      "pgsql-parse": ["../parse/src/index.ts"],
+      "plpgsql-deparser": ["../plpgsql-deparser/src/index.ts"],
+      "@pgsql/quotes": ["../quotes/src/index.ts"],
+      "@pgsql/utils": ["../utils/src/index.ts"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["src/**/*.ts", "__tests__/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}

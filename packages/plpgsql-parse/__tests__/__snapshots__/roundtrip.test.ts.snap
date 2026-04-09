@@ -1,0 +1,161 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`fixture round-trip tests exception-handler.sql deparsed output matches snapshot 1`] = `
+"-- Function with comments in exception handler
+CREATE FUNCTION safe_divide(
+  a numeric,
+  b numeric
+) RETURNS numeric LANGUAGE plpgsql AS $$
+DECLARE
+  v_result numeric;
+BEGIN
+  -- Attempt the division
+  v_result := a / b;
+  RETURN v_result;
+EXCEPTION
+  WHEN division_by_zero THEN
+    -- Log the error and return null
+    RAISE NOTICE 'Division by zero: % / %', a, b;
+    RETURN NULL;
+END;
+$$;"
+`;
+
+exports[`fixture round-trip tests loop-with-comments.sql deparsed output matches snapshot 1`] = `
+"-- Function with comments inside loops
+CREATE FUNCTION process_batch(
+  p_batch_size int
+) RETURNS int LANGUAGE plpgsql AS $$
+DECLARE
+  v_processed integer := 0;
+  r RECORD;
+BEGIN
+  -- Process items in batches
+  FOR r IN SELECT id, data FROM pending_items LIMIT p_batch_size LOOP
+    -- Process each item
+    PERFORM process_item(r.id, r.data);
+    v_processed := v_processed + 1;
+  END LOOP;
+
+  -- Return the count of processed items
+  RETURN v_processed;
+END;
+$$;"
+`;
+
+exports[`fixture round-trip tests multi-function.sql deparsed output matches snapshot 1`] = `
+"-- Multiple functions in one file
+-- with outer SQL comments preserved
+
+CREATE FUNCTION add_numbers(
+  a int,
+  b int
+) RETURNS int LANGUAGE plpgsql AS $$
+BEGIN
+  -- Simple addition
+  RETURN a + b;
+END;
+$$;
+
+-- Second function with its own body comments
+CREATE FUNCTION multiply_numbers(
+  a int,
+  b int
+) RETURNS int LANGUAGE plpgsql AS $$
+BEGIN
+  -- Multiply the inputs
+  RETURN a * b;
+END;
+$$;"
+`;
+
+exports[`fixture round-trip tests multiple-comments.sql deparsed output matches snapshot 1`] = `
+"-- Function with multiple comment groups
+CREATE FUNCTION process_order(
+  p_order_id int
+) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+  v_total numeric;
+  v_status text;
+BEGIN
+  -- First, calculate the order total
+  SELECT sum(amount) INTO v_total FROM order_items WHERE order_id = p_order_id;
+
+  -- Then update the order status
+  -- based on the total amount
+  IF v_total > 1000 THEN
+    v_status := 'premium';
+  ELSE
+    v_status := 'standard';
+  END IF;
+
+  -- Finally, record the result
+  UPDATE orders SET status = v_status, total = v_total WHERE id = p_order_id;
+END;
+$$;"
+`;
+
+exports[`fixture round-trip tests nested-blocks.sql deparsed output matches snapshot 1`] = `
+"-- Function with nested blocks and comments
+CREATE FUNCTION complex_logic(
+  p_id int
+) RETURNS text LANGUAGE plpgsql AS $$
+DECLARE
+  v_result text;
+BEGIN
+  -- Initialize result
+  v_result := 'unknown';
+
+  -- Try the main logic
+  BEGIN
+    -- Fetch and process
+    SELECT status INTO v_result FROM items WHERE id = p_id;
+  EXCEPTION
+    WHEN no_data_found THEN
+      -- Handle missing item
+      v_result := 'not_found';
+  END;
+
+  RETURN v_result;
+END;
+$$;"
+`;
+
+exports[`fixture round-trip tests no-comments.sql deparsed output matches snapshot 1`] = `
+"CREATE FUNCTION get_one() RETURNS int LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN 1;
+END;
+$$;"
+`;
+
+exports[`fixture round-trip tests simple-function.sql deparsed output matches snapshot 1`] = `
+"-- Simple function with body comments
+CREATE FUNCTION get_user_count() RETURNS int LANGUAGE plpgsql AS $$
+DECLARE
+  v_count integer;
+BEGIN
+  -- Count all active users
+  SELECT count(*) INTO v_count FROM users WHERE is_active = true;
+  RETURN v_count;
+END;
+$$;"
+`;
+
+exports[`fixture round-trip tests trigger-function.sql deparsed output matches snapshot 1`] = `
+"-- Trigger function with comments in body
+CREATE FUNCTION audit_trigger() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  -- Set the updated_at timestamp
+  NEW.updated_at := now();
+
+  -- Record the change in audit log
+  IF TG_OP = 'UPDATE' THEN
+    INSERT INTO audit_log (table_name, operation, old_data, new_data)
+    VALUES (TG_TABLE_NAME, TG_OP, row_to_json(OLD), row_to_json(NEW));
+  END IF;
+
+  RETURN NEW;
+END;
+$$;"
+`;
