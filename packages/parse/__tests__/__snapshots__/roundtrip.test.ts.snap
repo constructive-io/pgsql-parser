@@ -75,6 +75,46 @@ GRANT SELECT ON app.users TO authenticated;
 GRANT ALL ON app.users TO admin_role;"
 `;
 
+exports[`fixture round-trip (CST) mid-statement-comments deparsed output matches snapshot 1`] = `
+"-- Mid-statement comments are hoisted above their enclosing statement.
+-- The deparser cannot inject comments back into the middle of a
+-- statement, so they are preserved as standalone lines above it.
+
+-- Simple mid-statement comment
+-- the primary key
+SELECT
+  id,
+  name
+FROM users;
+
+-- Multiple mid-statement comments in one query
+-- user ID
+-- display name
+-- role from join
+SELECT
+  u.id,
+  u.name,
+  r.role_name
+FROM users AS u
+JOIN roles AS r ON r.id = u.role_id;
+
+-- Mid-statement comment in INSERT values
+-- log level
+-- log body
+INSERT INTO logs (
+  level,
+  message
+) VALUES
+  ('info', 'hello');
+
+-- Comment between clauses
+-- filter active only
+SELECT id
+FROM users
+WHERE
+  active = true;"
+`;
+
 exports[`fixture round-trip (CST) multi-statement deparsed output matches snapshot 1`] = `
 "-- Schema setup
 CREATE SCHEMA IF NOT EXISTS app;
