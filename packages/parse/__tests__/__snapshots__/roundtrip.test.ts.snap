@@ -1,0 +1,184 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`fixture round-trip (CST) alter-and-drop deparsed output matches snapshot 1`] = `
+"-- Add columns to existing table
+ALTER TABLE app.users 
+  ADD COLUMN bio text;
+ALTER TABLE app.users 
+  ADD COLUMN avatar_url text;
+
+-- Rename a column
+ALTER TABLE app.users RENAME COLUMN username TO display_name;
+
+-- Drop unused objects
+DROP INDEX IF EXISTS app.idx_old_index;
+
+-- Recreate with new definition
+CREATE INDEX idx_users_display_name ON app.users (display_name);"
+`;
+
+exports[`fixture round-trip (CST) edge-cases deparsed output matches snapshot 1`] = `
+"-- Comments with special characters: don't break "parsing"
+SELECT 1;
+
+-- Inline comment after statement
+SELECT 2;
+-- trailing note
+
+-- Adjacent comments with no blank line
+-- first line
+-- second line
+SELECT 3;
+
+-- Dollar-quoted body with internal comments (should NOT be extracted)
+CREATE FUNCTION app.noop() RETURNS void AS $$
+BEGIN
+  -- this comment is inside the function body
+  NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- String that looks like a comment
+SELECT '-- not a comment' AS val;
+
+-- Empty statement list edge
+SELECT 4;"
+`;
+
+exports[`fixture round-trip (CST) grants-and-policies deparsed output matches snapshot 1`] = `
+"-- RLS policies for the users table
+ALTER TABLE app.users 
+  ENABLE ROW LEVEL SECURITY;
+
+-- Admins can see all rows
+CREATE POLICY admin_all
+  ON app.users
+  AS PERMISSIVE
+  FOR ALL
+  TO admin_role
+  USING (
+    true
+  );
+
+-- Users can only see their own row
+CREATE POLICY own_row
+  ON app.users
+  AS PERMISSIVE
+  FOR SELECT
+  TO authenticated
+  USING (
+    id = (current_setting('app.current_user_id'))::int
+  );
+
+-- Grant basic access
+GRANT USAGE ON SCHEMA app TO authenticated;
+GRANT SELECT ON app.users TO authenticated;
+GRANT ALL ON app.users TO admin_role;"
+`;
+
+exports[`fixture round-trip (CST) multi-statement deparsed output matches snapshot 1`] = `
+"-- Schema setup
+CREATE SCHEMA IF NOT EXISTS app;
+
+-- Users table
+CREATE TABLE app.users (
+  id serial PRIMARY KEY,
+  username text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Roles table
+CREATE TABLE app.roles (
+  id serial PRIMARY KEY,
+  name text UNIQUE NOT NULL
+);
+
+-- Junction table
+CREATE TABLE app.user_roles (
+  user_id int REFERENCES app.users (id),
+  role_id int REFERENCES app.roles (id),
+  PRIMARY KEY (user_id, role_id)
+);
+
+-- Seed default roles
+INSERT INTO app.roles (
+  name
+) VALUES
+  ('admin'),
+  ('viewer');"
+`;
+
+exports[`fixture round-trip (CST) pgpm-header deparsed output matches snapshot 1`] = `
+"-- Deploy schemas/my-app/tables/users to pg
+-- requires: schemas/my-app/schema
+
+BEGIN;
+
+-- Create the main users table
+CREATE TABLE my_app.users (
+  id serial PRIMARY KEY,
+  name text NOT NULL,
+  email text UNIQUE
+);
+
+-- Add an index for fast lookups
+CREATE INDEX idx_users_email ON my_app.users (email);
+
+COMMIT;"
+`;
+
+exports[`fixture round-trip (CST) plpgsql-function deparsed output matches snapshot 1`] = `
+"-- Deploy schemas/app/functions/get_user to pg
+-- requires: schemas/app/tables/users
+
+BEGIN;
+
+-- Function to get a user by ID
+CREATE FUNCTION app.get_user(
+  p_id int
+) RETURNS TABLE (
+  id int,
+  username text,
+  created_at timestamptz
+) AS $$
+BEGIN
+  -- Return the matching user
+  RETURN QUERY
+  SELECT u.id, u.username, u.created_at
+  FROM app.users u
+  WHERE u.id = p_id;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- Grant execute to authenticated users
+GRANT EXECUTE ON FUNCTION app.get_user(int) TO authenticated;
+
+COMMIT;"
+`;
+
+exports[`fixture round-trip (CST) views-and-triggers deparsed output matches snapshot 1`] = `
+"-- Active users view
+CREATE VIEW app.active_users AS SELECT
+  id,
+  username,
+  created_at
+FROM app.users
+WHERE
+  created_at > (now() - '90 days'::interval);
+
+-- Audit trigger function
+CREATE FUNCTION app.audit_trigger() RETURNS trigger AS $$
+BEGIN
+  INSERT INTO app.audit_log (table_name, action, row_id)
+  VALUES (TG_TABLE_NAME, TG_OP, NEW.id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Attach trigger to users table
+CREATE TRIGGER users_audit
+  AFTER INSERT OR UPDATE
+  ON app.users
+  FOR EACH ROW
+  EXECUTE PROCEDURE app.audit_trigger();"
+`;

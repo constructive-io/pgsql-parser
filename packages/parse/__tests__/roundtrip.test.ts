@@ -26,6 +26,12 @@ beforeAll(async () => {
 describe('fixture round-trip (CST)', () => {
   for (const { name, sql } of fixtures) {
     describe(name, () => {
+      it('deparsed output matches snapshot', () => {
+        const result = parseSync(sql);
+        const output = deparseEnhanced(result);
+        expect(output).toMatchSnapshot();
+      });
+
       it('parse→deparse→parse→deparse is idempotent', () => {
         // First round trip
         const result1 = parseSync(sql);
