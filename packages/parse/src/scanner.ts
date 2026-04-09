@@ -21,6 +21,8 @@ export interface ScannedComment {
   start: number;
   /** Byte offset of the end of the comment (exclusive) */
   end: number;
+  /** True if this comment is on the same line as a preceding token (trailing comment) */
+  trailing: boolean;
 }
 
 export interface ScannedWhitespace {
@@ -87,6 +89,11 @@ export function scanComments(sql: string): ScannedElement[] {
     }
 
     if (token.tokenType === SQL_COMMENT) {
+      // A comment is "trailing" if no newline exists between the previous
+      // token's end and this comment's start (i.e. same line).
+      const gapBeforeComment = sql.substring(prevEnd, token.start);
+      const trailing = prevEnd > 0 && !gapBeforeComment.includes('\n');
+
       elements.push({
         kind: 'comment',
         value: {
@@ -94,6 +101,7 @@ export function scanComments(sql: string): ScannedElement[] {
           text: sql.substring(token.start + 2, token.end), // strip --
           start: token.start,
           end: token.end,
+          trailing,
         }
       });
     }

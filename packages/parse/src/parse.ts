@@ -85,6 +85,7 @@ function interleave(
             type: elem.value.type,
             text: elem.value.text,
             location: elem.value.start,
+            ...(elem.value.trailing ? { trailing: true } : {}),
           }
         }
       });

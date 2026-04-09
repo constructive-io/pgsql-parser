@@ -44,7 +44,13 @@ export function deparseEnhanced(
 
   for (const stmt of result.stmts) {
     if (isRawComment(stmt)) {
-      lines.push(deparseComment(stmt.RawComment));
+      const commentText = deparseComment(stmt.RawComment);
+      if (stmt.RawComment.trailing && lines.length > 0) {
+        // Trailing comment: append to the previous line
+        lines[lines.length - 1] += ' ' + commentText;
+      } else {
+        lines.push(commentText);
+      }
     } else if (isRawWhitespace(stmt)) {
       // Each blank line in the original source becomes an empty line in output.
       // The whitespace node represents N blank lines between content.

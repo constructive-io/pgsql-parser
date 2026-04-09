@@ -22,8 +22,7 @@ exports[`fixture round-trip (CST) edge-cases deparsed output matches snapshot 1`
 SELECT 1;
 
 -- Inline comment after statement
-SELECT 2;
--- trailing note
+SELECT 2; -- trailing note
 
 -- Adjacent comments with no blank line
 -- first line

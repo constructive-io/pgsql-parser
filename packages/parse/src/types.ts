@@ -12,6 +12,8 @@ export interface RawComment {
   text: string;
   /** Byte offset in the original source (for ordering) */
   location: number;
+  /** True if this comment is on the same line as the preceding statement */
+  trailing?: boolean;
 }
 
 /**
