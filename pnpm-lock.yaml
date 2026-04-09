@@ -92,8 +92,8 @@ importers:
   packages/parse:
     dependencies:
       '@libpg-query/parser':
-        specifier: ^17.6.3
-        version: 17.6.3
+        specifier: ^17.6.10
+        version: 17.6.10
       '@pgsql/types':
         specifier: ^17.6.2
         version: 17.6.2
@@ -741,6 +741,9 @@ packages:
     resolution: {integrity: sha512-A8AlzetnS2WIuhijdAzKUyFpR5YbLLfV3luQ4lzBgIBgRfuoBDZeF+RSZPhra+7A6/zTUlrbhKZIOi/MNhqgvQ==}
     engines: {node: '>=18.0.0'}
     deprecated: This package is an implementation detail of Lerna and is no longer published separately.
+
+  '@libpg-query/parser@17.6.10':
+    resolution: {integrity: sha512-AT/IM9H24/u70HvBhzkYlSBlYQWhJK3Z4CTmTnd3PnMqHU7Ib3o5pk2TEik6IblWsU64D+4GGURn94v2iSRe1A==}
 
   '@libpg-query/parser@17.6.3':
     resolution: {integrity: sha512-AvbS7b9GJZfCzqt4tLMqTaYK7Css9pJRTA2dKWLoTlob/XO2VNc30Q3g9DmxNBmokVTrmibkn/dy9bw8hfosQQ==}
@@ -4595,6 +4598,11 @@ snapshots:
       - encoding
       - supports-color
       - typescript
+
+  '@libpg-query/parser@17.6.10':
+    dependencies:
+      '@launchql/protobufjs': 7.2.6
+      '@pgsql/types': 17.6.2
 
   '@libpg-query/parser@17.6.3':
     dependencies:

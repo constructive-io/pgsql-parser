@@ -6,52 +6,9 @@
  * to identify SQL_COMMENT tokens with exact byte positions.
  * Whitespace detection uses token gaps to find blank lines
  * between statements/comments.
- *
- * Note: @libpg-query/parser has an upstream JSON serialization bug in
- * _wasm_scan where literal control characters in token text are not
- * escaped. We work around this by retrying with a patched JSON.parse
- * that escapes control characters before parsing.
  */
 
 import { scanSync, type ScanToken } from '@libpg-query/parser';
-
-/**
- * Escape unescaped control characters inside JSON string values.
- * The upstream _wasm_scan emits raw \n, \r, \t in token text fields,
- * which breaks JSON.parse. This replaces them with their escape sequences.
- */
-function fixScanJson(raw: string): string {
-  return raw.replace(
-    /"(?:[^"\\]|\\.)*"/g,
-    (match) =>
-      match
-        .replace(/\t/g, '\\t')
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-  );
-}
-
-/**
- * Call scanSync with a workaround for the upstream JSON serialization bug.
- * First tries the normal path; if JSON.parse throws, retries with a
- * temporarily patched JSON.parse that escapes control characters.
- * This is synchronous so there are no concurrency concerns.
- */
-function safeScanSync(sql: string): { tokens: ScanToken[] } {
-  try {
-    return scanSync(sql);
-  } catch {
-    // Retry with patched JSON.parse to handle unescaped control chars
-    const origParse = JSON.parse;
-    try {
-      JSON.parse = ((text: string, reviver?: Parameters<typeof JSON.parse>[1]) =>
-        origParse(fixScanJson(text), reviver)) as typeof JSON.parse;
-      return scanSync(sql);
-    } finally {
-      JSON.parse = origParse;
-    }
-  }
-}
 
 /** Token type for -- line comments from PostgreSQL's lexer */
 const SQL_COMMENT = 275;
@@ -105,7 +62,7 @@ export function scanComments(sql: string): ScannedElement[] {
 
   let tokens: ScanToken[];
   try {
-    const scanResult = safeScanSync(sql);
+    const scanResult = scanSync(sql);
     tokens = scanResult.tokens;
   } catch {
     return [];
