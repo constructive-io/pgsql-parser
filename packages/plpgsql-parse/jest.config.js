@@ -11,21 +11,7 @@ module.exports = {
             },
         ],
     },
-    transformIgnorePatterns: [
-        "/node_modules/(?!(pgsql-deparser|pgsql-parse|plpgsql-deparser|@pgsql/quotes|@pgsql/types|@pgsql/utils)/)"
-    ],
-    moduleNameMapper: {
-        "^pgsql-deparser$": "<rootDir>/../deparser/src/index.ts",
-        "^pgsql-deparser/(.*)$": "<rootDir>/../deparser/src/$1",
-        "^pgsql-parse$": "<rootDir>/../parse/src/index.ts",
-        "^pgsql-parse/(.*)$": "<rootDir>/../parse/src/$1",
-        "^plpgsql-deparser$": "<rootDir>/../plpgsql-deparser/src/index.ts",
-        "^plpgsql-deparser/(.*)$": "<rootDir>/../plpgsql-deparser/src/$1",
-        "^@pgsql/quotes$": "<rootDir>/../quotes/src/index.ts",
-        "^@pgsql/quotes/(.*)$": "<rootDir>/../quotes/src/$1",
-        "^@pgsql/utils$": "<rootDir>/../utils/src/index.ts",
-        "^@pgsql/utils/(.*)$": "<rootDir>/../utils/src/$1",
-    },
+    transformIgnorePatterns: [`/node_modules/*`],
     testRegex: "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
     moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
     modulePathIgnorePatterns: ["dist/*"]
