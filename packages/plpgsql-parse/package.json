@@ -1,6 +1,6 @@
 {
   "name": "plpgsql-parse",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "Comment and whitespace preserving PL/pgSQL parser",
   "main": "index.js",
