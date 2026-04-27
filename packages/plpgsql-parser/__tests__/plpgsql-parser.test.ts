@@ -209,4 +209,89 @@ describe('plpgsql-parser', () => {
       expect(result).not.toMatch(/RETURN\s+NULL\s*;/);
     });
   });
+
+  describe('SELECT INTO statement parsing', () => {
+    // Regression tests to ensure PL/pgSQL functions containing SELECT INTO
+    // statements are correctly parsed and hydrated. These tests verify that
+    // SELECT INTO works consistently with other DML statements like DELETE.
+
+    it('should parse function with SELECT INTO statement', () => {
+      const selectIntoSql = `
+        CREATE FUNCTION get_data()
+        RETURNS void
+        LANGUAGE plpgsql AS $$
+        DECLARE
+          v_result text;
+        BEGIN
+          SELECT * INTO v_result FROM some_table WHERE id = 1;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(selectIntoSql);
+      
+      expect(parsed.functions).toHaveLength(1);
+      expect(parsed.functions[0].kind).toBe('plpgsql-function');
+      expect(parsed.functions[0].plpgsql.hydrated).toBeDefined();
+    });
+
+    it('should parse function with SELECT INTO and schema-qualified table', () => {
+      const selectIntoSchemaSql = `
+        CREATE FUNCTION "my_schema".get_data()
+        RETURNS void
+        LANGUAGE plpgsql AS $$
+        DECLARE
+          v_result text;
+        BEGIN
+          SELECT * INTO v_result FROM "my_schema".some_table WHERE id = 1;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(selectIntoSchemaSql);
+      
+      expect(parsed.functions).toHaveLength(1);
+      expect(parsed.functions[0].kind).toBe('plpgsql-function');
+    });
+
+    it('should deparse function with SELECT INTO correctly', () => {
+      const selectIntoSql = `
+        CREATE FUNCTION get_data()
+        RETURNS void
+        LANGUAGE plpgsql AS $$
+        DECLARE
+          v_result text;
+        BEGIN
+          SELECT * INTO v_result FROM "quoted_schema".some_table WHERE id = 1;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(selectIntoSql);
+      const result = deparseSync(parsed);
+      
+      // Deparsed SQL should have consistent quoting based on QuoteUtils rules
+      expect(result).toContain('SELECT');
+      expect(result).toContain('INTO');
+      expect(result).toContain('v_result');
+    });
+
+    it('should parse function with DELETE statement', () => {
+      const deleteSql = `
+        CREATE FUNCTION delete_data()
+        RETURNS void
+        LANGUAGE plpgsql AS $$
+        BEGIN
+          DELETE FROM some_table WHERE id = 1;
+        END;
+        $$;
+      `;
+      
+      const parsed = parse(deleteSql);
+      
+      expect(parsed.functions).toHaveLength(1);
+      expect(parsed.functions[0].kind).toBe('plpgsql-function');
+      expect(parsed.functions[0].plpgsql.hydrated).toBeDefined();
+    });
+  });
 });
