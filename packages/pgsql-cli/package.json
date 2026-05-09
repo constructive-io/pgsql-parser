@@ -51,7 +51,7 @@
     "glob": "8.0.3",
     "minimist": "1.2.8",
     "mkdirp": "3.0.1",
-    "nested-obj": "^0.1.5",
+    "nested-obj": "^0.2.2",
     "pg-proto-parser": "workspace:*",
     "pgsql-deparser": "workspace:*",
     "pgsql-parser": "workspace:*"

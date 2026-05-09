@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@pgsql/types": "^17.6.2",
-    "nested-obj": "0.1.5"
+    "nested-obj": "0.2.2"
   },
   "keywords": []
 }
