@@ -1021,4 +1021,46 @@ END$$`;
       expect(deparsed).toContain('now()');
     });
   });
+
+  describe('RETURN NEXT retvarno loss (demonstrates bug)', () => {
+    it('should lose the variable in RETURN NEXT (libpg-query does not serialize retvarno)', async () => {
+      const sql = `CREATE FUNCTION test_return_next_for_var(v_data jsonb) RETURNS SETOF jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_entry jsonb;
+BEGIN
+  FOR v_entry IN SELECT jsonb_array_elements(v_data)
+  LOOP
+    RETURN NEXT v_entry;
+  END LOOP;
+  RETURN;
+END$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+
+      // BUG: the variable v_entry is lost — RETURN NEXT v_entry becomes bare RETURN NEXT
+      expect(deparsed).toContain('RETURN NEXT;');
+      expect(deparsed).not.toContain('RETURN NEXT v_entry');
+    });
+
+    it('should lose the variable in RETURN NEXT for declared var (no FOR loop)', async () => {
+      const sql = `CREATE FUNCTION test_return_next_declared_var() RETURNS SETOF int
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_val int := 42;
+BEGIN
+  RETURN NEXT v_val;
+END$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+
+      // BUG: the variable v_val is lost — RETURN NEXT v_val becomes bare RETURN NEXT
+      expect(deparsed).toContain('RETURN NEXT;');
+      expect(deparsed).not.toContain('RETURN NEXT v_val');
+    });
+  });
 });

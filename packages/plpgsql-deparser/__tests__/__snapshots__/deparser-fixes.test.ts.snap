@@ -183,6 +183,26 @@ exports[`plpgsql-deparser bug fixes PERFORM SELECT fix should strip SELECT keywo
 END"
 `;
 
+exports[`plpgsql-deparser bug fixes RETURN NEXT retvarno loss (demonstrates bug) should lose the variable in RETURN NEXT (libpg-query does not serialize retvarno) 1`] = `
+"DECLARE
+  v_entry jsonb;
+BEGIN
+  FOR v_entry IN SELECT jsonb_array_elements(v_data) LOOP
+      RETURN NEXT;
+  END LOOP;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes RETURN NEXT retvarno loss (demonstrates bug) should lose the variable in RETURN NEXT for declared var (no FOR loop) 1`] = `
+"DECLARE
+  v_val int := 42;
+BEGIN
+  RETURN NEXT;
+  RETURN;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes Record field qualification (recfield) should handle OLD and NEW record references 1`] = `
 "BEGIN
   IF OLD.status <> NEW.status THEN

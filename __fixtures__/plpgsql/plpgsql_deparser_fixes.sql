@@ -592,3 +592,26 @@ BEGIN
   END LOOP;
   RETURN NULL;
 END$$;
+
+-- Test 47: RETURN NEXT with FOR loop variable (retvarno recovery)
+-- Exercises the case where libpg-query drops retvarno from PLpgSQL_stmt_return_next
+CREATE FUNCTION test_return_next_for_var(v_data jsonb) RETURNS SETOF jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_entry jsonb;
+BEGIN
+  FOR v_entry IN SELECT jsonb_array_elements(v_data)
+  LOOP
+    RETURN NEXT v_entry;
+  END LOOP;
+  RETURN;
+END$$;
+
+-- Test 48: RETURN NEXT with declared variable (no FOR loop, single candidate)
+CREATE FUNCTION test_return_next_declared_var() RETURNS SETOF int
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_val int := 42;
+BEGIN
+  RETURN NEXT v_val;
+END$$;
