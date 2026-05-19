@@ -872,4 +872,153 @@ END$$`;
       expect(deparsed).toMatchSnapshot();
     });
   });
+
+  describe('CoalesceExpr and RangeFunction patterns', () => {
+    it('should handle COALESCE inside function call arguments', async () => {
+      const sql = `CREATE FUNCTION test_coalesce_in_func_args(v_config jsonb) RETURNS SETOF jsonb
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN QUERY SELECT jsonb_array_elements(COALESCE(v_config, '[]'::jsonb));
+END$$`;
+
+      await testUtils.expectAstMatch('COALESCE in FuncCall args', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('COALESCE');
+      expect(deparsed).toContain('jsonb_array_elements');
+    });
+
+    it('should handle set-returning function in FROM clause (RangeFunction)', async () => {
+      const sql = `CREATE FUNCTION test_func_in_from(v_data jsonb) RETURNS TABLE(key text, value text)
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN QUERY SELECT elem->>'key', elem->>'value'
+  FROM jsonb_array_elements(v_data) AS elem;
+END$$`;
+
+      await testUtils.expectAstMatch('FuncCall in FROM clause', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('jsonb_array_elements');
+      expect(deparsed).toContain('FROM');
+    });
+
+    it('should handle COALESCE in FROM clause with set-returning function', async () => {
+      const sql = `CREATE FUNCTION test_coalesce_in_from_srf(v_config jsonb) RETURNS TABLE(entry jsonb)
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN QUERY SELECT elem
+  FROM jsonb_array_elements(COALESCE(v_config, '[]'::jsonb)) AS elem;
+END$$`;
+
+      await testUtils.expectAstMatch('COALESCE in FROM SRF', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('COALESCE');
+      expect(deparsed).toContain('FROM');
+      expect(deparsed).toContain('jsonb_array_elements');
+    });
+
+    it('should handle SELECT INTO from set-returning function in FROM clause', async () => {
+      const sql = `CREATE FUNCTION test_select_into_from_srf(v_data jsonb) RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_first jsonb;
+BEGIN
+  SELECT elem INTO v_first
+  FROM jsonb_array_elements(v_data) AS elem
+  LIMIT 1;
+  RETURN v_first;
+END$$`;
+
+      await testUtils.expectAstMatch('SELECT INTO from SRF in FROM', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('INTO');
+      expect(deparsed).toContain('jsonb_array_elements');
+      expect(deparsed).toContain('FROM');
+    });
+
+    it('should handle FOR loop with SRF and WHERE filter', async () => {
+      const sql = `CREATE FUNCTION test_for_srf_filter(v_config jsonb, v_key text) RETURNS jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_entry jsonb;
+BEGIN
+  FOR v_entry IN
+    SELECT elem FROM jsonb_array_elements(v_config) AS elem
+    WHERE elem->>'key' = v_key
+  LOOP
+    RETURN v_entry;
+  END LOOP;
+  RETURN NULL;
+END$$`;
+
+      await testUtils.expectAstMatch('FOR loop SRF with WHERE', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('jsonb_array_elements');
+      expect(deparsed).toContain('WHERE');
+    });
+
+    it('should handle nested COALESCE expressions', async () => {
+      const sql = `CREATE FUNCTION test_nested_coalesce(a text, b text, c text) RETURNS text
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN COALESCE(a, COALESCE(b, COALESCE(c, 'fallback')));
+END$$`;
+
+      await testUtils.expectAstMatch('nested COALESCE', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('COALESCE');
+    });
+
+    it('should handle multiple SRFs in FROM clause', async () => {
+      const sql = `CREATE FUNCTION test_multiple_srf(v_keys text[], v_values text[]) RETURNS TABLE(k text, v text)
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN QUERY SELECT unnest_k, unnest_v
+  FROM unnest(v_keys) AS unnest_k, unnest(v_values) AS unnest_v;
+END$$`;
+
+      await testUtils.expectAstMatch('multiple SRFs in FROM', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('unnest');
+      expect(deparsed).toContain('FROM');
+    });
+
+    it('should handle COALESCE with function call in assignment', async () => {
+      const sql = `CREATE FUNCTION test_coalesce_assign() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at := COALESCE(NEW.updated_at, now());
+  NEW.name := COALESCE(NEW.name, 'default_' || NEW.id::text);
+  RETURN NEW;
+END$$`;
+
+      await testUtils.expectAstMatch('COALESCE assign with func', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('COALESCE');
+      expect(deparsed).toContain('now()');
+    });
+  });
 });

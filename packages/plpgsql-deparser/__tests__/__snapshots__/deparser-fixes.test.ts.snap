@@ -1,5 +1,72 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`plpgsql-deparser bug fixes CoalesceExpr and RangeFunction patterns should handle COALESCE in FROM clause with set-returning function 1`] = `
+"BEGIN
+  RETURN QUERY SELECT elem
+    FROM jsonb_array_elements(COALESCE(v_config, '[]'::jsonb)) AS elem;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes CoalesceExpr and RangeFunction patterns should handle COALESCE inside function call arguments 1`] = `
+"BEGIN
+  RETURN QUERY SELECT jsonb_array_elements(COALESCE(v_config, '[]'::jsonb));
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes CoalesceExpr and RangeFunction patterns should handle COALESCE with function call in assignment 1`] = `
+"BEGIN
+  NEW.updated_at := COALESCE(NEW.updated_at, now());
+  NEW.name := COALESCE(NEW.name, 'default_' || NEW.id::text);
+  RETURN NEW;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes CoalesceExpr and RangeFunction patterns should handle FOR loop with SRF and WHERE filter 1`] = `
+"DECLARE
+  v_entry jsonb;
+BEGIN
+  FOR v_entry IN SELECT elem FROM jsonb_array_elements(v_config) AS elem
+      WHERE elem->>'key' = v_key LOOP
+      RETURN v_entry;
+  END LOOP;
+  RETURN NULL;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes CoalesceExpr and RangeFunction patterns should handle SELECT INTO from set-returning function in FROM clause 1`] = `
+"DECLARE
+  v_first jsonb;
+BEGIN
+  SELECT elem INTO v_first FROM jsonb_array_elements(v_data) AS elem
+    LIMIT 1;
+  RETURN v_first;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes CoalesceExpr and RangeFunction patterns should handle multiple SRFs in FROM clause 1`] = `
+"BEGIN
+  RETURN QUERY SELECT unnest_k, unnest_v
+    FROM unnest(v_keys) AS unnest_k, unnest(v_values) AS unnest_v;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes CoalesceExpr and RangeFunction patterns should handle nested COALESCE expressions 1`] = `
+"BEGIN
+  RETURN COALESCE(a, COALESCE(b, COALESCE(c, 'fallback')));
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes CoalesceExpr and RangeFunction patterns should handle set-returning function in FROM clause (RangeFunction) 1`] = `
+"BEGIN
+  RETURN QUERY SELECT elem->>'key', elem->>'value'
+    FROM jsonb_array_elements(v_data) AS elem;
+  RETURN;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should handle INTO STRICT 1`] = `
 "DECLARE
   v_id integer;
