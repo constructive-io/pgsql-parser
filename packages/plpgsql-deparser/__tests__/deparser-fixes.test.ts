@@ -1022,8 +1022,64 @@ END$$`;
     });
   });
 
-  describe('RETURN NEXT retvarno loss (demonstrates bug)', () => {
-    it('should lose the variable in RETURN NEXT (libpg-query does not serialize retvarno)', async () => {
+  describe('RETURN NEXT retvarno recovery', () => {
+    it('should recover FOR loop variable in RETURN NEXT for SETOF functions', async () => {
+      const sql = `CREATE FUNCTION test_return_next_for_var(v_data jsonb) RETURNS SETOF jsonb
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_entry jsonb;
+BEGIN
+  FOR v_entry IN SELECT jsonb_array_elements(v_data)
+  LOOP
+    RETURN NEXT v_entry;
+  END LOOP;
+  RETURN;
+END$$`;
+
+      await testUtils.expectAstMatch('RETURN NEXT FOR loop var', sql);
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed, undefined, { kind: 'setof' });
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURN NEXT v_entry');
+    });
+
+    it('should recover single declared variable in RETURN NEXT for SETOF functions', async () => {
+      const sql = `CREATE FUNCTION test_return_next_declared_var() RETURNS SETOF int
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_val int := 42;
+BEGIN
+  RETURN NEXT v_val;
+END$$`;
+
+      await testUtils.expectAstMatch('RETURN NEXT declared var', sql);
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed, undefined, { kind: 'setof' });
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURN NEXT v_val');
+    });
+
+    it('should leave RETURN NEXT bare for OUT-param functions', async () => {
+      const sql = `CREATE FUNCTION test_return_next_out(OUT x integer, OUT y text) RETURNS SETOF record
+LANGUAGE plpgsql AS $$
+BEGIN
+  FOR i IN 1..5 LOOP
+    x := i;
+    y := 'item_' || i::text;
+    RETURN NEXT;
+  END LOOP;
+  RETURN;
+END$$`;
+
+      await testUtils.expectAstMatch('RETURN NEXT OUT params', sql);
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed, undefined, { kind: 'out_params' });
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURN NEXT;');
+      expect(deparsed).not.toMatch(/RETURN NEXT\s+\w/);
+    });
+
+    it('should leave RETURN NEXT bare when returnInfo is not provided', async () => {
       const sql = `CREATE FUNCTION test_return_next_for_var(v_data jsonb) RETURNS SETOF jsonb
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -1037,30 +1093,10 @@ BEGIN
 END$$`;
 
       const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      // Without returnInfo, inference should NOT happen (safety)
       const deparsed = deparseSync(parsed);
       expect(deparsed).toMatchSnapshot();
-
-      // BUG: the variable v_entry is lost — RETURN NEXT v_entry becomes bare RETURN NEXT
       expect(deparsed).toContain('RETURN NEXT;');
-      expect(deparsed).not.toContain('RETURN NEXT v_entry');
-    });
-
-    it('should lose the variable in RETURN NEXT for declared var (no FOR loop)', async () => {
-      const sql = `CREATE FUNCTION test_return_next_declared_var() RETURNS SETOF int
-LANGUAGE plpgsql AS $$
-DECLARE
-  v_val int := 42;
-BEGIN
-  RETURN NEXT v_val;
-END$$`;
-
-      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
-      const deparsed = deparseSync(parsed);
-      expect(deparsed).toMatchSnapshot();
-
-      // BUG: the variable v_val is lost — RETURN NEXT v_val becomes bare RETURN NEXT
-      expect(deparsed).toContain('RETURN NEXT;');
-      expect(deparsed).not.toContain('RETURN NEXT v_val');
     });
   });
 });

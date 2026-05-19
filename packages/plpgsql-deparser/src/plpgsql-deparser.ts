@@ -86,6 +86,8 @@ export interface PLpgSQLDeparserContext {
   loopVarLinenos?: Set<number>;
   /** Map of block lineno to the set of datum indices that belong to that block */
   blockDatumMap?: Map<number, Set<number>>;
+  /** Name of the enclosing FOR loop variable (used to recover RETURN NEXT <var> when retvarno is missing) */
+  enclosingForVarName?: string;
 }
 
 /**
@@ -1179,7 +1181,7 @@ export class PLpgSQLDeparser {
     }
 
     if (fori.body) {
-      const bodyContext = { ...context, indentLevel: context.indentLevel + 1 };
+      const bodyContext = { ...context, indentLevel: context.indentLevel + 1, enclosingForVarName: varName };
       for (const stmt of fori.body) {
         const stmtStr = this.deparseStmt(stmt, bodyContext);
         parts.push(this.indent(stmtStr + ';', bodyContext.indentLevel));
@@ -1210,7 +1212,7 @@ export class PLpgSQLDeparser {
     parts.push(`${kw('FOR')} ${varName} ${kw('IN')} ${query} ${kw('LOOP')}`);
 
     if (fors.body) {
-      const bodyContext = { ...context, indentLevel: context.indentLevel + 1 };
+      const bodyContext = { ...context, indentLevel: context.indentLevel + 1, enclosingForVarName: varName };
       for (const stmt of fors.body) {
         const stmtStr = this.deparseStmt(stmt, bodyContext);
         parts.push(this.indent(stmtStr + ';', bodyContext.indentLevel));
@@ -1246,7 +1248,7 @@ export class PLpgSQLDeparser {
     parts.push(`${forClause} ${kw('LOOP')}`);
 
     if (forc.body) {
-      const bodyContext = { ...context, indentLevel: context.indentLevel + 1 };
+      const bodyContext = { ...context, indentLevel: context.indentLevel + 1, enclosingForVarName: varName };
       for (const stmt of forc.body) {
         const stmtStr = this.deparseStmt(stmt, bodyContext);
         parts.push(this.indent(stmtStr + ';', bodyContext.indentLevel));
@@ -1283,7 +1285,7 @@ export class PLpgSQLDeparser {
     parts.push(`${kw('FOREACH')} ${varName}${sliceClause} ${kw('IN ARRAY')} ${expr} ${kw('LOOP')}`);
 
     if (foreach.body) {
-      const bodyContext = { ...context, indentLevel: context.indentLevel + 1 };
+      const bodyContext = { ...context, indentLevel: context.indentLevel + 1, enclosingForVarName: varName };
       for (const stmt of foreach.body) {
         const stmtStr = this.deparseStmt(stmt, bodyContext);
         parts.push(this.indent(stmtStr + ';', bodyContext.indentLevel));
@@ -1363,20 +1365,81 @@ export class PLpgSQLDeparser {
 
   /**
    * Deparse a RETURN NEXT statement
+   *
+   * libpg-query does not serialize `retvarno` for PLpgSQL_stmt_return_next,
+   * so when a function has `RETURN NEXT variable`, the variable reference is
+   * lost.  We recover it by:
+   *   1. Using the enclosing FOR loop variable (most common pattern)
+   *   2. Scanning datums for the sole user-declared variable (non-loop case)
+   * Bare `RETURN NEXT` remains valid for TABLE / OUT-param functions.
    */
   private deparseReturnNext(ret: PLpgSQL_stmt_return_next, context: PLpgSQLDeparserContext): string {
     const kw = this.keyword;
-    
+
     if (ret.expr) {
       return `${kw('RETURN NEXT')} ${this.deparseExpr(ret.expr)}`;
     }
-    
+
     if (ret.retvarno !== undefined && ret.retvarno >= 0) {
       const varName = this.getVarName(ret.retvarno, context);
       return `${kw('RETURN NEXT')} ${varName}`;
     }
-    
+
+    // retvarno is missing (libpg-query serialization gap).  Try to recover.
+    const inferred = this.inferReturnNextVar(context);
+    if (inferred) {
+      return `${kw('RETURN NEXT')} ${inferred}`;
+    }
+
     return kw('RETURN NEXT');
+  }
+
+  /**
+   * Attempt to infer the variable for a bare RETURN NEXT when retvarno is
+   * not available.  Returns the variable name or undefined.
+   *
+   * We only infer when `returnInfo` tells us the function returns SETOF
+   * scalar.  Without returnInfo we cannot distinguish a legitimate bare
+   * `RETURN NEXT` (OUT-param / TABLE function) from a dropped retvarno,
+   * so we leave the statement bare to avoid incorrect output.
+   */
+  private inferReturnNextVar(context: PLpgSQLDeparserContext): string | undefined {
+    // Without return-type context we cannot safely infer
+    if (!context.returnInfo) {
+      return undefined;
+    }
+
+    // TABLE / OUT-param functions legitimately use bare RETURN NEXT
+    if (context.returnInfo.kind === 'out_params') {
+      return undefined;
+    }
+
+    // Only attempt recovery for SETOF scalar functions
+    if (context.returnInfo.kind !== 'setof') {
+      return undefined;
+    }
+
+    // 1. Inside a FOR loop → use the loop variable
+    if (context.enclosingForVarName) {
+      return context.enclosingForVarName;
+    }
+
+    // 2. Outside a FOR loop → look for a single user-declared var
+    if (context.datums) {
+      const candidates = context.datums.filter((d) => {
+        if ('PLpgSQL_var' in d) {
+          const v = d.PLpgSQL_var;
+          // Skip implicit 'found' and function parameters (no lineno)
+          return v.refname !== 'found' && v.lineno !== undefined;
+        }
+        return false;
+      });
+      if (candidates.length === 1 && 'PLpgSQL_var' in candidates[0]) {
+        return candidates[0].PLpgSQL_var.refname;
+      }
+    }
+
+    return undefined;
   }
 
   /**
@@ -1718,7 +1781,7 @@ export class PLpgSQLDeparser {
     parts.push(`${forClause} ${kw('LOOP')}`);
 
     if (fors.body) {
-      const bodyContext = { ...context, indentLevel: context.indentLevel + 1 };
+      const bodyContext = { ...context, indentLevel: context.indentLevel + 1, enclosingForVarName: varName };
       for (const stmt of fors.body) {
         const stmtStr = this.deparseStmt(stmt, bodyContext);
         parts.push(this.indent(stmtStr + ';', bodyContext.indentLevel));

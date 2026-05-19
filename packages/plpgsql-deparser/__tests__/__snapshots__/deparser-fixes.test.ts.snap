@@ -183,7 +183,18 @@ exports[`plpgsql-deparser bug fixes PERFORM SELECT fix should strip SELECT keywo
 END"
 `;
 
-exports[`plpgsql-deparser bug fixes RETURN NEXT retvarno loss (demonstrates bug) should lose the variable in RETURN NEXT (libpg-query does not serialize retvarno) 1`] = `
+exports[`plpgsql-deparser bug fixes RETURN NEXT retvarno recovery should leave RETURN NEXT bare for OUT-param functions 1`] = `
+"BEGIN
+  FOR i IN 1..5 LOOP
+      x := i;
+      y := 'item_' || i::text;
+      RETURN NEXT;
+  END LOOP;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes RETURN NEXT retvarno recovery should leave RETURN NEXT bare when returnInfo is not provided 1`] = `
 "DECLARE
   v_entry jsonb;
 BEGIN
@@ -194,11 +205,22 @@ BEGIN
 END"
 `;
 
-exports[`plpgsql-deparser bug fixes RETURN NEXT retvarno loss (demonstrates bug) should lose the variable in RETURN NEXT for declared var (no FOR loop) 1`] = `
+exports[`plpgsql-deparser bug fixes RETURN NEXT retvarno recovery should recover FOR loop variable in RETURN NEXT for SETOF functions 1`] = `
+"DECLARE
+  v_entry jsonb;
+BEGIN
+  FOR v_entry IN SELECT jsonb_array_elements(v_data) LOOP
+      RETURN NEXT v_entry;
+  END LOOP;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes RETURN NEXT retvarno recovery should recover single declared variable in RETURN NEXT for SETOF functions 1`] = `
 "DECLARE
   v_val int := 42;
 BEGIN
-  RETURN NEXT;
+  RETURN NEXT v_val;
   RETURN;
 END"
 `;

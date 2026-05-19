@@ -1,5 +1,5 @@
 import { parsePlPgSQL, parsePlPgSQLSync } from '@libpg-query/parser';
-import { deparseSync, PLpgSQLParseResult } from '../src';
+import { deparseSync, PLpgSQLParseResult, ReturnInfo } from '../src';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import * as path from 'path';
 import { diff } from 'jest-diff';
@@ -328,6 +328,43 @@ function reconstructSql(originalSql: string, newBody: string): string {
   return parts.prefix + newBody + parts.suffix;
 }
 
+/**
+ * Extract ReturnInfo from a CREATE FUNCTION SQL string by inspecting the
+ * RETURNS clause and OUT/INOUT parameters.  Used by the round-trip test to
+ * give the deparser enough context to recover dropped retvarno fields.
+ *
+ * We intentionally only extract for SETOF and OUT-param functions — these
+ * are the cases where RETURN NEXT inference needs context.  For other
+ * return types (scalar, void, trigger) we return undefined to avoid
+ * changing existing RETURN statement behaviour (e.g. bare RETURN in scalar
+ * functions would become RETURN NULL if we provided returnInfo).
+ */
+export function extractReturnInfo(sql: string): ReturnInfo | undefined {
+  // Normalise to a single line for simpler matching
+  const norm = sql.replace(/\s+/g, ' ').trim();
+
+  // Strip the body ($$...$$) so we only inspect the signature
+  const sig = norm.replace(/\$\$.*\$\$/s, '');
+
+  // OUT / INOUT parameters → out_params (prevents false RETURN NEXT inference)
+  if (/\b(OUT|INOUT)\s+/i.test(sig)) {
+    return { kind: 'out_params' };
+  }
+
+  // RETURNS TABLE(...) → out_params
+  if (/RETURNS\s+TABLE\s*\(/i.test(sig)) {
+    return { kind: 'out_params' };
+  }
+
+  // RETURNS SETOF <type> → needed for RETURN NEXT variable recovery
+  if (/RETURNS\s+SETOF\b/i.test(sig)) {
+    return { kind: 'setof' };
+  }
+
+  // All other types: don't provide returnInfo to preserve existing behaviour
+  return undefined;
+}
+
 export class PLpgSQLTestUtils {
   protected printErrorMessage(sql: string, position: number) {
     const lineNumber = sql.slice(0, position).match(/\n/g)?.length || 0;
@@ -368,7 +405,8 @@ export class PLpgSQLTestUtils {
         throw createParseError('PARSE_FAILED', testName, sql);
       }
 
-      const deparsedBody = deparseSync(originalAst);
+      const returnInfo = extractReturnInfo(sql);
+      const deparsedBody = deparseSync(originalAst, undefined, returnInfo);
       
       if (!deparsedBody || deparsedBody.trim().length === 0) {
         throw createParseError('DEPARSE_FAILED', testName, sql, deparsedBody);

@@ -40,10 +40,7 @@ describe('PLpgSQLDeparser', () => {
     // - Labeled blocks with EXIT statements
     // - Nested DECLARE inside FOR loops (lineno-based scope tracking)
     const KNOWN_FAILING_FIXTURES = new Set<string>([
-      // libpg-query does not serialize retvarno for PLpgSQL_stmt_return_next,
-      // so RETURN NEXT <variable> loses the variable during round-trip.
-      'plpgsql_deparser_fixes-47.sql', // RETURN NEXT v_entry (FOR loop)
-      'plpgsql_deparser_fixes-48.sql', // RETURN NEXT v_val (declared var)
+      // No known failures - all fixtures pass!
     ]);
 
     it('should round-trip ALL generated fixtures (excluding known failures)', async () => {
