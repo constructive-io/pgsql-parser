@@ -1,4 +1,5 @@
 import { runtimeSchema, NodeSpec, FieldSpec } from '../../utils/src/runtime-schema';
+import * as enums from '@pgsql/enums';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -37,7 +38,11 @@ function isPrimitiveType(type: string): boolean {
 }
 
 function isEnumType(type: string): boolean {
-  return !isPrimitiveType(type) && !schemaMap.has(type) && type !== 'Node';
+  return !isPrimitiveType(type) && !schemaMap.has(type) && type !== 'Node' && type in enums;
+}
+
+function isExternalType(type: string): boolean {
+  return !isPrimitiveType(type) && !schemaMap.has(type) && type !== 'Node' && !(type in enums);
 }
 
 function getTsType(type: string): string {
@@ -54,6 +59,18 @@ function collectEnumTypes(): Set<string> {
     }
   }
   return enumTypes;
+}
+
+function collectExternalTypes(): Set<string> {
+  const externalTypes = new Set<string>();
+  for (const nodeSpec of runtimeSchema) {
+    for (const field of nodeSpec.fields) {
+      if (isExternalType(field.type)) {
+        externalTypes.add(field.type);
+      }
+    }
+  }
+  return externalTypes;
 }
 
 function generateWrappedUnion(tags: string[]): string {
@@ -136,8 +153,11 @@ function generateTypes(metadata: AllFieldMetadata): string {
   
   const enumTypes = collectEnumTypes();
   const sortedEnums = [...enumTypes].sort();
+  const externalTypes = collectExternalTypes();
+  const sortedExternals = [...externalTypes].sort();
   
-  lines.push("import type { Node } from '@pgsql/types';");
+  const typesImports = ['Node', ...sortedExternals];
+  lines.push(`import type { ${typesImports.join(', ')} } from '@pgsql/types';`);
   if (sortedEnums.length > 0) {
     lines.push(`import { ${sortedEnums.join(', ')} } from '@pgsql/enums';`);
   }

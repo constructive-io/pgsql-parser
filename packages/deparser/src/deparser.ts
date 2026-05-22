@@ -1142,11 +1142,8 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    if (node.returningList) {
-      output.push('RETURNING');
-      const returningList = ListUtils.unwrapList(node.returningList);
-      const returns = returningList.map(ret => this.visit(ret as Node, context));
-      output.push(returns.join(', '));
+    if (node.returningClause) {
+      output.push(this.deparseReturningClause(node.returningClause, context));
     }
 
     return output.join(' ');
@@ -1216,9 +1213,8 @@ export class Deparser implements DeparserVisitor {
       output.push(this.visit(node.whereClause, context));
     }
 
-    if (node.returningList) {
-      output.push('RETURNING');
-      output.push(this.deparseReturningList(node.returningList, context));
+    if (node.returningClause) {
+      output.push(this.deparseReturningClause(node.returningClause, context));
     }
 
     return output.join(' ');
@@ -1274,12 +1270,11 @@ export class Deparser implements DeparserVisitor {
         }
       }
 
-      if (node.returningList) {
-        output.push('RETURNING');
+      if (node.returningClause) {
         try {
-          output.push(this.deparseReturningList(node.returningList, context));
+          output.push(this.deparseReturningClause(node.returningClause, context));
         } catch (error) {
-          console.warn(`Error processing returningList in DeleteStmt: ${error instanceof Error ? error.message : String(error)}`);
+          console.warn(`Error processing returningClause in DeleteStmt: ${error instanceof Error ? error.message : String(error)}`);
           throw new Error(`Error deparsing DeleteStmt: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
@@ -1365,6 +1360,14 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
+    return output.join(' ');
+  }
+
+  deparseReturningClause(clause: t.ReturningClause, context: DeparserContext): string {
+    const output: string[] = ['RETURNING'];
+    if (clause.exprs) {
+      output.push(this.deparseReturningList(clause.exprs, context));
+    }
     return output.join(' ');
   }
 
@@ -5349,13 +5352,7 @@ export class Deparser implements DeparserVisitor {
           }
           output.push('DROP EXPRESSION');
           break;
-        case 'AT_CheckNotNull':
-          output.push('ALTER COLUMN');
-          if (node.name) {
-            output.push(QuoteUtils.quoteIdentifier(node.name));
-          }
-          output.push('SET NOT NULL');
-          break;
+
         case 'AT_AddIndex':
           output.push('ADD');
           if (node.def) {
@@ -5382,7 +5379,22 @@ export class Deparser implements DeparserVisitor {
           break;
         case 'AT_AlterConstraint':
           output.push('ALTER CONSTRAINT');
-          if (node.def && this.getNodeType(node.def) === 'Constraint') {
+          if (node.def && this.getNodeType(node.def) === 'ATAlterConstraint') {
+            const constraintData = this.getNodeData(node.def) as any;
+            if (constraintData.conname) {
+              output.push(QuoteUtils.quoteIdentifier(constraintData.conname));
+              if (constraintData.alterDeferrability) {
+                output.push(constraintData.deferrable ? 'DEFERRABLE' : 'NOT DEFERRABLE');
+                output.push(constraintData.initdeferred ? 'INITIALLY DEFERRED' : 'INITIALLY IMMEDIATE');
+              }
+              if (constraintData.alterEnforceability) {
+                output.push(constraintData.is_enforced ? 'ENFORCED' : 'NOT ENFORCED');
+              }
+              if (constraintData.alterInheritability) {
+                output.push(constraintData.noinherit ? 'NO INHERIT' : 'INHERIT');
+              }
+            }
+          } else if (node.def && this.getNodeType(node.def) === 'Constraint') {
             const constraintData = this.getNodeData(node.def) as any;
             if (constraintData.conname) {
               output.push(QuoteUtils.quoteIdentifier(constraintData.conname));
@@ -9312,6 +9324,10 @@ export class Deparser implements DeparserVisitor {
         .map(clause => this.visit(clause, context))
         .join(' ');
       output.push(whenClauses);
+    }
+
+    if (node.returningClause) {
+      output.push(this.deparseReturningClause(node.returningClause, context));
     }
 
     return output.join(' ');

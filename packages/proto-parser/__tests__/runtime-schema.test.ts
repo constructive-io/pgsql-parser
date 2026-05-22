@@ -101,6 +101,6 @@ describe('runtime-schema', () => {
         format: 'json',
         filename: 'latest-schema'
       }
-    }, '17-latest.proto');
+    }, '18-latest.proto');
   });
 });

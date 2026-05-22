@@ -32,12 +32,12 @@
     "test:watch": "jest --watch"
   },
   "devDependencies": {
-    "libpg-query": "17.7.3",
+    "libpg-query": "18.0.0",
     "makage": "^0.1.8"
   },
   "dependencies": {
-    "@pgsql/enums": "^17.6.2",
-    "@pgsql/types": "^17.6.2",
+    "@pgsql/enums": "^18.0.0",
+    "@pgsql/types": "^18.0.0",
     "@pgsql/utils": "workspace:^"
   },
   "keywords": [

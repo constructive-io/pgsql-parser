@@ -44479,6 +44479,18 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "list_end",
+        "type": "int32",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "list_start",
+        "type": "int32",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "location",
         "type": "int32",
         "isArray": false,
@@ -44565,6 +44577,18 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
       {
         "name": "rexpr",
         "type": "Node",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "rexpr_list_end",
+        "type": "int32",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "rexpr_list_start",
+        "type": "int32",
         "isArray": false,
         "optional": true
       }
@@ -45804,6 +45828,18 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "list_end",
+        "type": "int32",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "list_start",
+        "type": "int32",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "location",
         "type": "int32",
         "isArray": false,
@@ -45818,6 +45854,60 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
       {
         "name": "xpr",
         "type": "Node",
+        "isArray": false,
+        "optional": true
+      }
+    ]
+  },
+  {
+    "name": "ATAlterConstraint",
+    "isNode": true,
+    "fields": [
+      {
+        "name": "alterDeferrability",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "alterEnforceability",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "alterInheritability",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "conname",
+        "type": "string",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "deferrable",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "initdeferred",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "is_enforced",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "noinherit",
+        "type": "bool",
         "isArray": false,
         "optional": true
       }
@@ -46643,6 +46733,18 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "fk_with_period",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "generated_kind",
+        "type": "string",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "generated_when",
         "type": "string",
         "isArray": false,
@@ -46667,12 +46769,6 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
-        "name": "inhcount",
-        "type": "int32",
-        "isArray": false,
-        "optional": true
-      },
-      {
         "name": "initdeferred",
         "type": "bool",
         "isArray": false,
@@ -46680,6 +46776,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
       },
       {
         "name": "initially_valid",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "is_enforced",
         "type": "bool",
         "isArray": false,
         "optional": true
@@ -46733,6 +46835,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "pk_with_period",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "pktable",
         "type": "RangeVar",
         "isArray": false,
@@ -46759,6 +46867,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
       {
         "name": "where_clause",
         "type": "Node",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "without_overlaps",
+        "type": "bool",
         "isArray": false,
         "optional": true
       }
@@ -47633,6 +47747,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "nnconstraints",
+        "type": "Node",
+        "isArray": true,
+        "optional": true
+      },
+      {
         "name": "ofTypename",
         "type": "TypeName",
         "isArray": false,
@@ -48209,9 +48329,9 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
-        "name": "returningList",
-        "type": "Node",
-        "isArray": true,
+        "name": "returningClause",
+        "type": "ReturningClause",
+        "isArray": false,
         "optional": true
       },
       {
@@ -48803,6 +48923,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "location",
+        "type": "int32",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "mode",
         "type": "FunctionParameterMode",
         "isArray": false,
@@ -49151,6 +49277,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "iswithoutoverlaps",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "nulls_not_distinct",
         "type": "bool",
         "isArray": false,
@@ -49343,9 +49475,9 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
-        "name": "returningList",
-        "type": "Node",
-        "isArray": true,
+        "name": "returningClause",
+        "type": "ReturningClause",
+        "isArray": false,
         "optional": true
       },
       {
@@ -49434,7 +49566,7 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
       },
       {
         "name": "viewQuery",
-        "type": "Node",
+        "type": "Query",
         "isArray": false,
         "optional": true
       }
@@ -50585,9 +50717,9 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
-        "name": "returningList",
-        "type": "Node",
-        "isArray": true,
+        "name": "returningClause",
+        "type": "ReturningClause",
+        "isArray": false,
         "optional": true
       },
       {
@@ -51533,6 +51665,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "hasGroupRTE",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "hasModifyingCTE",
         "type": "bool",
         "isArray": false,
@@ -51650,6 +51788,18 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "name": "returningList",
         "type": "Node",
         "isArray": true,
+        "optional": true
+      },
+      {
+        "name": "returningNewAlias",
+        "type": "string",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "returningOldAlias",
+        "type": "string",
+        "isArray": false,
         "optional": true
       },
       {
@@ -51984,6 +52134,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
       },
       {
         "name": "functions",
+        "type": "Node",
+        "isArray": true,
+        "optional": true
+      },
+      {
+        "name": "groupexprs",
         "type": "Node",
         "isArray": true,
         "optional": true
@@ -52471,6 +52627,78 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
     ]
   },
   {
+    "name": "ReturningClause",
+    "isNode": true,
+    "fields": [
+      {
+        "name": "exprs",
+        "type": "Node",
+        "isArray": true,
+        "optional": true
+      },
+      {
+        "name": "options",
+        "type": "Node",
+        "isArray": true,
+        "optional": true
+      }
+    ]
+  },
+  {
+    "name": "ReturningExpr",
+    "isNode": true,
+    "fields": [
+      {
+        "name": "retexpr",
+        "type": "Node",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "retlevelsup",
+        "type": "int32",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "retold",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "xpr",
+        "type": "Node",
+        "isArray": false,
+        "optional": true
+      }
+    ]
+  },
+  {
+    "name": "ReturningOption",
+    "isNode": true,
+    "fields": [
+      {
+        "name": "location",
+        "type": "int32",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "option",
+        "type": "ReturningOptionKind",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "isArray": false,
+        "optional": true
+      }
+    ]
+  },
+  {
     "name": "ReturnStmt",
     "isNode": true,
     "fields": [
@@ -52511,6 +52739,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
     "isNode": true,
     "fields": [
       {
+        "name": "cmptype",
+        "type": "CompareType",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "inputcollids",
         "type": "Node",
         "isArray": true,
@@ -52538,12 +52772,6 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "name": "rargs",
         "type": "Node",
         "isArray": true,
-        "optional": true
-      },
-      {
-        "name": "rctype",
-        "type": "RowCompareType",
-        "isArray": false,
         "optional": true
       },
       {
@@ -53059,11 +53287,6 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
     ]
   },
   {
-    "name": "SinglePartitionSpec",
-    "isNode": true,
-    "fields": []
-  },
-  {
     "name": "SortBy",
     "isNode": true,
     "fields": [
@@ -53117,6 +53340,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
       },
       {
         "name": "nulls_first",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "reverse_sort",
         "type": "bool",
         "isArray": false,
         "optional": true
@@ -53418,6 +53647,54 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
       {
         "name": "xpr",
         "type": "Node",
+        "isArray": false,
+        "optional": true
+      }
+    ]
+  },
+  {
+    "name": "SummaryResult",
+    "isNode": false,
+    "fields": [
+      {
+        "name": "aliases",
+        "type": "string",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "cteNames",
+        "type": "string",
+        "isArray": true,
+        "optional": true
+      },
+      {
+        "name": "filterColumns",
+        "type": "FilterColumn",
+        "isArray": true,
+        "optional": true
+      },
+      {
+        "name": "functions",
+        "type": "Function",
+        "isArray": true,
+        "optional": true
+      },
+      {
+        "name": "statementTypes",
+        "type": "string",
+        "isArray": true,
+        "optional": true
+      },
+      {
+        "name": "tables",
+        "type": "Table",
+        "isArray": true,
+        "optional": true
+      },
+      {
+        "name": "truncatedQuery",
+        "type": "string",
         "isArray": false,
         "optional": true
       }
@@ -53830,9 +54107,9 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
-        "name": "returningList",
-        "type": "Node",
-        "isArray": true,
+        "name": "returningClause",
+        "type": "ReturningClause",
+        "isArray": false,
         "optional": true
       },
       {
@@ -53944,6 +54221,12 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "varreturningtype",
+        "type": "VarReturningType",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "vartype",
         "type": "uint32",
         "isArray": false,
@@ -53980,8 +54263,20 @@ exports[`runtime-schema runtime schema with latest proto 1`] = `
         "optional": true
       },
       {
+        "name": "jumble_args",
+        "type": "bool",
+        "isArray": false,
+        "optional": true
+      },
+      {
         "name": "kind",
         "type": "VariableSetKind",
+        "isArray": false,
+        "optional": true
+      },
+      {
+        "name": "location",
+        "type": "int32",
         "isArray": false,
         "optional": true
       },

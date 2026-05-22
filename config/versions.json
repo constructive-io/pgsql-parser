@@ -34,6 +34,13 @@
       "pgsql-deparser": "17.11.2",
       "@pgsql/types": "17.6.1",
       "npmTag": "pg17"
+    },
+    "18": {
+      "libpg-query": "18.0.0",
+      "pgsql-parser": "18.0.0",
+      "pgsql-deparser": "18.0.0",
+      "@pgsql/types": "18.0.0",
+      "npmTag": "pg18"
     }
   }
 }

@@ -31,7 +31,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@pgsql/types": "^17.6.2",
+    "@pgsql/types": "^18.0.0",
     "pg-proto-parser": "workspace:*"
   },
   "devDependencies": {

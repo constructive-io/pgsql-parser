@@ -36,7 +36,7 @@
     "pgsql-deparser": "workspace:*"
   },
   "dependencies": {
-    "@pgsql/types": "^17.6.2",
+    "@pgsql/types": "^18.0.0",
     "nested-obj": "0.2.2"
   },
   "keywords": []
