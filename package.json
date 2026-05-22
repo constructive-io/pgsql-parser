@@ -23,11 +23,6 @@
     "bump-versions": "ts-node scripts/bump-versions.ts",
     "update-workspace": "makage update-workspace"
   },
-  "pnpm": {
-    "overrides": {
-      "@pgsql/types": "^18.0.0"
-    }
-  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.12.7",

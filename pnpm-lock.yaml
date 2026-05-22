@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@pgsql/types': ^18.0.0
-
 importers:
 
   .:
@@ -85,8 +82,8 @@ importers:
         version: 18.0.0
     devDependencies:
       libpg-query:
-        specifier: 18.0.0
-        version: 18.0.0
+        specifier: 18.0.1
+        version: 18.0.1
       makage:
         specifier: ^0.1.8
         version: 0.1.8
@@ -95,8 +92,8 @@ importers:
   packages/parse:
     dependencies:
       '@libpg-query/parser':
-        specifier: ^17.6.10
-        version: 17.6.10
+        specifier: ^18.0.0
+        version: 18.0.0
       '@pgsql/types':
         specifier: ^18.0.0
         version: 18.0.0
@@ -115,8 +112,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.0.0
-        version: 18.0.0
+        specifier: 18.0.1
+        version: 18.0.1
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -199,8 +196,8 @@ importers:
         version: link:../utils/dist
     devDependencies:
       libpg-query:
-        specifier: 18.0.0
-        version: 18.0.0
+        specifier: 18.0.1
+        version: 18.0.1
       makage:
         specifier: ^0.1.8
         version: 0.1.8
@@ -216,11 +213,11 @@ importers:
         version: link:../deparser/dist
     devDependencies:
       '@libpg-query/parser':
-        specifier: ^17.6.3
-        version: 17.6.3
-      libpg-query:
-        specifier: 18.0.0
+        specifier: ^18.0.0
         version: 18.0.0
+      libpg-query:
+        specifier: 18.0.1
+        version: 18.0.1
       makage:
         specifier: ^0.1.8
         version: 0.1.8
@@ -229,8 +226,8 @@ importers:
   packages/plpgsql-parse:
     dependencies:
       '@libpg-query/parser':
-        specifier: ^17.6.10
-        version: 17.6.10
+        specifier: ^18.0.0
+        version: 18.0.0
       '@pgsql/types':
         specifier: ^18.0.0
         version: 18.0.0
@@ -252,8 +249,8 @@ importers:
   packages/plpgsql-parser:
     dependencies:
       '@libpg-query/parser':
-        specifier: ^17.6.3
-        version: 17.6.3
+        specifier: ^18.0.0
+        version: 18.0.0
       '@pgsql/traverse':
         specifier: workspace:*
         version: link:../traverse/dist
@@ -768,11 +765,8 @@ packages:
     engines: {node: '>=18.0.0'}
     deprecated: This package is an implementation detail of Lerna and is no longer published separately.
 
-  '@libpg-query/parser@17.6.10':
-    resolution: {integrity: sha512-AT/IM9H24/u70HvBhzkYlSBlYQWhJK3Z4CTmTnd3PnMqHU7Ib3o5pk2TEik6IblWsU64D+4GGURn94v2iSRe1A==}
-
-  '@libpg-query/parser@17.6.3':
-    resolution: {integrity: sha512-AvbS7b9GJZfCzqt4tLMqTaYK7Css9pJRTA2dKWLoTlob/XO2VNc30Q3g9DmxNBmokVTrmibkn/dy9bw8hfosQQ==}
+  '@libpg-query/parser@18.0.0':
+    resolution: {integrity: sha512-SlCUpkRMBBwT6vSE8RTgsi9RAiZRiBV9xTnxHQFDTM5DHjPlOzKkVtAF5xzdXUnch7d9MBmGKQf0Gxz/FJiGAg==}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -2728,8 +2722,8 @@ packages:
     resolution: {integrity: sha512-26zzwoBNAvX9AWOPiqqF6FG4HrSCPsHFkQm7nT+xU1ggAujL/eae81RnCv4CJ2In9q9fh10B88sYSzKCUh/Ghg==}
     engines: {node: ^16.14.0 || >=18.0.0}
 
-  libpg-query@18.0.0:
-    resolution: {integrity: sha512-ud7CR7jOQwbSWxl9InM4aRA+gr+qcqcIyvPjfEuLz+B8tznNT4AMbSUgFVMdMwLhOWJdLoyAJeW82bXTzC761g==}
+  libpg-query@18.0.1:
+    resolution: {integrity: sha512-iCfaELghi+XvfuOMjqRM+wzdWge29hQS2Z/tdYgb8JrwETnedDunIK0OS1tIRAlCFij4zvyOeGjZAlBBI8etqw==}
 
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
@@ -4625,14 +4619,8 @@ snapshots:
       - supports-color
       - typescript
 
-  '@libpg-query/parser@17.6.10':
+  '@libpg-query/parser@18.0.0':
     dependencies:
-      '@launchql/protobufjs': 7.2.6
-      '@pgsql/types': 18.0.0
-
-  '@libpg-query/parser@17.6.3':
-    dependencies:
-      '@launchql/protobufjs': 7.2.6
       '@pgsql/types': 18.0.0
 
   '@napi-rs/wasm-runtime@0.2.12':
@@ -6948,7 +6936,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  libpg-query@18.0.0:
+  libpg-query@18.0.1:
     dependencies:
       '@pgsql/types': 18.0.0
 
