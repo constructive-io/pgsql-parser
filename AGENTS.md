@@ -20,7 +20,6 @@ A pnpm monorepo for PostgreSQL AST parsing, deparsing, and code generation. All 
 | `@pgsql/quotes` | `packages/quotes` | SQL identifier/string quoting and keyword classification |
 | `@pgsql/cli` | `packages/pgsql-cli` | CLI tool for parse/deparse operations |
 | `pg-proto-parser` | `packages/proto-parser` | Generate TypeScript from PostgreSQL protobuf definitions |
-| `pg-ast` | `packages/pg-ast` | Low-level AST helpers |
 
 ## Setup
 
@@ -91,7 +90,6 @@ Every package supports these scripts:
 | `utils` | `npm run build:proto` | Generate AST helpers from protobuf |
 | `traverse` | `npm run build:proto` | Generate traversal utilities from protobuf |
 | `transform` | `npm run build:proto` | Generate transformer utilities from protobuf |
-| `pg-ast` | `npm run build:proto` | Generate AST types from protobuf |
 | `pgsql-types` | `npm run infer` | Infer field metadata from SQL fixtures |
 | `pgsql-types` | `npm run generate` | Generate narrowed types from metadata |
 | `proto-parser` | `npm run generate:test-utils` | Generate test utilities from protobuf |

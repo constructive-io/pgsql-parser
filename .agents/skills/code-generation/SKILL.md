@@ -8,14 +8,13 @@ Several packages generate TypeScript code from external sources rather than bein
 
 ## 1. Protobuf-Based Code Generation (`build:proto`)
 
-Four packages generate TypeScript from the PostgreSQL protobuf definition at `__fixtures__/proto/17-latest.proto`:
+Three packages generate TypeScript from the PostgreSQL protobuf definition at `__fixtures__/proto/17-latest.proto`:
 
 | Package | Script | What it generates |
 |---------|--------|-------------------|
 | `@pgsql/utils` | `npm run build:proto` | AST helper functions (`src/`), wrapped helpers (`wrapped.ts`), runtime schema (`runtime-schema.ts`) |
 | `@pgsql/traverse` | `npm run build:proto` | Visitor-pattern traversal utilities |
 | `@pgsql/transform` | `npm run build:proto` | Multi-version AST transformer utilities |
-| `pg-ast` | `npm run build:proto` | Low-level AST type helpers |
 
 Each package has a `scripts/pg-proto-parser.ts` that configures `PgProtoParser` with package-specific options (which features to enable, output paths, type sources).
 
