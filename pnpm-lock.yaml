@@ -215,26 +215,6 @@ importers:
         version: 17.12.2
     publishDirectory: dist
 
-  packages/pg-ast:
-    dependencies:
-      "@pgsql/types":
-        specifier: ^17.6.2
-        version: 17.6.2
-      nested-obj:
-        specifier: 0.2.2
-        version: 0.2.2
-    devDependencies:
-      makage:
-        specifier: ^0.1.8
-        version: 0.1.8
-      pg-proto-parser:
-        specifier: workspace:*
-        version: link:../proto-parser/dist
-      pgsql-deparser:
-        specifier: workspace:*
-        version: link:../deparser/dist
-    publishDirectory: dist
-
   packages/pgsql-cli:
     dependencies:
       "@launchql/protobufjs":
