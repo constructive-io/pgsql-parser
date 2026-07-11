@@ -5339,7 +5339,8 @@ export class Deparser implements DeparserVisitor {
           }
           output.push('SET EXPRESSION');
           if (node.def) {
-            output.push(this.visit(node.def, context));
+            output.push('AS');
+            output.push(context.parens(this.visit(node.def, context)));
           }
           break;
         case 'AT_DropExpression':
@@ -5348,6 +5349,9 @@ export class Deparser implements DeparserVisitor {
             output.push(QuoteUtils.quoteIdentifier(node.name));
           }
           output.push('DROP EXPRESSION');
+          if (node.missing_ok) {
+            output.push('IF EXISTS');
+          }
           break;
         case 'AT_CheckNotNull':
           output.push('ALTER COLUMN');
