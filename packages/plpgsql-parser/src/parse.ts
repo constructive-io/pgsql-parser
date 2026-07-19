@@ -61,7 +61,14 @@ function isPlpgsqlFunction(stmt: any): boolean {
   return language === 'plpgsql';
 }
 
-function extractFunctionInfo(stmt: any, stmtIndex: number, fullSql: string): ParsedFunction | null {
+function getStatementSql(sqlBuffer: Buffer, rawStmt: any): string {
+  const start = rawStmt?.stmt_location ?? 0;
+  const len = rawStmt?.stmt_len;
+  const end = len !== undefined ? start + len : sqlBuffer.length;
+  return sqlBuffer.slice(start, end).toString('utf8');
+}
+
+function extractFunctionInfo(stmt: any, stmtIndex: number, stmtSql: string): ParsedFunction | null {
   const createFunctionStmt = stmt?.CreateFunctionStmt;
   if (!createFunctionStmt) return null;
   
@@ -72,7 +79,10 @@ function extractFunctionInfo(stmt: any, stmtIndex: number, fullSql: string): Par
   if (!body) return null;
   
   try {
-    const plpgsqlRaw = parsePlPgSQLSync(fullSql) as unknown as PLpgSQLParseResult;
+    // Parse only this statement's SQL. Parsing the full script would return
+    // every function's PL/pgSQL AST in plpgsql_funcs, and downstream deparse
+    // pairs each statement with plpgsql_funcs[0].
+    const plpgsqlRaw = parsePlPgSQLSync(stmtSql) as unknown as PLpgSQLParseResult;
     const { ast: hydrated, stats, errors } = hydratePlpgsqlAst(plpgsqlRaw);
     
     return {
@@ -99,6 +109,7 @@ export function parse(sql: string, options: ParseOptions = {}): ParsedScript {
   const sqlResult: ParseResult = parseSqlSync(sql);
   const items: ParsedItem[] = [];
   const functions: ParsedFunction[] = [];
+  const sqlBuffer = Buffer.from(sql, 'utf8');
   
   if (sqlResult.stmts) {
     for (let i = 0; i < sqlResult.stmts.length; i++) {
@@ -106,7 +117,7 @@ export function parse(sql: string, options: ParseOptions = {}): ParsedScript {
       const stmt = rawStmt?.stmt;
       
       if (stmt && isPlpgsqlFunction(stmt) && hydrate) {
-        const fnInfo = extractFunctionInfo(stmt, i, sql);
+        const fnInfo = extractFunctionInfo(stmt, i, getStatementSql(sqlBuffer, rawStmt));
         if (fnInfo) {
           items.push(fnInfo);
           functions.push(fnInfo);

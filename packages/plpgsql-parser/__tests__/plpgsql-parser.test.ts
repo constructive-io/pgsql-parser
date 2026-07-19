@@ -91,6 +91,62 @@ describe('plpgsql-parser', () => {
       
       expect(result).toContain('visitor_renamed');
     });
+
+    it('should preserve each function body in multi-function scripts', () => {
+      const multiFunctionSql = `
+CREATE FUNCTION f1() RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE NOTICE 'one';
+END;
+$$;
+
+CREATE FUNCTION f2() RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE NOTICE 'two';
+END;
+$$;
+
+CREATE FUNCTION f3() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    RETURN NEW;
+  END IF;
+END;
+$$;
+`;
+      const result = transformSync(multiFunctionSql, () => {});
+
+      expect(result).toContain(`'one'`);
+      expect(result).toContain(`'two'`);
+      expect(result).toContain('RETURN new');
+      expect((result.match(/'one'/g) || []).length).toBe(1);
+      expect((result.match(/'two'/g) || []).length).toBe(1);
+    });
+
+    it('should associate the correct plpgsql AST with each parsed function', () => {
+      const multiFunctionSql = `
+CREATE TABLE t (id int);
+
+CREATE FUNCTION fa() RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE NOTICE 'alpha';
+END;
+$$;
+
+CREATE FUNCTION fb() RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE NOTICE 'beta';
+END;
+$$;
+`;
+      const parsed = parse(multiFunctionSql);
+
+      expect(parsed.functions).toHaveLength(2);
+      expect(JSON.stringify(parsed.functions[0].plpgsql.raw)).toContain('alpha');
+      expect(JSON.stringify(parsed.functions[0].plpgsql.raw)).not.toContain('beta');
+      expect(JSON.stringify(parsed.functions[1].plpgsql.raw)).toContain('beta');
+      expect(JSON.stringify(parsed.functions[1].plpgsql.raw)).not.toContain('alpha');
+    });
   });
 
   describe('deparseSync', () => {
