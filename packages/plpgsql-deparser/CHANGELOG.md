@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.9](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.8...plpgsql-deparser@0.7.9) (2026-07-19)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** re-insert INTO after DML RETURNING and skip implicit final RETURN ([8b162ff](https://github.com/constructive-io/pgsql-parser/commit/8b162ff2e2422dcc9ef988e3521f6a5516713273))
+
 ## [0.7.8](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.7...plpgsql-deparser@0.7.8) (2026-07-11)
 
 **Note:** Version bump only for package plpgsql-deparser
