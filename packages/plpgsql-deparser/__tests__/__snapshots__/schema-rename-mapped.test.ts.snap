@@ -227,7 +227,6 @@ CREATE FUNCTION myapp_v2.update_user_status(
     changed_at
   ) VALUES
     (p_user_id, p_status, now());
-  RETURN;
 END$$;
 
 CREATE FUNCTION myapp_v2.cleanup_old_sessions(
@@ -403,6 +402,5 @@ BEGIN
       UPDATE myapp_v2.batch_items SET status = 'processed' WHERE id = item.id;
   END LOOP;
   UPDATE myapp_v2.batches SET status = 'completed',completed_at = now() WHERE id = p_batch_id;
-  RETURN;
 END$$;"
 `;

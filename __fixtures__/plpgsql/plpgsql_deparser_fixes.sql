@@ -505,3 +505,87 @@ BEGIN
   END IF;
   RETURN v_user;
 END$$;
+
+-- Test 38: INSERT ... RETURNING ... INTO (INTO must be re-inserted after RETURNING)
+CREATE FUNCTION test_insert_returning_into() RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id INTO v_id;
+  RETURN v_id;
+END$$;
+
+-- Test 39: UPDATE ... RETURNING ... INTO
+CREATE FUNCTION test_update_returning_into() RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  UPDATE s.t SET name = 'y' WHERE name = 'x' RETURNING id INTO v_id;
+  RETURN v_id;
+END$$;
+
+-- Test 40: DELETE ... RETURNING ... INTO
+CREATE FUNCTION test_delete_returning_into() RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  DELETE FROM s.t WHERE name = 'x' RETURNING id INTO v_id;
+  RETURN v_id;
+END$$;
+
+-- Test 41: INSERT ... RETURNING ... INTO STRICT
+CREATE FUNCTION test_insert_returning_into_strict() RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id INTO STRICT v_id;
+  RETURN v_id;
+END$$;
+
+-- Test 42: INSERT ... RETURNING multiple columns INTO
+CREATE FUNCTION test_insert_returning_multi_into() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+  v_name text;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id, name INTO v_id, v_name;
+END$$;
+
+-- Test 43: INSERT ... RETURNING expression with subquery INTO (INTO must not land inside the subquery)
+CREATE FUNCTION test_insert_returning_subquery_into() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_total bigint;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING (SELECT count(*) FROM s.t WHERE name = 'x') INTO v_total;
+END$$;
+
+-- Test 44: Trigger function with no final return (implicit compiler RETURN must not be emitted)
+CREATE FUNCTION test_trigger_no_final_return() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    RETURN NEW;
+  END IF;
+END$$;
+
+-- Test 45: Void function with explicit trailing RETURN (must be preserved)
+CREATE FUNCTION test_void_explicit_return() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE NOTICE 'hi';
+  RETURN;
+END$$;
+
+-- Test 46: Trigger function ending in RETURN NEW (unchanged)
+CREATE FUNCTION test_trigger_return_new() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END$$;

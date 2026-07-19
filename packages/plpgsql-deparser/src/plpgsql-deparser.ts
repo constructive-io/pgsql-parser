@@ -213,10 +213,47 @@ export class PLpgSQLDeparser {
     // Deparse the action block (BEGIN...END)
     // Pass skipLabel=true since we already output the label
     if (func.action) {
-      parts.push(this.deparseStmt(func.action, context, blockLabel ? true : false));
+      const action = this.stripImplicitFinalReturn(func.action);
+      parts.push(this.deparseStmt(action, context, blockLabel ? true : false));
     }
 
     return parts.join(this.options.newline);
+  }
+
+  /**
+   * Strip the compiler-generated implicit final RETURN from the top-level block.
+   *
+   * The PL/pgSQL compiler appends a bare RETURN node (no expr, no lineno) to every
+   * function body. Emitting it as `RETURN;` is invalid inside trigger functions
+   * (trigger RETURN requires an expression). An explicit user-written `RETURN;`
+   * carries a lineno and is preserved.
+   */
+  private stripImplicitFinalReturn(action: PLpgSQLStmtNode): PLpgSQLStmtNode {
+    if (!('PLpgSQL_stmt_block' in action)) {
+      return action;
+    }
+    const block = action.PLpgSQL_stmt_block;
+    const body = block.body;
+    if (!body || body.length < 2) {
+      return action;
+    }
+    const last = body[body.length - 1];
+    if (!('PLpgSQL_stmt_return' in last)) {
+      return action;
+    }
+    const ret = (last as any).PLpgSQL_stmt_return;
+    const isImplicit = ret.expr === undefined &&
+      ret.lineno === undefined &&
+      (ret.retvarno === undefined || ret.retvarno < 0);
+    if (!isImplicit) {
+      return action;
+    }
+    return {
+      PLpgSQL_stmt_block: {
+        ...block,
+        body: body.slice(0, -1),
+      },
+    };
   }
 
   /**
@@ -1530,6 +1567,11 @@ export class PLpgSQLDeparser {
     
     // Clause keywords that end the SELECT target list at depth 0
     const clauseKeywords = ['FROM', 'WHERE', 'GROUP', 'HAVING', 'WINDOW', 'ORDER', 'LIMIT', 'OFFSET', 'FETCH', 'FOR', 'UNION', 'INTERSECT', 'EXCEPT'];
+    // DML command keywords: for INSERT/UPDATE/DELETE/MERGE ... RETURNING the INTO
+    // clause goes at the end of the statement, after the RETURNING list. The
+    // SELECT clause-keyword scan does not apply (and "INSERT INTO" must not be
+    // mistaken for an existing INTO target clause).
+    const dmlKeywords = ['INSERT', 'UPDATE', 'DELETE', 'MERGE'];
     
     for (let i = 0; i < len; i++) {
       const char = sql[i];
@@ -1644,6 +1686,18 @@ export class PLpgSQLDeparser {
         const isWordBoundary = /\s/.test(prevChar) || prevChar === '(' || prevChar === ')' || prevChar === ',' || i === 0;
         
         if (isWordBoundary) {
+          // DML statement: append INTO at the end (after the RETURNING list)
+          for (const keyword of dmlKeywords) {
+            const pattern = new RegExp(`^${keyword}\\b`, 'i');
+            if (pattern.test(upperSql.slice(i))) {
+              let insertPos = len;
+              while (insertPos > 0 && /\s/.test(sql[insertPos - 1])) {
+                insertPos--;
+              }
+              return insertPos;
+            }
+          }
+          
           // Check if INTO already exists at depth 0
           if (/^INTO\s/i.test(upperSql.slice(i))) {
             return -1;
