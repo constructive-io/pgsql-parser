@@ -1,5 +1,58 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`plpgsql-deparser bug fixes DML RETURNING ... INTO re-insertion should handle multi-column RETURNING ... INTO 1`] = `
+"DECLARE
+  v_id uuid;
+  v_name text;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id, name INTO v_id, v_name;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes DML RETURNING ... INTO re-insertion should not insert INTO inside a RETURNING subquery 1`] = `
+"DECLARE
+  v_total bigint;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING (SELECT count(*) FROM s.t WHERE name = 'x') INTO v_total;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes DML RETURNING ... INTO re-insertion should preserve STRICT in RETURNING ... INTO STRICT 1`] = `
+"DECLARE
+  v_id uuid;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id INTO STRICT v_id;
+  RETURN v_id;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes DML RETURNING ... INTO re-insertion should re-insert INTO after RETURNING for DELETE 1`] = `
+"DECLARE
+  v_id uuid;
+BEGIN
+  DELETE FROM s.t WHERE name = 'x' RETURNING id INTO v_id;
+  RETURN v_id;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes DML RETURNING ... INTO re-insertion should re-insert INTO after RETURNING for INSERT 1`] = `
+"DECLARE
+  v_id uuid;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id INTO v_id;
+  RETURN v_id;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes DML RETURNING ... INTO re-insertion should re-insert INTO after RETURNING for UPDATE 1`] = `
+"DECLARE
+  v_id uuid;
+BEGIN
+  UPDATE s.t SET name = 'y' WHERE name = 'x' RETURNING id INTO v_id;
+  RETURN v_id;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should handle INTO STRICT 1`] = `
 "DECLARE
   v_id integer;
@@ -74,7 +127,6 @@ exports[`plpgsql-deparser bug fixes OUT parameters with SELECT INTO multiple var
 "BEGIN
   SELECT u.name, u.email INTO STRICT name, email FROM users u
     WHERE u.id = p_id;
-  RETURN;
 END"
 `;
 
@@ -98,21 +150,18 @@ exports[`plpgsql-deparser bug fixes PERFORM SELECT fix should handle PERFORM wit
 "BEGIN
   PERFORM set_config('search_path', 'public', true);
   PERFORM nextval('my_sequence');
-  RETURN;
 END"
 `;
 
 exports[`plpgsql-deparser bug fixes PERFORM SELECT fix should handle PERFORM with subquery 1`] = `
 "BEGIN
   PERFORM 1 FROM users WHERE id = 1;
-  RETURN;
 END"
 `;
 
 exports[`plpgsql-deparser bug fixes PERFORM SELECT fix should strip SELECT keyword from PERFORM statements 1`] = `
 "BEGIN
   PERFORM pg_sleep(1);
-  RETURN;
 END"
 `;
 
@@ -139,7 +188,6 @@ BEGIN
   FOR r IN SELECT id, name FROM users LOOP
       RAISE NOTICE 'User: % - %', r.id, r.name;
   END LOOP;
-  RETURN;
 END"
 `;
 
@@ -241,7 +289,6 @@ exports[`plpgsql-deparser bug fixes deep nesting and sequential blocks should ha
                   RAISE NOTICE 'even logging failed';
         END;
   END;
-  RETURN;
 END"
 `;
 
@@ -265,6 +312,28 @@ exports[`plpgsql-deparser bug fixes deep nesting and sequential blocks should ha
   BEGIN
       PERFORM step_two();
   END;
+  RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes implicit trailing RETURN suppression should leave trigger function ending in RETURN NEW unchanged 1`] = `
+"BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes implicit trailing RETURN suppression should not emit implicit compiler-generated RETURN in trigger function 1`] = `
+"BEGIN
+  IF TG_OP = 'INSERT' THEN
+      RETURN NEW;
+  END IF;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes implicit trailing RETURN suppression should preserve explicit trailing RETURN in void function 1`] = `
+"BEGIN
+  RAISE NOTICE 'hi';
   RETURN;
 END"
 `;
@@ -423,7 +492,6 @@ END"
 exports[`plpgsql-deparser bug fixes untested statement types should handle RETURN QUERY 1`] = `
 "BEGIN
   RETURN QUERY SELECT id, name FROM my_table WHERE active = TRUE;
-  RETURN;
 END"
 `;
 

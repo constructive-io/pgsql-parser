@@ -173,7 +173,6 @@ begin
         end if;
         raise exception;
   end;
-  return;
 end"
 `;
 
@@ -186,7 +185,6 @@ exports[`lowercase: if-else-function.sql 1`] = `
   else
       return 'small';
   end if;
-  return;
 end"
 `;
 
@@ -402,7 +400,6 @@ BEGIN
         END IF;
         RAISE EXCEPTION;
   END;
-  RETURN;
 END"
 `;
 
@@ -415,7 +412,6 @@ exports[`uppercase: if-else-function.sql 1`] = `
   ELSE
       RETURN 'small';
   END IF;
-  RETURN;
 END"
 `;
 

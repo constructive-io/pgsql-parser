@@ -872,4 +872,182 @@ END$$`;
       expect(deparsed).toMatchSnapshot();
     });
   });
+
+  describe('DML RETURNING ... INTO re-insertion', () => {
+    const countKeyword = (sql: string, keyword: string): number =>
+      (sql.match(new RegExp(`\\b${keyword}\\b`, 'gi')) || []).length;
+
+    const expectKeywordsPreserved = (original: string, deparsed: string) => {
+      expect(countKeyword(deparsed, 'INTO')).toBeGreaterThanOrEqual(countKeyword(original, 'INTO'));
+      expect(countKeyword(deparsed, 'RETURNING')).toBeGreaterThanOrEqual(countKeyword(original, 'RETURNING'));
+    };
+
+    it('should re-insert INTO after RETURNING for INSERT', async () => {
+      const sql = `CREATE FUNCTION test_insert_returning_into() RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id INTO v_id;
+  RETURN v_id;
+END$$`;
+
+      await testUtils.expectAstMatch('INSERT RETURNING INTO', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURNING id INTO v_id');
+      expectKeywordsPreserved(sql, deparsed);
+    });
+
+    it('should re-insert INTO after RETURNING for UPDATE', async () => {
+      const sql = `CREATE FUNCTION test_update_returning_into() RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  UPDATE s.t SET name = 'y' WHERE name = 'x' RETURNING id INTO v_id;
+  RETURN v_id;
+END$$`;
+
+      await testUtils.expectAstMatch('UPDATE RETURNING INTO', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURNING id INTO v_id');
+      expectKeywordsPreserved(sql, deparsed);
+    });
+
+    it('should re-insert INTO after RETURNING for DELETE', async () => {
+      const sql = `CREATE FUNCTION test_delete_returning_into() RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  DELETE FROM s.t WHERE name = 'x' RETURNING id INTO v_id;
+  RETURN v_id;
+END$$`;
+
+      await testUtils.expectAstMatch('DELETE RETURNING INTO', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURNING id INTO v_id');
+      expectKeywordsPreserved(sql, deparsed);
+    });
+
+    it('should preserve STRICT in RETURNING ... INTO STRICT', async () => {
+      const sql = `CREATE FUNCTION test_insert_returning_into_strict() RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id INTO STRICT v_id;
+  RETURN v_id;
+END$$`;
+
+      await testUtils.expectAstMatch('INSERT RETURNING INTO STRICT', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURNING id INTO STRICT v_id');
+      expectKeywordsPreserved(sql, deparsed);
+    });
+
+    it('should handle multi-column RETURNING ... INTO', async () => {
+      const sql = `CREATE FUNCTION test_insert_returning_multi_into() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+  v_name text;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING id, name INTO v_id, v_name;
+END$$`;
+
+      await testUtils.expectAstMatch('INSERT RETURNING multi INTO', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURNING id, name INTO v_id, v_name');
+      expectKeywordsPreserved(sql, deparsed);
+    });
+
+    it('should not insert INTO inside a RETURNING subquery', async () => {
+      const sql = `CREATE FUNCTION test_insert_returning_subquery_into() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_total bigint;
+BEGIN
+  INSERT INTO s.t (name) VALUES ('x') RETURNING (SELECT count(*) FROM s.t WHERE name = 'x') INTO v_total;
+END$$`;
+
+      await testUtils.expectAstMatch('INSERT RETURNING subquery INTO', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      // INTO must be appended after the subquery, not inside it
+      expect(deparsed).toContain(`(SELECT count(*) FROM s.t WHERE name = 'x') INTO v_total`);
+      expectKeywordsPreserved(sql, deparsed);
+    });
+  });
+
+  describe('implicit trailing RETURN suppression', () => {
+    it('should not emit implicit compiler-generated RETURN in trigger function', async () => {
+      const sql = `CREATE FUNCTION test_trigger_no_final_return() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    RETURN NEW;
+  END IF;
+END$$`;
+
+      await testUtils.expectAstMatch('trigger no final return', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      // The compiler-generated implicit final RETURN must not be emitted
+      // (bare RETURN; is a syntax error inside trigger functions)
+      expect(deparsed).not.toMatch(/RETURN;/);
+    });
+
+    it('should preserve explicit trailing RETURN in void function', async () => {
+      const sql = `CREATE FUNCTION test_void_explicit_return() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE NOTICE 'hi';
+  RETURN;
+END$$`;
+
+      await testUtils.expectAstMatch('void explicit return', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toMatch(/RETURN;/);
+    });
+
+    it('should leave trigger function ending in RETURN NEW unchanged', async () => {
+      const sql = `CREATE FUNCTION test_trigger_return_new() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END$$`;
+
+      await testUtils.expectAstMatch('trigger return new', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('RETURN NEW');
+      expect(deparsed).not.toMatch(/RETURN;/);
+    });
+  });
 });
