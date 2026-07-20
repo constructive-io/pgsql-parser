@@ -166,12 +166,12 @@ begin
   exception
       when unique_violation then
         raise notice 'unique_violation: %', SQLERRM;
-        raise exception;
+        raise;
       when others then
         if p_debug then
                 raise notice 'error: % (%:%)', SQLERRM, SQLSTATE, SQLERRM;
         end if;
-        raise exception;
+        raise;
   end;
 end"
 `;
@@ -393,12 +393,12 @@ BEGIN
   EXCEPTION
       WHEN unique_violation THEN
         RAISE NOTICE 'unique_violation: %', SQLERRM;
-        RAISE EXCEPTION;
+        RAISE;
       WHEN others THEN
         IF p_debug THEN
                 RAISE NOTICE 'error: % (%:%)', SQLERRM, SQLSTATE, SQLERRM;
         END IF;
-        RAISE EXCEPTION;
+        RAISE;
   END;
 END"
 `;

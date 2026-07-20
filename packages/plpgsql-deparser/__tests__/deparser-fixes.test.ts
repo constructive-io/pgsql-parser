@@ -1050,4 +1050,168 @@ END$$`;
       expect(deparsed).not.toMatch(/RETURN;/);
     });
   });
+
+  describe('cursor SCROLL options', () => {
+    it('should keep SCROLL on the cursor declaration, not OPEN', async () => {
+      const sql = `CREATE FUNCTION test_scroll_cursor() RETURNS integer
+LANGUAGE plpgsql AS $$
+DECLARE
+  c SCROLL CURSOR FOR SELECT id FROM s.t ORDER BY id;
+  v int;
+BEGIN
+  OPEN c;
+  FETCH PRIOR FROM c INTO v;
+  CLOSE c;
+  RETURN v;
+END$$`;
+
+      await testUtils.expectAstMatch('scroll cursor declaration', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('SCROLL CURSOR FOR');
+      expect(deparsed).not.toMatch(/OPEN\s+(NO\s+)?SCROLL/i);
+      expect(deparsed).not.toMatch(/OPEN\s+c\s+(NO\s+)?SCROLL/i);
+    });
+
+    it('should not add SCROLL to OPEN of a plain bound cursor', async () => {
+      const sql = `CREATE FUNCTION test_plain_cursor() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  c CURSOR FOR SELECT id FROM s.t;
+  v int;
+BEGIN
+  OPEN c;
+  FETCH c INTO v;
+  CLOSE c;
+END$$`;
+
+      await testUtils.expectAstMatch('plain cursor open', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('OPEN c');
+      expect(deparsed).not.toMatch(/SCROLL/i);
+    });
+  });
+
+  describe('FETCH/MOVE directions', () => {
+    it('should preserve counts and FIRST/LAST directions', async () => {
+      const sql = `CREATE FUNCTION test_move_directions() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  c SCROLL CURSOR FOR SELECT id FROM s.t ORDER BY id;
+BEGIN
+  OPEN c;
+  MOVE FORWARD 3 FROM c;
+  MOVE BACKWARD 2 FROM c;
+  MOVE FORWARD ALL FROM c;
+  MOVE BACKWARD ALL FROM c;
+  MOVE LAST IN c;
+  MOVE FIRST IN c;
+  CLOSE c;
+END$$`;
+
+      await testUtils.expectAstMatch('move directions', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('FORWARD 3');
+      expect(deparsed).toContain('BACKWARD 2');
+      expect(deparsed).toContain('BACKWARD ALL');
+      expect(deparsed).toContain('LAST');
+      expect(deparsed).toContain('FIRST');
+    });
+  });
+
+  describe('SQLSTATE exception conditions', () => {
+    it('should emit SQLSTATE codes with the SQLSTATE keyword', async () => {
+      const sql = `CREATE FUNCTION test_sqlstate_cond() RETURNS integer
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN 1;
+EXCEPTION
+  WHEN unique_violation OR SQLSTATE '23503' THEN
+    RETURN -1;
+  WHEN SQLSTATE 'P0001' THEN
+    RETURN -2;
+END$$`;
+
+      await testUtils.expectAstMatch('sqlstate condition', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain(`SQLSTATE '23503'`);
+      expect(deparsed).toContain(`SQLSTATE 'P0001'`);
+      expect(deparsed).not.toMatch(/WHEN\s+23503/);
+    });
+  });
+
+  describe('bare RAISE re-throw', () => {
+    it('should keep a bare RAISE bare (not RAISE EXCEPTION;)', async () => {
+      const sql = `CREATE FUNCTION test_bare_raise() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM 1;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE;
+END$$`;
+
+      await testUtils.expectAstMatch('bare raise', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toMatch(/RAISE;/);
+      expect(deparsed).not.toMatch(/RAISE EXCEPTION;/);
+    });
+
+    it('should still emit level and message for normal RAISE', async () => {
+      const sql = `CREATE FUNCTION test_raise_msg() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'boom %', 42 USING HINT = 'h';
+  RAISE NOTICE 'hi';
+END$$`;
+
+      await testUtils.expectAstMatch('raise with message', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain(`RAISE EXCEPTION 'boom %', 42`);
+      expect(deparsed).toContain(`RAISE NOTICE 'hi'`);
+    });
+  });
+
+  describe('subscripted assignment targets', () => {
+    it('should not parenthesize array element assignment targets', async () => {
+      const sql = `CREATE FUNCTION test_array_assign() RETURNS int[]
+LANGUAGE plpgsql AS $$
+DECLARE
+  a int[] := ARRAY[1, 2, 3, 4, 5];
+  m int[][] := ARRAY[ARRAY[1, 2], ARRAY[3, 4]];
+BEGIN
+  a[2] := 20;
+  a[2:3] := ARRAY[9, 9];
+  m[1][2] := 42;
+  RETURN a;
+END$$`;
+
+      await testUtils.expectAstMatch('array element assignment', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('a[2] := 20');
+      expect(deparsed).toContain('m[1][2] := 42');
+      expect(deparsed).not.toMatch(/\(a\)\[/);
+      expect(deparsed).not.toMatch(/\(m\)\[/);
+    });
+  });
 });

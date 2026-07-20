@@ -177,12 +177,12 @@ BEGIN
   EXCEPTION
       WHEN unique_violation THEN
         RAISE NOTICE 'unique_violation: %', sqlerrm;
-        RAISE EXCEPTION;
+        RAISE;
       WHEN others THEN
         IF p_debug THEN
                 RAISE NOTICE 'error: % (%:%)', sqlerrm, sqlstate, sqlerrm;
         END IF;
-        RAISE EXCEPTION;
+        RAISE;
   END;
 END$$"
 `;

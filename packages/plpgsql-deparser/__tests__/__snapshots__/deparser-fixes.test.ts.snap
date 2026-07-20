@@ -53,6 +53,21 @@ BEGIN
 END"
 `;
 
+exports[`plpgsql-deparser bug fixes FETCH/MOVE directions should preserve counts and FIRST/LAST directions 1`] = `
+"DECLARE
+  c SCROLL CURSOR FOR SELECT id FROM s.t ORDER BY id;
+BEGIN
+  OPEN c;
+  MOVE FORWARD 3 FROM c;
+  MOVE BACKWARD 2 FROM c;
+  MOVE ALL FROM c;
+  MOVE BACKWARD ALL FROM c;
+  MOVE LAST FROM c;
+  MOVE FIRST FROM c;
+  CLOSE c;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes INTO clause depth-aware scanner should handle INTO STRICT 1`] = `
 "DECLARE
   v_id integer;
@@ -209,6 +224,37 @@ exports[`plpgsql-deparser bug fixes Record field qualification (recfield) should
 END"
 `;
 
+exports[`plpgsql-deparser bug fixes SQLSTATE exception conditions should emit SQLSTATE codes with the SQLSTATE keyword 1`] = `
+"BEGIN
+  BEGIN
+      RETURN 1;
+  EXCEPTION
+      WHEN unique_violation OR SQLSTATE '23503' THEN
+        RETURN -1;
+      WHEN SQLSTATE 'P0001' THEN
+        RETURN -2;
+  END;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes bare RAISE re-throw should keep a bare RAISE bare (not RAISE EXCEPTION;) 1`] = `
+"BEGIN
+  BEGIN
+      PERFORM 1;
+  EXCEPTION
+      WHEN others THEN
+        RAISE;
+  END;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes bare RAISE re-throw should still emit level and message for normal RAISE 1`] = `
+"BEGIN
+  RAISE EXCEPTION 'boom %', 42 USING HINT = 'h';
+  RAISE NOTICE 'hi';
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes blocks inside control structures should handle block inside CASE WHEN 1`] = `
 "BEGIN
   CASE p_status
@@ -273,6 +319,29 @@ BEGIN
       NEW.is_premium := true;
   END IF;
   RETURN NEW;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes cursor SCROLL options should keep SCROLL on the cursor declaration, not OPEN 1`] = `
+"DECLARE
+  c SCROLL CURSOR FOR SELECT id FROM s.t ORDER BY id;
+  v int;
+BEGIN
+  OPEN c;
+  FETCH PRIOR FROM c INTO v;
+  CLOSE c;
+  RETURN v;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes cursor SCROLL options should not add SCROLL to OPEN of a plain bound cursor 1`] = `
+"DECLARE
+  c CURSOR FOR SELECT id FROM s.t;
+  v int;
+BEGIN
+  OPEN c;
+  FETCH FROM c INTO v;
+  CLOSE c;
 END"
 `;
 
@@ -441,6 +510,18 @@ BEGIN
       NEW.bitstr := lpad('', v_len, '0');
   END IF;
   RETURN NEW;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes subscripted assignment targets should not parenthesize array element assignment targets 1`] = `
+"DECLARE
+  a int[] := ARRAY[1, 2, 3, 4, 5];
+  m int[][] := ARRAY[ARRAY[1, 2], ARRAY[3, 4]];
+BEGIN
+  a[2] := 20;
+  a[2:3] := ARRAY[9, 9];
+  m[1][2] := 42;
+  RETURN a;
 END"
 `;
 
