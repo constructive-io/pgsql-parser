@@ -588,3 +588,12 @@ BEGIN
   RETURN;
 END"
 `;
+
+exports[`plpgsql-deparser bug fixes uppercase %ROWTYPE/%TYPE references should not quote uppercase %ROWTYPE and %TYPE references 1`] = `
+"DECLARE
+  r myschema.users%ROWTYPE;
+  n myschema.users.name%TYPE;
+BEGIN
+  RETURN;
+END"
+`;

@@ -747,16 +747,17 @@ export class PLpgSQLDeparser {
   private deparseType(typeNode: PLpgSQLTypeNode): string {
     if ('PLpgSQL_type' in typeNode) {
       let typname = typeNode.PLpgSQL_type.typname;
+      const isRowOrTypeRef = /%(rowtype|type)/i.test(typname);
       
       // Strip pg_catalog. prefix for built-in types, but preserve schema qualification
       // for %rowtype and %type references where the schema is part of the table/variable reference
-      if (!typname.includes('%rowtype') && !typname.includes('%type')) {
+      if (!isRowOrTypeRef) {
         typname = typname.replace(/^"?pg_catalog"?\./, '');
       }
       
       // For %rowtype and %type references, preserve as-is after stripping quotes
       // These are special PL/pgSQL type references that shouldn't be re-quoted
-      if (typname.includes('%rowtype') || typname.includes('%type')) {
+      if (isRowOrTypeRef) {
         // Strip quotes and return as-is
         return typname.replace(/"/g, '').trim();
       }
