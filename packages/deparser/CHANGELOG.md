@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [17.18.5](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.18.4...pgsql-deparser@17.18.5) (2026-07-20)
+
+### Bug Fixes
+
+- **deparser:** add MergeWhenClause visitor and dot-join SecLabelStmt object names ([df814d2](https://github.com/constructive-io/pgsql-parser/commit/df814d24718b378ab26fe3e0725398d396e00463))
+
 ## [17.18.4](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@17.18.3...pgsql-deparser@17.18.4) (2026-07-11)
 
 **Note:** Version bump only for package pgsql-deparser
