@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.10](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.9...plpgsql-deparser@0.7.10) (2026-07-20)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** cursor SCROLL options, FETCH/MOVE directions, SQLSTATE conditions, bare RAISE, subscripted assignment targets ([4f7de71](https://github.com/constructive-io/pgsql-parser/commit/4f7de7107bb31eea04a22444e15c6a5ae4223da0))
+
 ## [0.7.9](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.8...plpgsql-deparser@0.7.9) (2026-07-19)
 
 ### Bug Fixes
