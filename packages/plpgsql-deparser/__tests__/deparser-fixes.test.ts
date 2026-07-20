@@ -1214,4 +1214,28 @@ END$$`;
       expect(deparsed).not.toMatch(/\(m\)\[/);
     });
   });
+
+  describe('uppercase %ROWTYPE/%TYPE references', () => {
+    it('should not quote uppercase %ROWTYPE and %TYPE references', async () => {
+      const sql = `CREATE FUNCTION test_rowtype_case() RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  r myschema.users%ROWTYPE;
+  n myschema.users.name%TYPE;
+BEGIN
+  NULL;
+END;
+$$`;
+
+      await testUtils.expectAstMatch('uppercase rowtype/type refs', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toMatch(/myschema\.users%ROWTYPE/i);
+      expect(deparsed).not.toContain('"users%ROWTYPE"');
+      expect(deparsed).not.toContain('"name%TYPE"');
+    });
+  });
 });
