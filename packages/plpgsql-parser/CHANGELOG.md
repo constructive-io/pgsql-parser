@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.12](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-parser@0.5.11...plpgsql-parser@0.5.12) (2026-07-20)
+
+### Bug Fixes
+
+- **plpgsql-parser:** parse each function's own statement SQL so multi-function scripts keep distinct bodies ([b96a43c](https://github.com/constructive-io/pgsql-parser/commit/b96a43c37d2ac3eb34db33503e4ab2c8a0bf7ba4))
+
 ## [0.5.11](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-parser@0.5.10...plpgsql-parser@0.5.11) (2026-07-19)
 
 **Note:** Version bump only for package plpgsql-parser
