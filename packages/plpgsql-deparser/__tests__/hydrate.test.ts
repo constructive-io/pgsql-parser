@@ -274,6 +274,47 @@ $$`;
       expect(deparsedBody).not.toContain('old-schema');
     });
 
+    it('should preserve array bounds when dehydrating modified type-name nodes', () => {
+      const sql = `CREATE FUNCTION test_func() RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_items "old-schema".mytype[];
+    v_item "old-schema".mytype;
+BEGIN
+    NULL;
+END;
+$$`;
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const { ast: hydratedAst } = hydratePlpgsqlAst(parsed);
+
+      // Rename schema inside the hydrated TypeName AST nodes
+      const renameTypeNames = (obj: any): void => {
+        if (obj === null || typeof obj !== 'object') return;
+        if ('PLpgSQL_type' in obj) {
+          const typname = obj.PLpgSQL_type.typname;
+          if (typname && typeof typname === 'object' && typname.kind === 'type-name') {
+            for (const name of typname.typeNameNode?.names ?? []) {
+              if (name?.String?.sval === 'old-schema') {
+                name.String.sval = 'new_schema';
+              }
+            }
+          }
+        }
+        for (const value of Object.values(obj)) renameTypeNames(value);
+      };
+      renameTypeNames(hydratedAst);
+
+      const dehydratedAst = dehydratePlpgsqlAst(hydratedAst);
+      const deparsedBody = deparseSync(dehydratedAst);
+
+      // The renamed array type must keep its [] bounds
+      expect(deparsedBody).toContain('new_schema.mytype[]');
+      expect(deparsedBody).toContain('v_item new_schema.mytype;');
+      expect(deparsedBody).not.toContain('old-schema');
+    });
+
     it('should deparse modified assign AST nodes (schema renaming in assignments)', () => {
       const sql = `CREATE FUNCTION test_func() RETURNS void
 LANGUAGE plpgsql

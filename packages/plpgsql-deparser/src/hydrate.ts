@@ -652,8 +652,11 @@ function deparseTypeNameNode(typeNameNode: Node, sqlDeparseOptions?: DeparserOpt
       }
     } as any;
     const deparsed = Deparser.deparse(wrappedStmt, sqlDeparseOptions);
-    // Extract the type name from "SELECT NULL::typename"
-    const match = deparsed.match(/SELECT\s+NULL::(.+)/i);
+    // Extract the type name from "SELECT NULL::typename" or
+    // "SELECT CAST(NULL AS typename)" depending on the deparser's cast style
+    const match =
+      deparsed.match(/SELECT\s+NULL::(.+)/i) ||
+      deparsed.match(/^SELECT\s+CAST\(NULL\s+AS\s+(.+)\)[\s;]*$/i);
     if (match) {
       return match[1].trim().replace(/;$/, '');
     }
