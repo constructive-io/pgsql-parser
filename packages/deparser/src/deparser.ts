@@ -8720,7 +8720,16 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.object) {
-      output.push(this.visit(node.object, context));
+      // Qualified names arrive as a List of String nodes and must be
+      // dot-joined (visiting the List directly would comma-join them).
+      if (typeof node.object === 'object' && 'List' in node.object) {
+        const list = node.object.List as t.List;
+        const objectParts = ListUtils.unwrapList(list.items)
+          .map(item => this.visit(item, context));
+        output.push(objectParts.join('.'));
+      } else {
+        output.push(this.visit(node.object, context));
+      }
     }
 
     output.push('IS');
@@ -9316,6 +9325,81 @@ export class Deparser implements DeparserVisitor {
         .map(clause => this.visit(clause, context))
         .join(' ');
       output.push(whenClauses);
+    }
+
+    if (node.returningList && node.returningList.length > 0) {
+      output.push('RETURNING');
+      const returningList = ListUtils.unwrapList(node.returningList)
+        .map(target => this.visit(target, context))
+        .join(', ');
+      output.push(returningList);
+    }
+
+    return output.join(' ');
+  }
+
+  MergeWhenClause(node: t.MergeWhenClause, context: DeparserContext): string {
+    const output: string[] = ['WHEN'];
+
+    switch (node.matchKind) {
+      case 'MERGE_WHEN_MATCHED':
+        output.push('MATCHED');
+        break;
+      case 'MERGE_WHEN_NOT_MATCHED_BY_SOURCE':
+        output.push('NOT MATCHED BY SOURCE');
+        break;
+      case 'MERGE_WHEN_NOT_MATCHED_BY_TARGET':
+        output.push('NOT MATCHED');
+        break;
+    }
+
+    if (node.condition) {
+      output.push('AND');
+      output.push(this.visit(node.condition, context));
+    }
+
+    output.push('THEN');
+
+    switch (node.commandType) {
+      case 'CMD_UPDATE': {
+        output.push('UPDATE SET');
+        const assignments = ListUtils.unwrapList(node.targetList)
+          .map(target => this.visit(target, context.spawn('UpdateStmt', { update: true })))
+          .join(', ');
+        output.push(assignments);
+        break;
+      }
+      case 'CMD_INSERT': {
+        output.push('INSERT');
+        const targetList = ListUtils.unwrapList(node.targetList);
+        if (targetList.length > 0) {
+          const columns = targetList
+            .map(target => QuoteUtils.quoteIdentifier(target.ResTarget?.name))
+            .join(', ');
+          output.push(`(${columns})`);
+        }
+        if (node.override === 'OVERRIDING_USER_VALUE') {
+          output.push('OVERRIDING USER VALUE');
+        } else if (node.override === 'OVERRIDING_SYSTEM_VALUE') {
+          output.push('OVERRIDING SYSTEM VALUE');
+        }
+        const values = ListUtils.unwrapList(node.values);
+        if (values.length > 0) {
+          const valueItems = values
+            .map(value => this.visit(value, context))
+            .join(', ');
+          output.push(`VALUES (${valueItems})`);
+        } else {
+          output.push('DEFAULT VALUES');
+        }
+        break;
+      }
+      case 'CMD_DELETE':
+        output.push('DELETE');
+        break;
+      case 'CMD_NOTHING':
+        output.push('DO NOTHING');
+        break;
     }
 
     return output.join(' ');
