@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.12](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.11...plpgsql-deparser@0.7.12) (2026-07-20)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** case-insensitive %rowtype/%type detection in deparseType ([d858de3](https://github.com/constructive-io/pgsql-parser/commit/d858de3b3c59929d8040d000416e1704c621bd0c))
+- **plpgsql-deparser:** dehydrate hydrated type-names via AST (handle CAST deparse form), preserving array bounds ([e689ce1](https://github.com/constructive-io/pgsql-parser/commit/e689ce1e7f28d5fa3275ccbad1eba4b13ecf3488))
+
 ## [0.7.11](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.10...plpgsql-deparser@0.7.11) (2026-07-20)
 
 **Note:** Version bump only for package plpgsql-deparser
