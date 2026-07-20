@@ -692,8 +692,15 @@ export class PLpgSQLDeparser {
     }
 
     // Handle cursor declarations - don't output the type for cursors
-    // The syntax is: cursor_name CURSOR FOR query
+    // The syntax is: cursor_name [NO] SCROLL CURSOR FOR query
     if (v.cursor_explicit_expr) {
+      if (v.cursor_options !== undefined) {
+        if (v.cursor_options & 2) { // CURSOR_OPT_SCROLL
+          parts.push(kw('SCROLL'));
+        } else if (v.cursor_options & 4) { // CURSOR_OPT_NO_SCROLL
+          parts.push(kw('NO SCROLL'));
+        }
+      }
       parts.push(kw('CURSOR FOR'));
       parts.push(this.deparseExpr(v.cursor_explicit_expr));
       return parts.join(' ');
@@ -980,7 +987,14 @@ export class PLpgSQLDeparser {
           const excData = exc.PLpgSQL_exception;
           const conditions = excData.conditions?.map((c: any) => {
             if ('PLpgSQL_condition' in c) {
-              return c.PLpgSQL_condition.condname || c.PLpgSQL_condition.sqlerrstate || 'OTHERS';
+              const condname = c.PLpgSQL_condition.condname || c.PLpgSQL_condition.sqlerrstate;
+              if (!condname) return 'OTHERS';
+              // SQLSTATE conditions are stored as their raw 5-character code
+              // (e.g. '23503'); named conditions are lowercase identifiers.
+              if (/^[0-9A-Z]{5}$/.test(condname)) {
+                return `${kw('SQLSTATE')} '${condname}'`;
+              }
+              return condname;
             }
             return 'OTHERS';
           }).join(' OR ') || 'OTHERS';
@@ -1016,7 +1030,10 @@ export class PLpgSQLDeparser {
     // The expression already contains the assignment in the query
     // e.g., "sum := sum + n"
     if (expr.includes(':=')) {
-      return expr;
+      // The SQL deparser parenthesizes subscripted targets like '(a)[2]',
+      // but the PL/pgSQL assignment grammar requires a bare identifier
+      // before subscripts/field selections.
+      return expr.replace(/^\((\w+(?:\.\w+)*)\)(?=\[|\.)/, '$1');
     }
     
     return `${varName} := ${expr}`;
@@ -1445,6 +1462,13 @@ export class PLpgSQLDeparser {
     const kw = this.keyword;
     const parts: string[] = [kw('RAISE')];
 
+    // Bare RAISE (re-throw inside an exception handler) has no condition
+    // name, message, or options; emitting a level like 'RAISE EXCEPTION;'
+    // alone is a syntax error.
+    if (!raise.condname && !raise.message && (!raise.options || raise.options.length === 0)) {
+      return kw('RAISE');
+    }
+
     // Log level
     const level = this.getElogLevelName(raise.elog_level);
     if (level) {
@@ -1841,12 +1865,14 @@ export class PLpgSQLDeparser {
       }
     }
     
-    // Handle SCROLL option
-    if (open.cursor_options) {
-      if (open.cursor_options & 256) { // CURSOR_OPT_SCROLL
-        parts.splice(1, 0, kw('SCROLL'));
-      } else if (open.cursor_options & 512) { // CURSOR_OPT_NO_SCROLL
-        parts.splice(1, 0, kw('NO SCROLL'));
+    // Handle SCROLL option: only valid for unbound cursors
+    // (OPEN cursor_var [NO] SCROLL FOR query); a bound cursor's options
+    // belong on its declaration.
+    if (open.cursor_options && (open.query || open.dynquery)) {
+      if (open.cursor_options & 2) { // CURSOR_OPT_SCROLL
+        parts.splice(2, 0, kw('SCROLL'));
+      } else if (open.cursor_options & 4) { // CURSOR_OPT_NO_SCROLL
+        parts.splice(2, 0, kw('NO SCROLL'));
       }
     }
     
@@ -2155,17 +2181,27 @@ export class PLpgSQLDeparser {
     
     switch (direction) {
       case FetchDirection.FETCH_FORWARD:
+        if (expr) {
+          return `${this.keyword('FORWARD')} ${this.deparseExpr(expr)}`;
+        }
         if (howMany === 1) return '';
-        if (howMany === 0) return this.keyword('ALL');
+        if (howMany === 2147483647) return this.keyword('ALL'); // FETCH_ALL
         return `${this.keyword('FORWARD')} ${howMany}`;
       case FetchDirection.FETCH_BACKWARD:
+        if (expr) {
+          return `${this.keyword('BACKWARD')} ${this.deparseExpr(expr)}`;
+        }
         if (howMany === 1) return this.keyword('PRIOR');
-        if (howMany === 0) return `${this.keyword('BACKWARD')} ${this.keyword('ALL')}`;
+        if (howMany === 2147483647) return `${this.keyword('BACKWARD')} ${this.keyword('ALL')}`; // FETCH_ALL
         return `${this.keyword('BACKWARD')} ${howMany}`;
       case FetchDirection.FETCH_ABSOLUTE:
         if (expr) {
           return `${this.keyword('ABSOLUTE')} ${this.deparseExpr(expr)}`;
         }
+        // FIRST/LAST are stored as ABSOLUTE 1 / ABSOLUTE -1 with no expr;
+        // an explicit ABSOLUTE n always carries an expr.
+        if (howMany === 1) return this.keyword('FIRST');
+        if (howMany === -1) return this.keyword('LAST');
         return `${this.keyword('ABSOLUTE')} ${howMany}`;
       case FetchDirection.FETCH_RELATIVE:
         if (expr) {

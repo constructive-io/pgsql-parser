@@ -589,3 +589,90 @@ BEGIN
   NEW.updated_at := now();
   RETURN NEW;
 END$$;
+
+-- Test 47: Bound cursor declared with SCROLL (option must stay on the declaration, not OPEN)
+CREATE FUNCTION test_scroll_cursor_decl() RETURNS int
+LANGUAGE plpgsql AS $$
+DECLARE
+  c SCROLL CURSOR FOR SELECT id FROM s.t ORDER BY id;
+  v int;
+BEGIN
+  OPEN c;
+  FETCH PRIOR FROM c INTO v;
+  CLOSE c;
+  RETURN v;
+END$$;
+
+-- Test 48: Bound cursor declared with NO SCROLL
+CREATE FUNCTION test_no_scroll_cursor_decl() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  c NO SCROLL CURSOR FOR SELECT id FROM s.t;
+  v int;
+BEGIN
+  OPEN c;
+  FETCH c INTO v;
+  CLOSE c;
+END$$;
+
+-- Test 49: Plain bound cursor (OPEN must not gain a SCROLL keyword)
+CREATE FUNCTION test_plain_cursor_open() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  c CURSOR FOR SELECT id FROM s.t;
+  v int;
+BEGIN
+  OPEN c;
+  FETCH c INTO v;
+  CLOSE c;
+END$$;
+
+-- Test 50: MOVE with count/expression directions (counts must be preserved)
+CREATE FUNCTION test_move_directions() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  c SCROLL CURSOR FOR SELECT id FROM s.t ORDER BY id;
+BEGIN
+  OPEN c;
+  MOVE FORWARD 3 FROM c;
+  MOVE BACKWARD 2 FROM c;
+  MOVE FORWARD ALL FROM c;
+  MOVE BACKWARD ALL FROM c;
+  MOVE LAST IN c;
+  CLOSE c;
+END$$;
+
+-- Test 51: Exception handler with SQLSTATE condition (must emit SQLSTATE 'xxxxx')
+CREATE FUNCTION test_sqlstate_condition() RETURNS int
+LANGUAGE plpgsql AS $$
+BEGIN
+  RETURN 1;
+EXCEPTION
+  WHEN unique_violation OR SQLSTATE '23503' THEN
+    RETURN -1;
+  WHEN SQLSTATE 'P0001' THEN
+    RETURN -2;
+END$$;
+
+-- Test 52: Bare RAISE re-throw inside an exception handler (must stay bare)
+CREATE FUNCTION test_bare_raise_rethrow() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM 1;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE;
+END$$;
+
+-- Test 53: Array element and slice assignment (target must not be parenthesized)
+CREATE FUNCTION test_array_element_assignment() RETURNS int[]
+LANGUAGE plpgsql AS $$
+DECLARE
+  a int[] := ARRAY[1, 2, 3, 4, 5];
+  m int[][] := ARRAY[ARRAY[1, 2], ARRAY[3, 4]];
+BEGIN
+  a[2] := 20;
+  a[2:3] := ARRAY[9, 9];
+  m[1][2] := 42;
+  RETURN a;
+END$$;
