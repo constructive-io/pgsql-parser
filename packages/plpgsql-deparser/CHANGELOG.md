@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.13](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.12...plpgsql-deparser@0.7.13) (2026-07-21)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** bound cursor argument lists and RAISE SQLSTATE conditions ([51d4b77](https://github.com/constructive-io/pgsql-parser/commit/51d4b7778a4154b7619f2c98309b5e89aea73fae))
+
 ## [0.7.12](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.11...plpgsql-deparser@0.7.12) (2026-07-20)
 
 ### Bug Fixes
