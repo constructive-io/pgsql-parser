@@ -238,25 +238,21 @@ END"
 
 exports[`plpgsql-deparser bug fixes SQLSTATE exception conditions should emit SQLSTATE codes with the SQLSTATE keyword 1`] = `
 "BEGIN
-  BEGIN
-      RETURN 1;
-  EXCEPTION
-      WHEN unique_violation OR SQLSTATE '23503' THEN
-        RETURN -1;
-      WHEN SQLSTATE 'P0001' THEN
-        RETURN -2;
-  END;
+  RETURN 1;
+EXCEPTION
+  WHEN unique_violation OR SQLSTATE '23503' THEN
+    RETURN -1;
+  WHEN SQLSTATE 'P0001' THEN
+    RETURN -2;
 END"
 `;
 
 exports[`plpgsql-deparser bug fixes bare RAISE re-throw should keep a bare RAISE bare (not RAISE EXCEPTION;) 1`] = `
 "BEGIN
-  BEGIN
-      PERFORM 1;
-  EXCEPTION
-      WHEN others THEN
-        RAISE;
-  END;
+  PERFORM 1;
+EXCEPTION
+  WHEN others THEN
+    RAISE;
 END"
 `;
 
@@ -370,17 +366,15 @@ END"
 
 exports[`plpgsql-deparser bug fixes deep nesting and sequential blocks should handle block inside exception handler 1`] = `
 "BEGIN
-  BEGIN
-      PERFORM risky();
-  EXCEPTION
-      WHEN others THEN
-        BEGIN
-                PERFORM log_error();
-        EXCEPTION
-                WHEN others THEN
-                  RAISE NOTICE 'even logging failed';
-        END;
-  END;
+  PERFORM risky();
+EXCEPTION
+  WHEN others THEN
+    BEGIN
+          PERFORM log_error();
+    EXCEPTION
+          WHEN others THEN
+            RAISE NOTICE 'even logging failed';
+    END;
 END"
 `;
 
@@ -545,6 +539,33 @@ BEGIN
   a[2:3] := ARRAY[9, 9];
   m[1][2] := 42;
   RETURN a;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes top-level EXCEPTION wrapper block should not emit a nested BEGIN for a top-level block with EXCEPTION 1`] = `
+"DECLARE
+  v_result numeric;
+BEGIN
+  v_result := a / b;
+  RETURN v_result;
+EXCEPTION
+  WHEN division_by_zero THEN
+    RETURN NULL;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes top-level EXCEPTION wrapper block should preserve an explicit nested block with EXCEPTION 1`] = `
+"DECLARE
+  v_result text;
+BEGIN
+  v_result := 'unknown';
+  BEGIN
+      SELECT status INTO v_result FROM items WHERE id = p_id;
+  EXCEPTION
+      WHEN no_data_found THEN
+        v_result := 'not_found';
+  END;
+  RETURN v_result;
 END"
 `;
 

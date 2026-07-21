@@ -725,3 +725,32 @@ BEGIN
     RETURN NEXT r;
   END LOOP;
 END$$;
+
+-- Test 59: Top-level block with EXCEPTION clause (compiler wraps it in a synthetic outer block; must not deparse a nested BEGIN)
+CREATE FUNCTION test_toplevel_exception(a numeric, b numeric) RETURNS numeric
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result numeric;
+BEGIN
+  v_result := a / b;
+  RETURN v_result;
+EXCEPTION
+  WHEN division_by_zero THEN
+    RETURN NULL;
+END$$;
+
+-- Test 60: Explicit nested block with EXCEPTION inside a top-level block (nesting must be preserved)
+CREATE FUNCTION test_explicit_nested_exception(p_id integer) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result text;
+BEGIN
+  v_result := 'unknown';
+  BEGIN
+    SELECT status INTO v_result FROM items WHERE id = p_id;
+  EXCEPTION
+    WHEN no_data_found THEN
+      v_result := 'not_found';
+  END;
+  RETURN v_result;
+END$$;
