@@ -1142,11 +1142,8 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    if (node.returningList) {
-      output.push('RETURNING');
-      const returningList = ListUtils.unwrapList(node.returningList);
-      const returns = returningList.map(ret => this.visit(ret as Node, context));
-      output.push(returns.join(', '));
+    if (node.returningClause) {
+      output.push(this.ReturningClause(node.returningClause, context));
     }
 
     return output.join(' ');
@@ -1216,9 +1213,8 @@ export class Deparser implements DeparserVisitor {
       output.push(this.visit(node.whereClause, context));
     }
 
-    if (node.returningList) {
-      output.push('RETURNING');
-      output.push(this.deparseReturningList(node.returningList, context));
+    if (node.returningClause) {
+      output.push(this.ReturningClause(node.returningClause, context));
     }
 
     return output.join(' ');
@@ -1274,12 +1270,11 @@ export class Deparser implements DeparserVisitor {
         }
       }
 
-      if (node.returningList) {
-        output.push('RETURNING');
+      if (node.returningClause) {
         try {
-          output.push(this.deparseReturningList(node.returningList, context));
+          output.push(this.ReturningClause(node.returningClause, context));
         } catch (error) {
-          console.warn(`Error processing returningList in DeleteStmt: ${error instanceof Error ? error.message : String(error)}`);
+          console.warn(`Error processing returningClause in DeleteStmt: ${error instanceof Error ? error.message : String(error)}`);
           throw new Error(`Error deparsing DeleteStmt: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
@@ -1366,6 +1361,60 @@ export class Deparser implements DeparserVisitor {
     }
 
     return output.join(' ');
+  }
+
+  ATAlterConstraint(node: t.ATAlterConstraint, context: DeparserContext): string {
+    const output: string[] = ['ALTER CONSTRAINT'];
+
+    if (node.conname) {
+      output.push(QuoteUtils.quoteIdentifier(node.conname));
+    }
+
+    if (node.alterEnforceability) {
+      output.push(node.is_enforced ? 'ENFORCED' : 'NOT ENFORCED');
+    }
+
+    if (node.alterDeferrability) {
+      output.push(node.deferrable ? 'DEFERRABLE' : 'NOT DEFERRABLE');
+      if (node.initdeferred) {
+        output.push('INITIALLY DEFERRED');
+      }
+    }
+
+    if (node.alterInheritability) {
+      output.push(node.noinherit ? 'NO INHERIT' : 'INHERIT');
+    }
+
+    return output.join(' ');
+  }
+
+  deparseKeyAttrs(attrs: t.Node[], withPeriod: boolean | undefined, context: DeparserContext): string {
+    const items = ListUtils.unwrapList(attrs).map(attr => this.visit(attr, context));
+    if (withPeriod && items.length > 0) {
+      items[items.length - 1] = `PERIOD ${items[items.length - 1]}`;
+    }
+    return items.join(', ');
+  }
+
+  ReturningClause(node: t.ReturningClause, context: DeparserContext): string {
+    const output: string[] = ['RETURNING'];
+
+    if (node.options && node.options.length > 0) {
+      const options = ListUtils.unwrapList(node.options)
+        .map(option => this.visit(option, context));
+      output.push(`WITH (${options.join(', ')})`);
+    }
+
+    if (node.exprs && node.exprs.length > 0) {
+      output.push(this.deparseReturningList(node.exprs, context));
+    }
+
+    return output.join(' ');
+  }
+
+  ReturningOption(node: t.ReturningOption, context: DeparserContext): string {
+    const keyword = node.option === 'RETURNING_OPTION_NEW' ? 'NEW' : 'OLD';
+    return `${keyword} AS ${QuoteUtils.quoteIdentifier(node.value)}`;
   }
 
   deparseReturningList(list: t.Node[], context: DeparserContext): string {
@@ -2758,7 +2807,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     // Handle constraint name if present
-    if (node.conname && (node.contype === 'CONSTR_CHECK' || node.contype === 'CONSTR_UNIQUE' || node.contype === 'CONSTR_PRIMARY' || node.contype === 'CONSTR_FOREIGN')) {
+    if (node.conname && (node.contype === 'CONSTR_CHECK' || node.contype === 'CONSTR_UNIQUE' || node.contype === 'CONSTR_PRIMARY' || node.contype === 'CONSTR_FOREIGN' || node.contype === 'CONSTR_NOTNULL')) {
       output.push('CONSTRAINT');
       output.push(QuoteUtils.quoteIdentifier(node.conname));
     }
@@ -2769,6 +2818,18 @@ export class Deparser implements DeparserVisitor {
         break;
       case 'CONSTR_NOTNULL':
         output.push('NOT NULL');
+        if (node.keys && node.keys.length > 0 && !context.isColumnConstraint) {
+          const keyList = ListUtils.unwrapList(node.keys)
+            .map(key => this.visit(key, context))
+            .join(', ');
+          output.push(keyList);
+        }
+        if (node.is_no_inherit) {
+          output.push('NO INHERIT');
+        }
+        if (node.skip_validation) {
+          output.push('NOT VALID');
+        }
         break;
       case 'CONSTR_DEFAULT':
         output.push('DEFAULT');
@@ -2794,8 +2855,12 @@ export class Deparser implements DeparserVisitor {
             output.push(context.parens(this.visit(node.raw_expr, context)));
           }
         }
-        // Handle NOT VALID for check constraints
-        if (node.skip_validation) {
+        // PG18: constraints are enforced unless explicitly NOT ENFORCED
+        // (libpg-query omits false booleans, so undefined means not enforced)
+        if (node.is_enforced !== true && !context.isDomainConstraint) {
+          output.push('NOT ENFORCED');
+        } else if (node.skip_validation) {
+          // NOT ENFORCED implies NOT VALID, so only emit NOT VALID when enforced
           output.push('NOT VALID');
         }
         // Handle NO INHERIT for check constraints - only for table constraints, not domain constraints
@@ -2814,7 +2879,7 @@ export class Deparser implements DeparserVisitor {
         if (node.raw_expr) {
           output.push(context.parens(this.visit(node.raw_expr, context)));
         }
-        output.push('STORED');
+        output.push(node.generated_kind === 'v' ? 'VIRTUAL' : 'STORED');
         break;
       case 'CONSTR_IDENTITY':
         output.push('GENERATED');
@@ -2880,10 +2945,12 @@ export class Deparser implements DeparserVisitor {
       case 'CONSTR_PRIMARY':
         output.push('PRIMARY KEY');
         if (node.keys && node.keys.length > 0) {
-          const keyList = ListUtils.unwrapList(node.keys)
-            .map(key => this.visit(key, context))
-            .join(', ');
-          output.push(`(${keyList})`);
+          const keyItems = ListUtils.unwrapList(node.keys)
+            .map(key => this.visit(key, context));
+          if (node.without_overlaps) {
+            keyItems[keyItems.length - 1] += ' WITHOUT OVERLAPS';
+          }
+          output.push(`(${keyItems.join(', ')})`);
         }
         if (node.indexname) {
           output.push('USING INDEX');
@@ -2900,10 +2967,12 @@ export class Deparser implements DeparserVisitor {
           output.push('NULLS NOT DISTINCT');
         }
         if (node.keys && node.keys.length > 0) {
-          const keyList = ListUtils.unwrapList(node.keys)
-            .map(key => this.visit(key, context))
-            .join(', ');
-          output.push(`(${keyList})`);
+          const keyItems = ListUtils.unwrapList(node.keys)
+            .map(key => this.visit(key, context));
+          if (node.without_overlaps) {
+            keyItems[keyItems.length - 1] += ' WITHOUT OVERLAPS';
+          }
+          output.push(`(${keyItems.join(', ')})`);
         }
         if (node.indexname) {
           output.push('USING INDEX');
@@ -2916,19 +2985,13 @@ export class Deparser implements DeparserVisitor {
           if (context.isPretty()) {
             output.push('\n' + context.indent('FOREIGN KEY'));
             if (node.fk_attrs && node.fk_attrs.length > 0) {
-              const fkAttrs = ListUtils.unwrapList(node.fk_attrs)
-                .map(attr => this.visit(attr, context))
-                .join(', ');
-              output.push(`(${fkAttrs})`);
+              output.push(`(${this.deparseKeyAttrs(node.fk_attrs, node.fk_with_period, context)})`);
             }
             output.push('\n' + context.indent('REFERENCES'));
           } else {
             output.push('FOREIGN KEY');
             if (node.fk_attrs && node.fk_attrs.length > 0) {
-              const fkAttrs = ListUtils.unwrapList(node.fk_attrs)
-                .map(attr => this.visit(attr, context))
-                .join(', ');
-              output.push(`(${fkAttrs})`);
+              output.push(`(${this.deparseKeyAttrs(node.fk_attrs, node.fk_with_period, context)})`);
             }
             output.push('REFERENCES');
           }
@@ -2948,9 +3011,7 @@ export class Deparser implements DeparserVisitor {
           }
         }
         if (node.pk_attrs && node.pk_attrs.length > 0) {
-          const pkAttrs = ListUtils.unwrapList(node.pk_attrs)
-            .map(attr => this.visit(attr, context))
-            .join(', ');
+          const pkAttrs = this.deparseKeyAttrs(node.pk_attrs, node.pk_with_period, context);
           if (context.isPretty() && !context.isColumnConstraint) {
             const lastIndex = output.length - 1;
             if (lastIndex >= 0) {
@@ -3024,8 +3085,16 @@ export class Deparser implements DeparserVisitor {
             output.push(deleteClause.replace('ON DELETE ', ''));
           }
         }
-        // Handle NOT VALID for foreign key constraints - only for table constraints, not domain constraints
-        if (node.skip_validation && !context.isDomainConstraint) {
+        // PG18: constraints are enforced unless explicitly NOT ENFORCED
+        // (libpg-query omits false booleans, so undefined means not enforced)
+        if (node.is_enforced !== true && !context.isDomainConstraint) {
+          if (context.isPretty() && !context.isColumnConstraint) {
+            output.push('\n' + context.indent('NOT ENFORCED'));
+          } else {
+            output.push('NOT ENFORCED');
+          }
+        } else if (node.skip_validation && !context.isDomainConstraint) {
+          // NOT ENFORCED implies NOT VALID, so only emit NOT VALID when enforced
           if (context.isPretty() && !context.isColumnConstraint) {
             output.push('\n' + context.indent('NOT VALID'));
           } else {
@@ -3044,6 +3113,12 @@ export class Deparser implements DeparserVisitor {
         break;
       case 'CONSTR_ATTR_IMMEDIATE':
         output.push('INITIALLY IMMEDIATE');
+        break;
+      case 'CONSTR_ATTR_ENFORCED':
+        output.push('ENFORCED');
+        break;
+      case 'CONSTR_ATTR_NOT_ENFORCED':
+        output.push('NOT ENFORCED');
         break;
       case 'CONSTR_EXCLUSION':
         output.push('EXCLUDE');
@@ -4184,6 +4259,11 @@ export class Deparser implements DeparserVisitor {
     switch (node.kind) {
       case 'VAR_SET_VALUE':
         const localPrefix = node.is_local ? 'LOCAL ' : '';
+        if (node.jumble_args && node.name === 'xmloption' && node.args) {
+          const xmlValue = this.getNodeData(ListUtils.unwrapList(node.args)[0]);
+          const xmlOption = (typeof xmlValue.sval === 'object' ? xmlValue.sval.sval : xmlValue.sval) || '';
+          return `SET ${localPrefix}XML OPTION ${xmlOption.toUpperCase()}`;
+        }
         const args = node.args ? ListUtils.unwrapList(node.args).map(arg => {
           const nodeData = this.getNodeData(arg);
           if (nodeData.sval !== undefined) {
@@ -4196,6 +4276,10 @@ export class Deparser implements DeparserVisitor {
           return this.visit(arg, context);
         }).join(', ') : '';
 
+              if (node.jumble_args && node.name === 'timezone') {
+                return `SET ${localPrefix}TIME ZONE ${args}`;
+              }
+
               // Handle args - always include TO clause if args exist (even if empty string)
               const paramName = QuoteUtils.quoteIdentifier(node.name);
               if (!node.args || node.args.length === 0) {
@@ -4203,6 +4287,9 @@ export class Deparser implements DeparserVisitor {
               }
               return `SET ${localPrefix}${paramName} TO ${args}`;
             case 'VAR_SET_DEFAULT':
+              if (node.jumble_args && node.name === 'timezone') {
+                return `SET ${node.is_local ? 'LOCAL ' : ''}TIME ZONE DEFAULT`;
+              }
               const defaultParamName = QuoteUtils.quoteIdentifier(node.name);
               return `SET ${defaultParamName} TO DEFAULT`;
             case 'VAR_SET_CURRENT':
@@ -5353,13 +5440,6 @@ export class Deparser implements DeparserVisitor {
             output.push('IF EXISTS');
           }
           break;
-        case 'AT_CheckNotNull':
-          output.push('ALTER COLUMN');
-          if (node.name) {
-            output.push(QuoteUtils.quoteIdentifier(node.name));
-          }
-          output.push('SET NOT NULL');
-          break;
         case 'AT_AddIndex':
           output.push('ADD');
           if (node.def) {
@@ -5385,22 +5465,26 @@ export class Deparser implements DeparserVisitor {
           }
           break;
         case 'AT_AlterConstraint':
-          output.push('ALTER CONSTRAINT');
-          if (node.def && this.getNodeType(node.def) === 'Constraint') {
-            const constraintData = this.getNodeData(node.def) as any;
-            if (constraintData.conname) {
-              output.push(QuoteUtils.quoteIdentifier(constraintData.conname));
-              if (constraintData.deferrable !== undefined) {
-                output.push(constraintData.deferrable ? 'DEFERRABLE' : 'NOT DEFERRABLE');
+          if (node.def && this.getNodeType(node.def) === 'ATAlterConstraint') {
+            output.push(this.ATAlterConstraint(this.getNodeData(node.def) as t.ATAlterConstraint, context));
+          } else {
+            output.push('ALTER CONSTRAINT');
+            if (node.def && this.getNodeType(node.def) === 'Constraint') {
+              const constraintData = this.getNodeData(node.def) as any;
+              if (constraintData.conname) {
+                output.push(QuoteUtils.quoteIdentifier(constraintData.conname));
+                if (constraintData.deferrable !== undefined) {
+                  output.push(constraintData.deferrable ? 'DEFERRABLE' : 'NOT DEFERRABLE');
+                }
+                if (constraintData.initdeferred !== undefined) {
+                  output.push(constraintData.initdeferred ? 'INITIALLY DEFERRED' : 'INITIALLY IMMEDIATE');
+                }
               }
-              if (constraintData.initdeferred !== undefined) {
-                output.push(constraintData.initdeferred ? 'INITIALLY DEFERRED' : 'INITIALLY IMMEDIATE');
+            } else if (node.name) {
+              output.push(QuoteUtils.quoteIdentifier(node.name));
+              if (node.def) {
+                output.push(this.visit(node.def, context));
               }
-            }
-          } else if (node.name) {
-            output.push(QuoteUtils.quoteIdentifier(node.name));
-            if (node.def) {
-              output.push(this.visit(node.def, context));
             }
           }
           break;
@@ -9327,15 +9411,15 @@ export class Deparser implements DeparserVisitor {
       output.push(whenClauses);
     }
 
-    if (node.returningList && node.returningList.length > 0) {
-      output.push('RETURNING');
-      const returningList = ListUtils.unwrapList(node.returningList)
-        .map(target => this.visit(target, context))
-        .join(', ');
-      output.push(returningList);
+    if (node.returningClause) {
+      output.push(this.ReturningClause(node.returningClause, context));
     }
 
     return output.join(' ');
+  }
+
+  MergeSupportFunc(node: t.MergeSupportFunc, context: DeparserContext): string {
+    return 'merge_action()';
   }
 
   MergeWhenClause(node: t.MergeWhenClause, context: DeparserContext): string {

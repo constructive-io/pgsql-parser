@@ -64,6 +64,10 @@ export const cleanTree = (tree: any) => {
     stmt_len: noop,
     stmt_location: noop,
     location: noop,
+    rexpr_list_start: noop,
+    rexpr_list_end: noop,
+    list_start: noop,
+    list_end: noop,
     DefElem: (obj: any) => {
       if (obj.defname === 'as') {
         if (Array.isArray(obj.arg) && obj.arg.length) {

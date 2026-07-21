@@ -1,5 +1,5 @@
 import { scanComments, ScannedElement } from '../src/scanner';
-import { loadModule } from '@libpg-query/parser';
+import { loadModule } from 'libpg-query';
 
 describe('scanComments', () => {
   beforeAll(async () => {

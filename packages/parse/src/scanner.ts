@@ -2,13 +2,13 @@
  * Scanner for extracting comments and vertical whitespace
  * from PostgreSQL SQL source text.
  *
- * Uses PostgreSQL's real lexer via @libpg-query/parser's scanSync()
+ * Uses PostgreSQL's real lexer via libpg-query's scanSync()
  * to identify SQL_COMMENT tokens with exact byte positions.
  * Whitespace detection uses token gaps to find blank lines
  * between statements/comments.
  */
 
-import { scanSync, type ScanToken } from '@libpg-query/parser';
+import { scanSync, type ScanToken } from 'libpg-query';
 
 /** Token type for -- line comments from PostgreSQL's lexer */
 const SQL_COMMENT = 275;

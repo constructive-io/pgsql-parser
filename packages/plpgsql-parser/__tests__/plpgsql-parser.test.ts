@@ -118,7 +118,7 @@ $$;
 
       expect(result).toContain(`'one'`);
       expect(result).toContain(`'two'`);
-      expect(result).toContain('RETURN new');
+      expect(result).toContain('RETURN NEW');
       expect((result.match(/'one'/g) || []).length).toBe(1);
       expect((result.match(/'two'/g) || []).length).toBe(1);
     });

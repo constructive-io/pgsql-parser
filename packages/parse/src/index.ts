@@ -22,8 +22,8 @@ export { deparseEnhanced, deparseEnhancedSync, Deparser, DeparserOptions } from 
 // Re-export standard deparse for non-enhanced use
 export { deparse, deparseSync } from 'pgsql-deparser';
 
-// Re-export loadModule from @libpg-query/parser
-export { loadModule } from '@libpg-query/parser';
+// Re-export loadModule from libpg-query
+export { loadModule } from 'libpg-query';
 
 // Types
 export {

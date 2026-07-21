@@ -1,4 +1,4 @@
-import { loadModule } from '@libpg-query/parser';
+import { loadModule } from 'libpg-query';
 import { PLpgSQLDeparser, deparseSync, PLpgSQLParseResult } from '../src';
 import { FixtureTestUtils } from '../test-utils';
 

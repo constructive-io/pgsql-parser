@@ -163,7 +163,7 @@ export class PLpgSQLDeparser {
     // Normalize the action: strip the compiler-generated implicit final
     // RETURN and unwrap the compiler-generated wrapper block
     const action = func.action
-      ? this.unwrapCompilerWrapperBlock(this.stripImplicitFinalReturn(func.action, func.out_param_varno))
+      ? this.unwrapCompilerWrapperBlock(this.stripImplicitFinalReturn(func.action, this.resolveOutParamVarno(func, returnInfo)))
       : undefined;
 
     // Collect loop-introduced variables before generating DECLARE section
@@ -190,7 +190,7 @@ export class PLpgSQLDeparser {
       returnInfo,
       loopVarLinenos,
       blockDatumMap,
-      outParamVarno: func.out_param_varno,
+      outParamVarno: this.resolveOutParamVarno(func, returnInfo),
     };
 
     const parts: string[] = [];
@@ -794,6 +794,10 @@ export class PLpgSQLDeparser {
    * Deparse a record declaration
    */
   private deparseRec(rec: PLpgSQL_rec, context: PLpgSQLDeparserContext): string {
+    const datatype = (rec as { datatype?: PLpgSQLTypeNode }).datatype;
+    if (datatype && 'PLpgSQL_type' in datatype && datatype.PLpgSQL_type.typname) {
+      return `${rec.refname} ${this.deparseType(datatype)}`;
+    }
     return `${rec.refname} ${this.keyword('RECORD')}`;
   }
 
@@ -826,8 +830,12 @@ export class PLpgSQLDeparser {
       // For %rowtype and %type references, preserve as-is after stripping quotes
       // These are special PL/pgSQL type references that shouldn't be re-quoted
       if (isRowOrTypeRef) {
-        // Strip quotes and return as-is
-        return typname.replace(/"/g, '').trim();
+        // Strip quotes and return as-is, normalizing the %rowtype/%type suffix casing
+        return typname
+          .replace(/"/g, '')
+          .replace(/%rowtype\s*$/i, `%${this.keyword('ROWTYPE')}`)
+          .replace(/%type\s*$/i, `%${this.keyword('TYPE')}`)
+          .trim();
       }
       
       // Check if this is a schema-qualified type (contains a dot outside of quotes)
@@ -1465,6 +1473,9 @@ export class PLpgSQLDeparser {
     
     if (ret.retvarno !== undefined && ret.retvarno >= 0 && ret.retvarno !== context.outParamVarno) {
       const varName = this.getVarName(ret.retvarno, context);
+      if (varName === 'new' || varName === 'old') {
+        return `${kw('RETURN')} ${varName.toUpperCase()}`;
+      }
       return `${kw('RETURN')} ${varName}`;
     }
     
@@ -2054,6 +2065,32 @@ export class PLpgSQLDeparser {
   /**
    * Get variable name by varno from datums
    */
+  /**
+   * Resolve the OUT-parameter varno for a function.
+   * Serialized JSON omits out_param_varno when it is 0, which is ambiguous:
+   * it can mean "no OUT params" or "OUT param row/var at datum 0". When the
+   * field is absent, datum 0 belonging to something other than the implicit
+   * `found` variable indicates an OUT parameter at varno 0.
+   */
+  private resolveOutParamVarno(func: PLpgSQL_function, returnInfo?: ReturnInfo): number | undefined {
+    if (func.out_param_varno !== undefined) {
+      return func.out_param_varno;
+    }
+    if (func.datums) {
+      const rowIdx = func.datums.findIndex(
+        d => 'PLpgSQL_row' in d && d.PLpgSQL_row.refname === '(unnamed row)' && d.PLpgSQL_row.lineno === -1
+      );
+      if (rowIdx >= 0) {
+        return rowIdx;
+      }
+      const first = func.datums[0];
+      if (first && returnInfo?.kind === 'out_params' && 'PLpgSQL_var' in first && first.PLpgSQL_var.refname !== 'found') {
+        return 0;
+      }
+    }
+    return undefined;
+  }
+
   private getVarName(varno: number | undefined, context: PLpgSQLDeparserContext): string {
     if (varno === undefined || varno < 0 || !context.datums) {
       return `$${varno ?? 0}`;

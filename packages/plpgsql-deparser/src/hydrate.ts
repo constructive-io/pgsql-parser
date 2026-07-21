@@ -1,4 +1,4 @@
-import { parseSync, scanSync } from '@libpg-query/parser';
+import { parseSync, scanSync } from 'libpg-query';
 import { ParseResult, Node } from '@pgsql/types';
 import { Deparser, DeparserOptions } from 'pgsql-deparser';
 import {

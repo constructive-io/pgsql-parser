@@ -211,9 +211,9 @@ CREATE FUNCTION myapp_v2.audit_changes() RETURNS trigger LANGUAGE plpgsql AS $$B
   ) VALUES
     (tg_table_name, tg_op, to_json(old), to_json(new), now());
   IF tg_op = 'DELETE' THEN
-      RETURN old;
+      RETURN OLD;
   END IF;
-  RETURN new;
+  RETURN NEW;
 END$$;
 
 CREATE FUNCTION myapp_v2.update_user_status(
@@ -317,7 +317,7 @@ BEGIN
       UPDATE myapp_v2.profiles SET updated_at = now() WHERE user_id = new.id;
   END IF;
   PERFORM myapp_v2.notify_profile_change(new.id);
-  RETURN new;
+  RETURN NEW;
 END$$;
 
 CREATE FUNCTION myapp_v2.get_top_customers(
@@ -388,7 +388,7 @@ END$$;
 CREATE PROCEDURE myapp_v2.process_batch(
   p_batch_id int
 ) LANGUAGE plpgsql AS $$DECLARE
-  item RECORD;
+  item record;
 BEGIN
   FOR item IN SELECT *
   FROM myapp_v2.batch_items

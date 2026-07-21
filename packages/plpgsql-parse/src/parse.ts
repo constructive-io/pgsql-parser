@@ -11,8 +11,8 @@ import {
   parseSync as parseSqlSync,
   parsePlPgSQLSync,
   loadModule,
-} from '@libpg-query/parser';
-import type { ParseResult } from '@libpg-query/parser';
+} from 'libpg-query';
+import type { ParseResult } from 'libpg-query';
 import { parseSync as pgsqlParseSync } from 'pgsql-parse';
 import type { EnhancedParseResult, EnhancedStmt } from 'pgsql-parse';
 import {

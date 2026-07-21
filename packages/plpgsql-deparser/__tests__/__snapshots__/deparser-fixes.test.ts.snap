@@ -314,7 +314,7 @@ END"
 exports[`plpgsql-deparser bug fixes bound cursor arguments should emit the parameter list of a bound cursor and not redeclare its args 1`] = `
 "DECLARE
   c CURSOR (key int, label text) FOR SELECT * FROM users WHERE id = key AND name = label;
-  r RECORD;
+  r record;
 BEGIN
   OPEN c (42, 'x');
   FETCH FROM c INTO r;
@@ -493,8 +493,8 @@ END"
 
 exports[`plpgsql-deparser bug fixes real-world patterns should handle multi-step sign-in pattern 1`] = `
 "DECLARE
-  v_user RECORD;
-  v_secret RECORD;
+  v_user record;
+  v_secret record;
 BEGIN
   SELECT * INTO v_user FROM users WHERE email = v_email;
   IF NOT FOUND THEN
@@ -594,7 +594,7 @@ END"
 
 exports[`plpgsql-deparser bug fixes untested statement types should handle FOR query loop 1`] = `
 "DECLARE
-  rec RECORD;
+  rec record;
 BEGIN
   FOR rec IN SELECT id, name FROM my_table LOOP
       PERFORM handle(rec);
@@ -622,7 +622,7 @@ END"
 
 exports[`plpgsql-deparser bug fixes untested statement types should handle labeled FOR loop with EXIT 1`] = `
 "DECLARE
-  rec RECORD;
+  rec record;
 BEGIN
   <<row_loop>>
   FOR rec IN SELECT id, name FROM items LOOP

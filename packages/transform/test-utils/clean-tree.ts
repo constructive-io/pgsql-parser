@@ -69,7 +69,11 @@ export const cleanLines = (sql: string) => {
       stmt_len: noop,
       stmt_location: noop,
       location: removeUndefined,
-      typemod: removeUndefined
+      typemod: removeUndefined,
+      rexpr_list_start: noop,
+      rexpr_list_end: noop,
+      list_start: noop,
+      list_end: noop
     });
   };
   

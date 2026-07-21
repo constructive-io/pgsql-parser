@@ -1,4 +1,4 @@
-import { parsePlPgSQL, parsePlPgSQLSync } from '@libpg-query/parser';
+import { parsePlPgSQL, parsePlPgSQLSync } from 'libpg-query';
 import { deparseSync, PLpgSQLParseResult } from '../src';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import * as path from 'path';

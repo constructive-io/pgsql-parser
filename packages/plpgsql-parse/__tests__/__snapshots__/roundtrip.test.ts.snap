@@ -166,7 +166,7 @@ BEGIN
       ) VALUES
         (tg_table_name, tg_op, row_to_json(old), row_to_json(new));
   END IF;
-  RETURN new;
+  RETURN NEW;
 END
 $$;"
 `;

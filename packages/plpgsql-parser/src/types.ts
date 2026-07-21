@@ -1,4 +1,4 @@
-import type { ParseResult } from '@libpg-query/parser';
+import type { ParseResult } from 'libpg-query';
 import type {
   PLpgSQLParseResult,
   HydrationStats,
