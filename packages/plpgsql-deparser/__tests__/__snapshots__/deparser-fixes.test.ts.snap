@@ -180,6 +180,18 @@ exports[`plpgsql-deparser bug fixes PERFORM SELECT fix should strip SELECT keywo
 END"
 `;
 
+exports[`plpgsql-deparser bug fixes RAISE with SQLSTATE condition should emit SQLSTATE codes as SQLSTATE literals, not bare numbers 1`] = `
+"BEGIN
+  RAISE EXCEPTION SQLSTATE '22012';
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes RAISE with SQLSTATE condition should keep named conditions as bare identifiers 1`] = `
+"BEGIN
+  RAISE EXCEPTION division_by_zero;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes Record field qualification (recfield) should handle OLD and NEW record references 1`] = `
 "BEGIN
   IF OLD.status <> NEW.status THEN
@@ -300,6 +312,17 @@ exports[`plpgsql-deparser bug fixes blocks inside control structures should hand
       EXIT WHEN NOT FOUND;
   END LOOP;
   RETURN;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes bound cursor arguments should emit the parameter list of a bound cursor and not redeclare its args 1`] = `
+"DECLARE
+  c CURSOR (key int, label text) FOR SELECT * FROM users WHERE id = key AND name = label;
+  r RECORD;
+BEGIN
+  OPEN c (42, 'x');
+  FETCH FROM c INTO r;
+  CLOSE c;
 END"
 `;
 

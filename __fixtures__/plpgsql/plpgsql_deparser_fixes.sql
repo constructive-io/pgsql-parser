@@ -676,3 +676,29 @@ BEGIN
   m[1][2] := 42;
   RETURN a;
 END$$;
+
+-- Test 54: Bound cursor with explicit arguments (must emit the parameter list)
+CREATE FUNCTION test_bound_cursor_args() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  c CURSOR (key int, label text) FOR SELECT * FROM users WHERE id = key AND name = label;
+  r record;
+BEGIN
+  OPEN c(42, 'x');
+  FETCH c INTO r;
+  CLOSE c;
+END$$;
+
+-- Test 55: RAISE with a SQLSTATE condition code (must emit SQLSTATE 'xxxxx', not a bare number)
+CREATE FUNCTION test_raise_sqlstate() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE SQLSTATE '22012';
+END$$;
+
+-- Test 56: RAISE EXCEPTION with a named condition (must stay a bare identifier)
+CREATE FUNCTION test_raise_named_condition() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION division_by_zero;
+END$$;

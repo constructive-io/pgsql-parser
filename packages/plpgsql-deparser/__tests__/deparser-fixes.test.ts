@@ -1238,4 +1238,63 @@ $$`;
       expect(deparsed).not.toContain('"name%TYPE"');
     });
   });
+
+  describe('bound cursor arguments', () => {
+    it('should emit the parameter list of a bound cursor and not redeclare its args', async () => {
+      const sql = `CREATE FUNCTION test_bound_cursor_args() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  c CURSOR (key int, label text) FOR SELECT * FROM users WHERE id = key AND name = label;
+  r record;
+BEGIN
+  OPEN c(42, 'x');
+  FETCH c INTO r;
+  CLOSE c;
+END$$`;
+
+      await testUtils.expectAstMatch('bound cursor args', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toMatch(/c CURSOR \(key int, label text\) FOR/);
+      // The cursor args must not leak out as standalone DECLARE variables
+      expect(deparsed).not.toMatch(/^\s*key int;/m);
+      expect(deparsed).not.toMatch(/^\s*label text;/m);
+    });
+  });
+
+  describe('RAISE with SQLSTATE condition', () => {
+    it('should emit SQLSTATE codes as SQLSTATE literals, not bare numbers', async () => {
+      const sql = `CREATE FUNCTION test_raise_sqlstate() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE SQLSTATE '22012';
+END$$`;
+
+      await testUtils.expectAstMatch('raise sqlstate', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toMatch(/RAISE EXCEPTION SQLSTATE '22012'/i);
+      expect(deparsed).not.toMatch(/RAISE EXCEPTION 22012/);
+    });
+
+    it('should keep named conditions as bare identifiers', async () => {
+      const sql = `CREATE FUNCTION test_raise_named_condition() RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION division_by_zero;
+END$$`;
+
+      await testUtils.expectAstMatch('raise named condition', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toMatch(/RAISE EXCEPTION division_by_zero/i);
+      expect(deparsed).not.toMatch(/SQLSTATE/i);
+    });
+  });
 });
