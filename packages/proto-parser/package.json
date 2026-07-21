@@ -1,6 +1,6 @@
 {
   "name": "pg-proto-parser",
-  "version": "1.30.6",
+  "version": "1.31.0",
   "description": "The LaunchQL Proto parser",
   "author": "Constructive <developers@constructive.io>",
   "main": "index.js",

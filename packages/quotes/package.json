@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/quotes",
-  "version": "18.0.0",
+  "version": "18.1.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostgreSQL identifier quoting and keyword classification utilities",
   "main": "index.js",
