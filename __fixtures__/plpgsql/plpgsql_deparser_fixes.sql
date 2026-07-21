@@ -754,3 +754,32 @@ BEGIN
   END;
   RETURN v_result;
 END$$;
+
+-- Test 61: Bare RETURN in function whose single OUT param is not the first datum
+-- (libpg-query 18 omits out_param_varno, so the OUT datum must be resolved by name)
+CREATE FUNCTION test_out_param_bare_return(
+  IN a text,
+  IN b uuid,
+  OUT result uuid
+) RETURNS uuid
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_id uuid;
+BEGIN
+  v_id := b;
+  SELECT v_id INTO result;
+  RETURN;
+END$$;
+
+-- Test 62: Bare RETURN with multiple OUT params (unnamed-row OUT datum)
+CREATE FUNCTION test_multi_out_bare_return(
+  IN a integer,
+  OUT x integer,
+  OUT y text
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+  x := a;
+  y := 'ok';
+  RETURN;
+END$$;

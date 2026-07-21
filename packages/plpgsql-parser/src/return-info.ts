@@ -21,16 +21,27 @@ export function getReturnInfo(createFunctionStmt: any): ReturnInfo {
 
   // Check for OUT/INOUT/TABLE parameters - these indicate out_params return type
   if (createFunctionStmt.parameters && Array.isArray(createFunctionStmt.parameters)) {
+    const outParamNames = createFunctionStmt.parameters
+      .map((param: any) => param?.FunctionParameter)
+      .filter((fp: any) => {
+        if (!fp) return false;
+        const mode = fp.mode;
+        return mode === 'FUNC_PARAM_OUT' ||
+               mode === 'FUNC_PARAM_INOUT' ||
+               mode === 'FUNC_PARAM_TABLE';
+      })
+      .map((fp: any) => fp.name)
+      .filter((name: string | undefined): name is string => typeof name === 'string');
     const hasOutParams = createFunctionStmt.parameters.some((param: any) => {
       const fp = param?.FunctionParameter;
       if (!fp) return false;
       const mode = fp.mode;
-      return mode === 'FUNC_PARAM_OUT' || 
-             mode === 'FUNC_PARAM_INOUT' || 
+      return mode === 'FUNC_PARAM_OUT' ||
+             mode === 'FUNC_PARAM_INOUT' ||
              mode === 'FUNC_PARAM_TABLE';
     });
     if (hasOutParams) {
-      return { kind: 'out_params' };
+      return { kind: 'out_params', outParamNames };
     }
   }
 

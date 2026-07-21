@@ -1,5 +1,5 @@
-import { parsePlPgSQL, parsePlPgSQLSync } from 'libpg-query';
-import { deparseSync, PLpgSQLParseResult } from '../src';
+import { parsePlPgSQL, parsePlPgSQLSync, parseSync } from 'libpg-query';
+import { deparseSync, PLpgSQLParseResult, ReturnInfo } from '../src';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import * as path from 'path';
 import { diff } from 'jest-diff';
@@ -11,6 +11,39 @@ export interface PLpgSQLTestCase {
   name: string;
   sql: string;
   functionBody: string;
+}
+
+/**
+ * Derive ReturnInfo from a CREATE FUNCTION/PROCEDURE statement's signature
+ * so the deparser can distinguish bare RETURN (OUT params) from RETURN <expr>.
+ */
+export function deriveReturnInfo(sql: string): ReturnInfo | undefined {
+  let stmts: any[];
+  try {
+    stmts = (parseSync(sql) as any).stmts || [];
+  } catch {
+    return undefined;
+  }
+  for (const s of stmts) {
+    const fn = s?.stmt?.CreateFunctionStmt;
+    if (!fn) continue;
+    if (fn.is_procedure) return { kind: 'void' };
+    const outParamNames: string[] = (fn.parameters || [])
+      .map((p: any) => p?.FunctionParameter)
+      .filter((fp: any) => fp && (fp.mode === 'FUNC_PARAM_OUT' || fp.mode === 'FUNC_PARAM_INOUT' || fp.mode === 'FUNC_PARAM_TABLE'))
+      .map((fp: any) => fp.name)
+      .filter((n: any): n is string => typeof n === 'string');
+    if (outParamNames.length > 0) return { kind: 'out_params', outParamNames };
+    const names = (fn.returnType?.names || [])
+      .map((n: any) => n?.String?.sval)
+      .filter((v: any): v is string => typeof v === 'string');
+    const typeName = (names[names.length - 1] || '').toLowerCase();
+    if (fn.returnType?.setof) return { kind: 'setof' };
+    if (typeName === 'void' || !fn.returnType) return { kind: 'void' };
+    if (typeName === 'trigger') return { kind: 'trigger' };
+    return { kind: 'scalar' };
+  }
+  return undefined;
 }
 
 export function extractFunctionBodies(sql: string): string[] {
@@ -368,7 +401,7 @@ export class PLpgSQLTestUtils {
         throw createParseError('PARSE_FAILED', testName, sql);
       }
 
-      const deparsedBody = deparseSync(originalAst);
+      const deparsedBody = deparseSync(originalAst, undefined, deriveReturnInfo(sql));
       
       if (!deparsedBody || deparsedBody.trim().length === 0) {
         throw createParseError('DEPARSE_FAILED', testName, sql, deparsedBody);

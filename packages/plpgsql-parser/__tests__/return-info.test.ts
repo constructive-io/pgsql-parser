@@ -64,7 +64,7 @@ describe('getReturnInfo', () => {
         CREATE FUNCTION test_out(IN x integer, OUT result integer)
         LANGUAGE plpgsql AS $$ BEGIN result := x * 2; END; $$
       `);
-      expect(getReturnInfo(stmt)).toEqual({ kind: 'out_params' });
+      expect(getReturnInfo(stmt)).toEqual({ kind: 'out_params', outParamNames: ['result'] });
     });
 
     it('should return out_params for INOUT parameters', () => {
@@ -72,7 +72,7 @@ describe('getReturnInfo', () => {
         CREATE FUNCTION test_inout(INOUT x integer)
         LANGUAGE plpgsql AS $$ BEGIN x := x * 2; END; $$
       `);
-      expect(getReturnInfo(stmt)).toEqual({ kind: 'out_params' });
+      expect(getReturnInfo(stmt)).toEqual({ kind: 'out_params', outParamNames: ['x'] });
     });
 
     it('should return out_params for RETURNS TABLE', () => {
@@ -80,7 +80,7 @@ describe('getReturnInfo', () => {
         CREATE FUNCTION test_table() RETURNS TABLE (id integer, name text)
         LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT 1, 'test'; END; $$
       `);
-      expect(getReturnInfo(stmt)).toEqual({ kind: 'out_params' });
+      expect(getReturnInfo(stmt)).toEqual({ kind: 'out_params', outParamNames: ['id', 'name'] });
     });
   });
 
