@@ -158,6 +158,27 @@ function extractTypeNameFromCast(result: ParseResult): Node | undefined {
  * Handles special suffixes like %rowtype and %type by stripping them before
  * parsing and preserving them in the result.
  */
+/**
+ * Quotes each dot-separated part of a type name that is not already quoted,
+ * preserving array bounds (e.g. `my-schema.mytype[]` -> `"my-schema"."mytype"[]`).
+ */
+function quoteTypnameParts(typname: string): string {
+  let bounds = '';
+  let base = typname;
+  const boundsMatch = base.match(/(\[[^\]]*\])+$/);
+  if (boundsMatch) {
+    bounds = boundsMatch[0];
+    base = base.substring(0, base.length - bounds.length);
+  }
+  const parts = base.split('.').map(part => {
+    if (part.startsWith('"') && part.endsWith('"')) {
+      return part;
+    }
+    return `"${part.replace(/"/g, '""')}"`;
+  });
+  return parts.join('.') + bounds;
+}
+
 function hydrateTypeName(
   typname: string,
   path: string,
@@ -194,10 +215,20 @@ function hydrateTypeName(
   try {
     // Parse the type name by wrapping it in a cast expression
     // Keep quotes intact for proper parsing of special identifiers
-    const sql = `SELECT NULL::${parseTypname}`;
-    const parseResult = parseSync(sql);
-    const typeNameNode = extractTypeNameFromCast(parseResult);
-    
+    let typeNameNode;
+    try {
+      const sql = `SELECT NULL::${parseTypname}`;
+      const parseResult = parseSync(sql);
+      typeNameNode = extractTypeNameFromCast(parseResult);
+    } catch (parseErr) {
+      // The parser reports typnames without quoting, so identifiers that
+      // require quotes (e.g. schema names containing dashes) fail to parse
+      // verbatim. Retry with each dot-separated part quoted.
+      const quoted = quoteTypnameParts(parseTypname);
+      const parseResult = parseSync(`SELECT NULL::${quoted}`);
+      typeNameNode = extractTypeNameFromCast(parseResult);
+    }
+
     if (typeNameNode) {
       stats.typeNameExpressions++;
       return {
