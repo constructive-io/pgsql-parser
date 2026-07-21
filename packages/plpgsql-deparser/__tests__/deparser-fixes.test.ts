@@ -1345,4 +1345,65 @@ END$$`;
       expect(beginCount).toBe(2);
     });
   });
+
+  describe('ALIAS declarations', () => {
+    it('should preserve ALIAS FOR a positional parameter', async () => {
+      const sql = `CREATE FUNCTION test_alias_positional_param(integer) RETURNS integer
+LANGUAGE plpgsql AS $$
+DECLARE
+  arg ALIAS FOR $1;
+BEGIN
+  RETURN arg + 1;
+END$$`;
+
+      await testUtils.expectAstMatch('alias for positional parameter', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('arg ALIAS FOR $1;');
+    });
+
+    it('should interleave aliases with variable declarations by source order', async () => {
+      const sql = `CREATE FUNCTION test_alias_named(input_value text) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  val ALIAS FOR input_value;
+  buffer text := 'x';
+  buf ALIAS FOR buffer;
+BEGIN
+  buf := buf || val;
+  RETURN buf;
+END$$`;
+
+      await testUtils.expectAstMatch('aliases interleaved with variables', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      // the alias of a local variable must come after that variable's declaration
+      expect(deparsed.indexOf('buf ALIAS FOR buffer;')).toBeGreaterThan(deparsed.indexOf('buffer text'));
+      expect(deparsed).toContain('val ALIAS FOR input_value;');
+    });
+
+    it('should preserve ALIAS FOR OLD/NEW in trigger functions', async () => {
+      const sql = `CREATE FUNCTION test_alias_trigger() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+  prior ALIAS FOR old;
+  updated ALIAS FOR new;
+BEGIN
+  updated.updated_at := now();
+  RETURN updated;
+END$$`;
+
+      await testUtils.expectAstMatch('alias for OLD/NEW in trigger', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain('prior ALIAS FOR old;');
+      expect(deparsed).toContain('updated ALIAS FOR new;');
+    });
+  });
 });

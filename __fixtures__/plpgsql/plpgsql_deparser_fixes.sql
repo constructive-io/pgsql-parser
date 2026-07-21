@@ -754,3 +754,35 @@ BEGIN
   END;
   RETURN v_result;
 END$$;
+
+-- Test 61: ALIAS FOR a positional parameter (alias declaration must be preserved)
+CREATE FUNCTION test_alias_positional_param(integer) RETURNS integer
+LANGUAGE plpgsql AS $$
+DECLARE
+  arg ALIAS FOR $1;
+BEGIN
+  RETURN arg + 1;
+END$$;
+
+-- Test 62: ALIAS FOR a named parameter and a local variable
+CREATE FUNCTION test_alias_named(input_value text) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  val ALIAS FOR input_value;
+  buffer text := 'x';
+  buf ALIAS FOR buffer;
+BEGIN
+  buf := buf || val;
+  RETURN buf;
+END$$;
+
+-- Test 63: ALIAS FOR OLD/NEW in a trigger function
+CREATE FUNCTION test_alias_trigger() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+  prior ALIAS FOR old;
+  updated ALIAS FOR new;
+BEGIN
+  updated.updated_at := now();
+  RETURN updated;
+END$$;
