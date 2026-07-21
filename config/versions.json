@@ -36,7 +36,7 @@
       "npmTag": "pg17"
     },
     "18": {
-      "libpg-query": "18.1.1",
+      "libpg-query": "18.1.2",
       "pgsql-parser": "18.0.0",
       "pgsql-deparser": "18.0.0",
       "@pgsql/types": "18.0.0",
