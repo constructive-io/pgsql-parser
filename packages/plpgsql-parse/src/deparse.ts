@@ -194,11 +194,23 @@ function reinjectBodyComments(
   let stmtKeyIdx = 0;
   const usedAnchors = new Set<number>();
 
+  // Track DECLARE sections: lines between DECLARE and the following BEGIN
+  // are variable declarations, not statements, and must not consume
+  // statement keyword matches (e.g. a declaration `v_x int;` would
+  // otherwise match an assignment to `v_x`).
+  let inDeclare = false;
+
   for (const line of depLines) {
     const trimmed = line.trim().toUpperCase();
 
+    if (trimmed === 'DECLARE') {
+      inDeclare = true;
+    } else if (inDeclare && trimmed.startsWith('BEGIN')) {
+      inDeclare = false;
+    }
+
     // Try to match this line to the next expected statement
-    if (stmtKeyIdx < stmtKeywords.length) {
+    if (!inDeclare && stmtKeyIdx < stmtKeywords.length) {
       const { lineno, keywords } = stmtKeywords[stmtKeyIdx];
 
       if (lineMatchesKeywords(trimmed, keywords)) {
@@ -574,19 +586,26 @@ function findLastEndLine(lines: string[]): number {
 
 /**
  * Replace the function body in a CREATE FUNCTION AST node.
+ * The body is padded with newlines so it renders as
+ * `AS $$\n<body>\n$$` rather than gluing onto the dollar quotes.
  */
 function stitchBodyIntoAst(createFunctionStmt: any, newBody: string): void {
   if (!createFunctionStmt?.options) return;
+
+  const padded =
+    (newBody.startsWith('\n') ? '' : '\n') +
+    newBody +
+    (newBody.endsWith('\n') ? '' : '\n');
 
   for (const opt of createFunctionStmt.options) {
     if (opt?.DefElem?.defname === 'as') {
       const arg = opt.DefElem.arg;
       if (arg?.List?.items?.[0]?.String) {
-        arg.List.items[0].String.sval = newBody;
+        arg.List.items[0].String.sval = padded;
         return;
       }
       if (arg?.String) {
-        arg.String.sval = newBody;
+        arg.String.sval = padded;
         return;
       }
     }

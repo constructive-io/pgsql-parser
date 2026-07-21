@@ -86,6 +86,8 @@ export interface PLpgSQLDeparserContext {
   loopVarLinenos?: Set<number>;
   /** Map of block lineno to the set of datum indices that belong to that block */
   blockDatumMap?: Map<number, Set<number>>;
+  /** Datum index of the function's OUT parameter(s), when present */
+  outParamVarno?: number;
 }
 
 /**
@@ -158,14 +160,20 @@ export class PLpgSQLDeparser {
    * @param returnInfo - Optional return type info for correct RETURN statement handling
    */
   deparseFunction(func: PLpgSQL_function, returnInfo?: ReturnInfo): string {
+    // Normalize the action: strip the compiler-generated implicit final
+    // RETURN and unwrap the compiler-generated wrapper block
+    const action = func.action
+      ? this.unwrapCompilerWrapperBlock(this.stripImplicitFinalReturn(func.action, func.out_param_varno))
+      : undefined;
+
     // Collect loop-introduced variables before generating DECLARE section
     const loopVarLinenos = new Set<number>();
-    if (func.action) {
-      this.collectLoopVariables(func.action, loopVarLinenos);
+    if (action) {
+      this.collectLoopVariables(action, loopVarLinenos);
     }
 
     // Build the block-to-datum mapping for nested DECLARE sections
-    const blockDatumMap = this.buildBlockDatumMap(func.datums, func.action, loopVarLinenos);
+    const blockDatumMap = this.buildBlockDatumMap(func.datums, action, loopVarLinenos);
 
     // Collect all datum indices that belong to nested blocks (to exclude from top-level)
     const nestedDatumIndices = new Set<number>();
@@ -182,6 +190,7 @@ export class PLpgSQLDeparser {
       returnInfo,
       loopVarLinenos,
       blockDatumMap,
+      outParamVarno: func.out_param_varno,
     };
 
     const parts: string[] = [];
@@ -189,8 +198,8 @@ export class PLpgSQLDeparser {
     // Extract label from action block - it should come before DECLARE
     // In PL/pgSQL, the syntax is: <<label>> DECLARE ... BEGIN ... END label
     let blockLabel: string | undefined;
-    if (func.action && 'PLpgSQL_stmt_block' in func.action) {
-      blockLabel = func.action.PLpgSQL_stmt_block.label;
+    if (action && 'PLpgSQL_stmt_block' in action) {
+      blockLabel = action.PLpgSQL_stmt_block.label;
     }
 
     // Output label before DECLARE if present
@@ -212,8 +221,7 @@ export class PLpgSQLDeparser {
 
     // Deparse the action block (BEGIN...END)
     // Pass skipLabel=true since we already output the label
-    if (func.action) {
-      const action = this.stripImplicitFinalReturn(func.action);
+    if (action) {
       parts.push(this.deparseStmt(action, context, blockLabel ? true : false));
     }
 
@@ -228,7 +236,7 @@ export class PLpgSQLDeparser {
    * (trigger RETURN requires an expression). An explicit user-written `RETURN;`
    * carries a lineno and is preserved.
    */
-  private stripImplicitFinalReturn(action: PLpgSQLStmtNode): PLpgSQLStmtNode {
+  private stripImplicitFinalReturn(action: PLpgSQLStmtNode, outParamVarno?: number): PLpgSQLStmtNode {
     if (!('PLpgSQL_stmt_block' in action)) {
       return action;
     }
@@ -244,7 +252,7 @@ export class PLpgSQLDeparser {
     const ret = (last as any).PLpgSQL_stmt_return;
     const isImplicit = ret.expr === undefined &&
       ret.lineno === undefined &&
-      (ret.retvarno === undefined || ret.retvarno < 0);
+      (ret.retvarno === undefined || ret.retvarno < 0 || ret.retvarno === outParamVarno);
     if (!isImplicit) {
       return action;
     }
@@ -254,6 +262,32 @@ export class PLpgSQLDeparser {
         body: body.slice(0, -1),
       },
     };
+  }
+
+  /**
+   * Unwrap the compiler-generated wrapper block around a function body.
+   *
+   * When the top-level block of a function has an EXCEPTION clause, the
+   * PL/pgSQL compiler wraps it in a synthetic outer block (no lineno) whose
+   * body is just the user's block. Deparsing that wrapper verbatim emits a
+   * redundant nested BEGIN, so unwrap it back to the user's block.
+   */
+  private unwrapCompilerWrapperBlock(action: PLpgSQLStmtNode): PLpgSQLStmtNode {
+    if (!('PLpgSQL_stmt_block' in action)) {
+      return action;
+    }
+    const block = action.PLpgSQL_stmt_block;
+    if (block.lineno !== undefined || block.label !== undefined || block.exceptions !== undefined) {
+      return action;
+    }
+    if (!block.body || block.body.length !== 1) {
+      return action;
+    }
+    const only = block.body[0];
+    if (!('PLpgSQL_stmt_block' in only)) {
+      return action;
+    }
+    return only;
   }
 
   /**
@@ -1429,7 +1463,7 @@ export class PLpgSQLDeparser {
       return `${kw('RETURN')} ${this.deparseExpr(ret.expr)}`;
     }
     
-    if (ret.retvarno !== undefined && ret.retvarno >= 0) {
+    if (ret.retvarno !== undefined && ret.retvarno >= 0 && ret.retvarno !== context.outParamVarno) {
       const varName = this.getVarName(ret.retvarno, context);
       return `${kw('RETURN')} ${varName}`;
     }
@@ -1460,7 +1494,7 @@ export class PLpgSQLDeparser {
       return `${kw('RETURN NEXT')} ${this.deparseExpr(ret.expr)}`;
     }
     
-    if (ret.retvarno !== undefined && ret.retvarno >= 0) {
+    if (ret.retvarno !== undefined && ret.retvarno >= 0 && ret.retvarno !== context.outParamVarno) {
       const varName = this.getVarName(ret.retvarno, context);
       return `${kw('RETURN NEXT')} ${varName}`;
     }

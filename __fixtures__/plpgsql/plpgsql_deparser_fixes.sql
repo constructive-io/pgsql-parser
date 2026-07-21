@@ -702,3 +702,55 @@ LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION division_by_zero;
 END$$;
+
+-- Test 57: Bare RETURN NEXT with OUT parameters (retvarno points at out_param_varno; must stay bare)
+CREATE FUNCTION test_return_next_out_params(OUT x integer, OUT y text) RETURNS SETOF record
+LANGUAGE plpgsql AS $$
+BEGIN
+  FOR i IN 1..5 LOOP
+    x := i;
+    y := 'item_' || i::text;
+    RETURN NEXT;
+  END LOOP;
+  RETURN;
+END$$;
+
+-- Test 58: RETURN NEXT with a variable (retvarno must be emitted as the variable name)
+CREATE FUNCTION test_return_next_var() RETURNS SETOF integer
+LANGUAGE plpgsql AS $$
+DECLARE
+  r integer;
+BEGIN
+  FOR r IN SELECT g FROM generate_series(1, 3) g LOOP
+    RETURN NEXT r;
+  END LOOP;
+END$$;
+
+-- Test 59: Top-level block with EXCEPTION clause (compiler wraps it in a synthetic outer block; must not deparse a nested BEGIN)
+CREATE FUNCTION test_toplevel_exception(a numeric, b numeric) RETURNS numeric
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result numeric;
+BEGIN
+  v_result := a / b;
+  RETURN v_result;
+EXCEPTION
+  WHEN division_by_zero THEN
+    RETURN NULL;
+END$$;
+
+-- Test 60: Explicit nested block with EXCEPTION inside a top-level block (nesting must be preserved)
+CREATE FUNCTION test_explicit_nested_exception(p_id integer) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result text;
+BEGIN
+  v_result := 'unknown';
+  BEGIN
+    SELECT status INTO v_result FROM items WHERE id = p_id;
+  EXCEPTION
+    WHEN no_data_found THEN
+      v_result := 'not_found';
+  END;
+  RETURN v_result;
+END$$;

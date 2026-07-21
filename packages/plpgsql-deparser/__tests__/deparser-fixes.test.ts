@@ -1297,4 +1297,52 @@ END$$`;
       expect(deparsed).not.toMatch(/SQLSTATE/i);
     });
   });
+
+  describe('top-level EXCEPTION wrapper block', () => {
+    it('should not emit a nested BEGIN for a top-level block with EXCEPTION', async () => {
+      const sql = `CREATE FUNCTION test_toplevel_exception(a numeric, b numeric) RETURNS numeric
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result numeric;
+BEGIN
+  v_result := a / b;
+  RETURN v_result;
+EXCEPTION
+  WHEN division_by_zero THEN
+    RETURN NULL;
+END$$`;
+
+      await testUtils.expectAstMatch('top-level exception block', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).not.toMatch(/BEGIN\s+BEGIN/i);
+    });
+
+    it('should preserve an explicit nested block with EXCEPTION', async () => {
+      const sql = `CREATE FUNCTION test_explicit_nested_exception(p_id integer) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_result text;
+BEGIN
+  v_result := 'unknown';
+  BEGIN
+    SELECT status INTO v_result FROM items WHERE id = p_id;
+  EXCEPTION
+    WHEN no_data_found THEN
+      v_result := 'not_found';
+  END;
+  RETURN v_result;
+END$$`;
+
+      await testUtils.expectAstMatch('explicit nested exception block', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      const beginCount = (deparsed.match(/BEGIN/g) ?? []).length;
+      expect(beginCount).toBe(2);
+    });
+  });
 });
