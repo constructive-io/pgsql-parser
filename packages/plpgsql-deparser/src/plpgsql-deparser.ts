@@ -603,8 +603,25 @@ export class PLpgSQLDeparser {
       return '';
     }
 
+    // Bound-cursor argument variables are emitted inside the cursor's own
+    // declaration (`c CURSOR (key int) FOR ...`), not as standalone DECLAREs.
+    const cursorArgVarnos = new Set<number>();
+    for (const datum of datums) {
+      if ('PLpgSQL_var' in datum && datum.PLpgSQL_var.cursor_explicit_argrow !== undefined) {
+        const argrow = datums[datum.PLpgSQL_var.cursor_explicit_argrow];
+        if (argrow && 'PLpgSQL_row' in argrow) {
+          for (const field of argrow.PLpgSQL_row.fields ?? []) {
+            cursorArgVarnos.add(field.varno);
+          }
+        }
+      }
+    }
+
     // Filter out internal variables (like 'found', parameters, etc.) and loop variables
     const localVars = datums.filter((datum, index) => {
+      if (cursorArgVarnos.has(index)) {
+        return false;
+      }
       // If includedIndices is provided, only include datums at those indices
       if (includedIndices !== undefined && !includedIndices.has(index)) {
         return false;
@@ -701,7 +718,24 @@ export class PLpgSQLDeparser {
           parts.push(kw('NO SCROLL'));
         }
       }
-      parts.push(kw('CURSOR FOR'));
+      parts.push(kw('CURSOR'));
+      if (v.cursor_explicit_argrow !== undefined && context.datums) {
+        const argrow = context.datums[v.cursor_explicit_argrow];
+        if (argrow && 'PLpgSQL_row' in argrow) {
+          const args = (argrow.PLpgSQL_row.fields ?? []).map((field) => {
+            const argDatum = context.datums![field.varno];
+            const argType =
+              argDatum && 'PLpgSQL_var' in argDatum && argDatum.PLpgSQL_var.datatype
+                ? ` ${this.deparseType(argDatum.PLpgSQL_var.datatype)}`
+                : '';
+            return `${field.name}${argType}`;
+          });
+          if (args.length > 0) {
+            parts.push(`(${args.join(', ')})`);
+          }
+        }
+      }
+      parts.push(kw('FOR'));
       parts.push(this.deparseExpr(v.cursor_explicit_expr));
       return parts.join(' ');
     }
@@ -1476,9 +1510,15 @@ export class PLpgSQLDeparser {
       parts.push(level);
     }
 
-    // Condition name (for RAISE without message)
+    // Condition name (for RAISE without message). SQLSTATE conditions are
+    // stored as their raw 5-character code (e.g. '22012') and must be emitted
+    // as `SQLSTATE '22012'`; named conditions are lowercase identifiers.
     if (raise.condname) {
-      parts.push(raise.condname);
+      if (/^[0-9A-Z]{5}$/.test(raise.condname)) {
+        parts.push(`${kw('SQLSTATE')} '${raise.condname}'`);
+      } else {
+        parts.push(raise.condname);
+      }
     }
 
     // Message
