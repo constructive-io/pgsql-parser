@@ -221,9 +221,13 @@ function hydrateTypeName(
       const parseResult = parseSync(sql);
       typeNameNode = extractTypeNameFromCast(parseResult);
     } catch (parseErr) {
+      typeNameNode = undefined;
+    }
+    if (!typeNameNode) {
       // The parser reports typnames without quoting, so identifiers that
       // require quotes (e.g. schema names containing dashes) fail to parse
-      // verbatim. Retry with each dot-separated part quoted.
+      // verbatim or parse as a different expression. Retry with each
+      // dot-separated part quoted.
       const quoted = quoteTypnameParts(parseTypname);
       const parseResult = parseSync(`SELECT NULL::${quoted}`);
       typeNameNode = extractTypeNameFromCast(parseResult);
