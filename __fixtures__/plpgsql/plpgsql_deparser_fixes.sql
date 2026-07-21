@@ -702,3 +702,26 @@ LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION division_by_zero;
 END$$;
+
+-- Test 57: Bare RETURN NEXT with OUT parameters (retvarno points at out_param_varno; must stay bare)
+CREATE FUNCTION test_return_next_out_params(OUT x integer, OUT y text) RETURNS SETOF record
+LANGUAGE plpgsql AS $$
+BEGIN
+  FOR i IN 1..5 LOOP
+    x := i;
+    y := 'item_' || i::text;
+    RETURN NEXT;
+  END LOOP;
+  RETURN;
+END$$;
+
+-- Test 58: RETURN NEXT with a variable (retvarno must be emitted as the variable name)
+CREATE FUNCTION test_return_next_var() RETURNS SETOF integer
+LANGUAGE plpgsql AS $$
+DECLARE
+  r integer;
+BEGIN
+  FOR r IN SELECT g FROM generate_series(1, 3) g LOOP
+    RETURN NEXT r;
+  END LOOP;
+END$$;

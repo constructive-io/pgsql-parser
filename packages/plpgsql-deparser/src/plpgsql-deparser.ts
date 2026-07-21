@@ -86,6 +86,8 @@ export interface PLpgSQLDeparserContext {
   loopVarLinenos?: Set<number>;
   /** Map of block lineno to the set of datum indices that belong to that block */
   blockDatumMap?: Map<number, Set<number>>;
+  /** Datum index of the function's OUT parameter(s), when present */
+  outParamVarno?: number;
 }
 
 /**
@@ -182,6 +184,7 @@ export class PLpgSQLDeparser {
       returnInfo,
       loopVarLinenos,
       blockDatumMap,
+      outParamVarno: func.out_param_varno,
     };
 
     const parts: string[] = [];
@@ -213,7 +216,7 @@ export class PLpgSQLDeparser {
     // Deparse the action block (BEGIN...END)
     // Pass skipLabel=true since we already output the label
     if (func.action) {
-      const action = this.stripImplicitFinalReturn(func.action);
+      const action = this.stripImplicitFinalReturn(func.action, func.out_param_varno);
       parts.push(this.deparseStmt(action, context, blockLabel ? true : false));
     }
 
@@ -228,7 +231,7 @@ export class PLpgSQLDeparser {
    * (trigger RETURN requires an expression). An explicit user-written `RETURN;`
    * carries a lineno and is preserved.
    */
-  private stripImplicitFinalReturn(action: PLpgSQLStmtNode): PLpgSQLStmtNode {
+  private stripImplicitFinalReturn(action: PLpgSQLStmtNode, outParamVarno?: number): PLpgSQLStmtNode {
     if (!('PLpgSQL_stmt_block' in action)) {
       return action;
     }
@@ -244,7 +247,7 @@ export class PLpgSQLDeparser {
     const ret = (last as any).PLpgSQL_stmt_return;
     const isImplicit = ret.expr === undefined &&
       ret.lineno === undefined &&
-      (ret.retvarno === undefined || ret.retvarno < 0);
+      (ret.retvarno === undefined || ret.retvarno < 0 || ret.retvarno === outParamVarno);
     if (!isImplicit) {
       return action;
     }
@@ -1429,7 +1432,7 @@ export class PLpgSQLDeparser {
       return `${kw('RETURN')} ${this.deparseExpr(ret.expr)}`;
     }
     
-    if (ret.retvarno !== undefined && ret.retvarno >= 0) {
+    if (ret.retvarno !== undefined && ret.retvarno >= 0 && ret.retvarno !== context.outParamVarno) {
       const varName = this.getVarName(ret.retvarno, context);
       return `${kw('RETURN')} ${varName}`;
     }
@@ -1460,7 +1463,7 @@ export class PLpgSQLDeparser {
       return `${kw('RETURN NEXT')} ${this.deparseExpr(ret.expr)}`;
     }
     
-    if (ret.retvarno !== undefined && ret.retvarno >= 0) {
+    if (ret.retvarno !== undefined && ret.retvarno >= 0 && ret.retvarno !== context.outParamVarno) {
       const varName = this.getVarName(ret.retvarno, context);
       return `${kw('RETURN NEXT')} ${varName}`;
     }

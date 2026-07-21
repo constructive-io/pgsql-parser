@@ -17,6 +17,7 @@ export type PLpgSQLFunctionNode = {
 export interface PLpgSQL_function {
   datums?: PLpgSQLDatum[];
   action?: PLpgSQLStmtNode;
+  out_param_varno?: number;
 }
 
 export type PLpgSQLDatum = 
