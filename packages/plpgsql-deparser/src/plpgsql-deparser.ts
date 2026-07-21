@@ -75,6 +75,8 @@ export type ReturnInfoKind = 'void' | 'setof' | 'trigger' | 'scalar' | 'out_para
 
 export interface ReturnInfo {
   kind: ReturnInfoKind;
+  /** Names of OUT/INOUT/TABLE parameters, used to locate the OUT-param datum */
+  outParamNames?: string[];
 }
 
 export interface PLpgSQLDeparserContext {
@@ -2077,6 +2079,26 @@ export class PLpgSQLDeparser {
       return func.out_param_varno;
     }
     if (func.datums) {
+      const outNames = returnInfo?.outParamNames;
+      if (returnInfo?.kind === 'out_params' && outNames && outNames.length === 1) {
+        const varIdx = func.datums.findIndex(
+          d => 'PLpgSQL_var' in d && d.PLpgSQL_var.refname === outNames[0]
+        );
+        if (varIdx >= 0) {
+          return varIdx;
+        }
+      }
+      if (returnInfo?.kind === 'out_params' && outNames && outNames.length > 1) {
+        const rowIdx = func.datums.findIndex(d => {
+          if (!('PLpgSQL_row' in d) || d.PLpgSQL_row.refname !== '(unnamed row)') return false;
+          const fields = d.PLpgSQL_row.fields || [];
+          return fields.length === outNames.length &&
+            fields.every((f, i) => f.name === outNames[i]);
+        });
+        if (rowIdx >= 0) {
+          return rowIdx;
+        }
+      }
       const rowIdx = func.datums.findIndex(
         d => 'PLpgSQL_row' in d && d.PLpgSQL_row.refname === '(unnamed row)' && d.PLpgSQL_row.lineno === -1
       );
