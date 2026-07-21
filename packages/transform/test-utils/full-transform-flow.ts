@@ -1,7 +1,8 @@
 import { Parser } from '@pgsql/parser';
+import { parse as parse18 } from 'libpg-query';
 import { deparse } from 'pgsql-deparser';
 import { cleanTree } from './clean-tree';
-import { PG13ToPG17Transformer } from '../src/transformers-direct/v13-to-v17';
+import { PG13ToPG18Transformer } from '../src/transformers-direct/v13-to-v18';
 import { readFileSync } from 'fs';
 import * as path from 'path';
 
@@ -13,9 +14,9 @@ export interface FullTransformResult {
   originalSql: string;
   /** PG13 parsed AST */
   pg13Ast: any;
-  /** PG17 transformed AST */
-  pg17Ast: any;
-  /** Deparsed SQL from PG17 AST */
+  /** PG18 transformed AST */
+  pg18Ast: any;
+  /** Deparsed SQL from PG18 AST */
   deparsedSql: string;
   /** Reparsed AST from deparsed SQL (if validation enabled) */
   reparsedAst?: any;
@@ -55,31 +56,30 @@ export async function fullTransformFlow(
 
   // Initialize parsers and transformer
   const pg13Parser = new Parser({ version: 13 });
-  const pg17Parser = new Parser({ version: 17 });
-  const transformer = new PG13ToPG17Transformer();
+  const transformer = new PG13ToPG18Transformer();
 
   // Step 1: Parse with PG13
   const pg13Ast = await pg13Parser.parse(sql);
   
-  // Step 2: Transform PG13 → PG17
-  const pg17Ast = transformer.transform(pg13Ast);
+  // Step 2: Transform PG13 → PG18
+  const pg18Ast = transformer.transform(pg13Ast as any);
   
-  // Step 3: Deparse with PG17 deparser
-  const deparsedSql = await deparse(pg17Ast);
+  // Step 3: Deparse with PG18 deparser
+  const deparsedSql = await deparse(pg18Ast);
 
   // Step 4: Optional round-trip validation
   let reparsedAst: any;
 
   if (validateRoundTrip) {
-    reparsedAst = await pg17Parser.parse(deparsedSql);
+    reparsedAst = await parse18(deparsedSql);
     // Direct AST equality assertion instead of boolean property
-    expect(cleanTree(pg17Ast)).toEqual(cleanTree(reparsedAst));
+    expect(cleanTree(pg18Ast)).toEqual(cleanTree(reparsedAst));
   }
 
   const result: FullTransformResult = {
     originalSql: sql,
     pg13Ast,
-    pg17Ast,
+    pg18Ast,
     deparsedSql,
     reparsedAst
   };
@@ -100,7 +100,7 @@ export async function expectSqlTransform(sql: string): Promise<FullTransformResu
   const result = await fullTransformFlow(sql, { validateRoundTrip: true });
   
   expect(result.pg13Ast).toBeDefined();
-  expect(result.pg17Ast).toBeDefined();
+  expect(result.pg18Ast).toBeDefined();
   expect(result.deparsedSql).toBe(sql);
 
   return result;
@@ -116,7 +116,7 @@ export async function expectSqlTransformWithContains(
   const result = await fullTransformFlow(sql, { validateRoundTrip: true });
   
   expect(result.pg13Ast).toBeDefined();
-  expect(result.pg17Ast).toBeDefined();
+  expect(result.pg18Ast).toBeDefined();
   
   expectedContains.forEach(expected => {
     expect(result.deparsedSql.toLowerCase()).toContain(expected.toLowerCase());
@@ -131,14 +131,12 @@ export async function expectSqlTransformWithContains(
 export class FullTransformFlowFixture {
   private fixtures: Record<string, string>;
   private pg13Parser: Parser<13>;
-  private pg17Parser: Parser<17>;
-  private transformer: PG13ToPG17Transformer;
+  private transformer: PG13ToPG18Transformer;
 
   constructor() {
     // Initialize parsers and transformer once
     this.pg13Parser = new Parser({ version: 13 });
-    this.pg17Parser = new Parser({ version: 17 });
-    this.transformer = new PG13ToPG17Transformer();
+    this.transformer = new PG13ToPG18Transformer();
 
     // Load fixtures
     const GENERATED_JSON = path.join(__dirname, '../../../__fixtures__/generated/generated.json');
@@ -157,22 +155,22 @@ export class FullTransformFlowFixture {
     // Step 1: Parse with PG13
     const pg13Ast = await this.pg13Parser.parse(sql);
 
-    // Step 2: Transform PG13 → PG17
-    const pg17Ast = this.transformer.transform(pg13Ast as any);
+    // Step 2: Transform PG13 → PG18
+    const pg18Ast = this.transformer.transform(pg13Ast as any);
 
-    // Step 3: Deparse with PG17 deparser
-    const deparsedSql = await deparse(pg17Ast, {
+    // Step 3: Deparse with PG18 deparser
+    const deparsedSql = await deparse(pg18Ast, {
       pretty: true
     });
 
     // Step 4: Parse deparsed SQL with PG13
     const pg13Ast2 = await this.pg13Parser.parse(deparsedSql);
     
-    // Step 5: Parse deparsed SQL with PG17
-    const pg17Ast2 = await this.pg17Parser.parse(deparsedSql);
+    // Step 5: Parse deparsed SQL with PG18
+    const pg18Ast2 = await parse18(deparsedSql);
     
-    // Step 6: Deparse again with PG17 deparser
-    const deparsedSql2 = await deparse(pg17Ast2 as any, {
+    // Step 6: Deparse again with PG18 deparser
+    const deparsedSql2 = await deparse(pg18Ast2 as any, {
       pretty: true
     });
 

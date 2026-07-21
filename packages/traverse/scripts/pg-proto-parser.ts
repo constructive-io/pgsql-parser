@@ -1,7 +1,7 @@
 import { join,resolve } from 'path';
 import { PgProtoParser, PgProtoParserOptions } from 'pg-proto-parser';
 
-const versions = ['17'];
+const versions = ['18'];
 const baseDir = resolve(join(__dirname, '../../../__fixtures__/proto'));
 
 for (const version of versions) {

@@ -1,4 +1,5 @@
 import { Parser } from '@pgsql/parser';
+import { parse as parse18 } from 'libpg-query';
 import { cleanTree } from './clean-tree';
 import { readFileSync } from 'fs';
 import * as path from 'path';
@@ -9,6 +10,8 @@ const parser14 = new Parser({ version: 14 });
 const parser15 = new Parser({ version: 15 });
 const parser16 = new Parser({ version: 16 });
 const parser17 = new Parser({ version: 17 });
+// @pgsql/parser does not ship a v18 build yet; use libpg-query@18 directly
+const parser18 = { parse: (sql: string) => parse18(sql) };
 
 import { ASTTransformer } from '../src/multi-version-transformer';
 
@@ -39,6 +42,10 @@ export function getParsersForVersions(versionPrevious: number, versionNext: numb
     case 16:
       parserPrevious = parser16;
       parserNext = parser17;
+      break;
+    case 17:
+      parserPrevious = parser17;
+      parserNext = parser18;
       break;
     default:
       throw new Error('Unsupported version');

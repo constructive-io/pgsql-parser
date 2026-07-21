@@ -1,4 +1,4 @@
-import { loadModule, parsePlPgSQLSync } from '@libpg-query/parser';
+import { loadModule, parsePlPgSQLSync } from 'libpg-query';
 import { hydratePlpgsqlAst, dehydratePlpgsqlAst, deparseSync, isHydratedExpr, getOriginalQuery, PLpgSQLParseResult } from '../src';
 
 describe('hydratePlpgsqlAst', () => {

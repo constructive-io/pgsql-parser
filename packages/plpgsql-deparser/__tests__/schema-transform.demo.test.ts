@@ -16,7 +16,7 @@
  * - Cross-cutting AST transformations
  */
 
-import { loadModule, parsePlPgSQLSync, parseSync } from '@libpg-query/parser';
+import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query';
 import { Deparser } from 'pgsql-deparser';
 import { hydratePlpgsqlAst, dehydratePlpgsqlAst, PLpgSQLParseResult, deparseSync } from '../src';
 

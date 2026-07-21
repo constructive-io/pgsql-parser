@@ -415,6 +415,7 @@
     "def": {
       "nullable": true,
       "tags": [
+        "ATAlterConstraint",
         "A_Const",
         "A_Expr",
         "ColumnDef",
@@ -824,6 +825,7 @@
         "A_Const",
         "A_Expr",
         "BoolExpr",
+        "CaseExpr",
         "ColumnRef",
         "FuncCall",
         "JsonFuncExpr",
@@ -1238,6 +1240,11 @@
       ],
       "isArray": true
     },
+    "nnconstraints": {
+      "nullable": true,
+      "tags": [],
+      "isArray": true
+    },
     "options": {
       "nullable": true,
       "tags": [
@@ -1406,13 +1413,6 @@
     }
   },
   "DeleteStmt": {
-    "returningList": {
-      "nullable": true,
-      "tags": [
-        "ResTarget"
-      ],
-      "isArray": true
-    },
     "usingClause": {
       "nullable": true,
       "tags": [
@@ -1769,13 +1769,6 @@
       ],
       "isArray": true
     },
-    "returningList": {
-      "nullable": true,
-      "tags": [
-        "ResTarget"
-      ],
-      "isArray": true
-    },
     "selectStmt": {
       "nullable": true,
       "tags": [
@@ -2015,13 +2008,6 @@
       ],
       "isArray": true
     },
-    "returningList": {
-      "nullable": true,
-      "tags": [
-        "ResTarget"
-      ],
-      "isArray": true
-    },
     "sourceRelation": {
       "nullable": false,
       "tags": [
@@ -2047,6 +2033,7 @@
         "A_Const",
         "A_Expr",
         "BoolExpr",
+        "ColumnRef",
         "FuncCall",
         "NullTest",
         "SubLink"
@@ -2479,6 +2466,7 @@
       "nullable": false,
       "tags": [
         "List",
+        "ObjectWithArgs",
         "String"
       ],
       "isArray": false
@@ -2748,13 +2736,6 @@
         "RangeFunction",
         "RangeSubselect",
         "RangeVar"
-      ],
-      "isArray": true
-    },
-    "returningList": {
-      "nullable": true,
-      "tags": [
-        "ResTarget"
       ],
       "isArray": true
     },

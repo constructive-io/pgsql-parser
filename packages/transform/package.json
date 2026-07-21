@@ -36,7 +36,9 @@
     "@pgsql/parser": "^1.2.1",
     "makage": "^0.1.8",
     "pg-proto-parser": "workspace:*",
-    "pgsql-deparser": "workspace:*"
+    "pgsql-deparser": "workspace:*",
+    "libpg-query": "18.1.1",
+    "@pgsql/types": "^18.0.0"
   },
   "keywords": []
 }

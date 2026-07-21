@@ -1,0 +1,52 @@
+
+import { FixtureTestUtils } from '../../../test-utils';
+const fixtures = new FixtureTestUtils(17, 18);
+
+it('original-upstream-select_implicit', async () => {
+  await fixtures.runFixtureTests([
+  "original/upstream/select_implicit-1.sql",
+  "original/upstream/select_implicit-2.sql",
+  "original/upstream/select_implicit-3.sql",
+  "original/upstream/select_implicit-4.sql",
+  "original/upstream/select_implicit-5.sql",
+  "original/upstream/select_implicit-6.sql",
+  "original/upstream/select_implicit-7.sql",
+  "original/upstream/select_implicit-8.sql",
+  "original/upstream/select_implicit-9.sql",
+  "original/upstream/select_implicit-10.sql",
+  "original/upstream/select_implicit-11.sql",
+  "original/upstream/select_implicit-12.sql",
+  "original/upstream/select_implicit-13.sql",
+  "original/upstream/select_implicit-14.sql",
+  "original/upstream/select_implicit-15.sql",
+  "original/upstream/select_implicit-16.sql",
+  "original/upstream/select_implicit-17.sql",
+  "original/upstream/select_implicit-18.sql",
+  "original/upstream/select_implicit-19.sql",
+  "original/upstream/select_implicit-20.sql",
+  "original/upstream/select_implicit-21.sql",
+  "original/upstream/select_implicit-22.sql",
+  "original/upstream/select_implicit-23.sql",
+  "original/upstream/select_implicit-24.sql",
+  "original/upstream/select_implicit-25.sql",
+  "original/upstream/select_implicit-26.sql",
+  "original/upstream/select_implicit-27.sql",
+  "original/upstream/select_implicit-28.sql",
+  "original/upstream/select_implicit-29.sql",
+  "original/upstream/select_implicit-30.sql",
+  "original/upstream/select_implicit-31.sql",
+  "original/upstream/select_implicit-32.sql",
+  "original/upstream/select_implicit-33.sql",
+  "original/upstream/select_implicit-34.sql",
+  "original/upstream/select_implicit-35.sql",
+  "original/upstream/select_implicit-36.sql",
+  "original/upstream/select_implicit-37.sql",
+  "original/upstream/select_implicit-38.sql",
+  "original/upstream/select_implicit-39.sql",
+  "original/upstream/select_implicit-40.sql",
+  "original/upstream/select_implicit-41.sql",
+  "original/upstream/select_implicit-42.sql",
+  "original/upstream/select_implicit-43.sql",
+  "original/upstream/select_implicit-44.sql"
+]);
+});

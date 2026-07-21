@@ -1,5 +1,5 @@
 import { parse, deparseSync, loadModule } from '../src';
-import { parseSync } from '@libpg-query/parser';
+import { parseSync } from 'libpg-query';
 import { readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 

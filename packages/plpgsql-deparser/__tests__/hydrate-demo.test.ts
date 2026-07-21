@@ -1,4 +1,4 @@
-import { loadModule, parsePlPgSQLSync, parseSync } from '@libpg-query/parser';
+import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query';
 import { deparse } from 'pgsql-deparser';
 import * as fs from 'fs';
 import * as path from 'path';

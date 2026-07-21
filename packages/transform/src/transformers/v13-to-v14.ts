@@ -2044,6 +2044,26 @@ export class V13ToV14Transformer {
   }
 
 
+  AlterExtensionContentsStmt(node: PG13.AlterExtensionContentsStmt, context: TransformerContext): { AlterExtensionContentsStmt: PG14.AlterExtensionContentsStmt } {
+    const result: any = {};
+    const childContext: TransformerContext = {
+      ...context,
+      alterExtensionObjtype: node.objtype
+    } as TransformerContext;
+
+    for (const [key, value] of Object.entries(node)) {
+      if (Array.isArray(value)) {
+        result[key] = value.map(item => this.transform(item as any, childContext));
+      } else if (typeof value === 'object' && value !== null) {
+        result[key] = this.transform(value as any, childContext);
+      } else {
+        result[key] = value;
+      }
+    }
+
+    return { AlterExtensionContentsStmt: result };
+  }
+
   ObjectWithArgs(node: PG13.ObjectWithArgs, context: TransformerContext): { ObjectWithArgs: PG14.ObjectWithArgs } {
     const result: any = { ...node };
 
@@ -2267,6 +2287,10 @@ export class V13ToV14Transformer {
       return false;
     }
 
+    if ((context as any).alterExtensionObjtype === 'OBJECT_OPERATOR') {
+      return false;
+    }
+
     if ((context as any).commentObjtype === 'OBJECT_OPERATOR' &&
         context.parentNodeTypes.includes('CommentStmt')) {
       return false;
@@ -2330,7 +2354,7 @@ export class V13ToV14Transformer {
     }
 
     const allowedNodeTypes = [
-      'CommentStmt', 'AlterFunctionStmt', 'RenameStmt', 'AlterOwnerStmt', 'AlterObjectSchemaStmt', 'CreateCastStmt', 'CreateTransformStmt', 'AlterOpFamilyStmt', 'CreateOpClassItem', 'GrantStmt', 'RevokeStmt'
+      'CommentStmt', 'AlterFunctionStmt', 'RenameStmt', 'AlterOwnerStmt', 'AlterObjectSchemaStmt', 'CreateCastStmt', 'CreateTransformStmt', 'AlterOpFamilyStmt', 'CreateOpClassItem', 'GrantStmt', 'RevokeStmt', 'AlterExtensionContentsStmt'
     ];
 
     for (const node of path) {

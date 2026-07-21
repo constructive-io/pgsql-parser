@@ -10,8 +10,8 @@
 import {
   parsePlPgSQLSync,
   parseSync as parseSqlSync,
-} from '@libpg-query/parser';
-import type { ParseResult } from '@libpg-query/parser';
+} from 'libpg-query';
+import type { ParseResult } from 'libpg-query';
 import {
   deparseEnhanced,
   isRawComment,

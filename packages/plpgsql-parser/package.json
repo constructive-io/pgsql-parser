@@ -46,9 +46,9 @@
     "makage": "^0.1.8"
   },
   "dependencies": {
-    "@libpg-query/parser": "^17.8.0",
+    "libpg-query": "18.1.1",
     "@pgsql/traverse": "workspace:*",
-    "@pgsql/types": "^17.6.2",
+    "@pgsql/types": "^18.0.0",
     "pgsql-deparser": "workspace:*",
     "plpgsql-deparser": "workspace:*"
   }

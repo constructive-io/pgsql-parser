@@ -1,8 +1,8 @@
 
 import type { Node } from '@pgsql/types';
 
-import type { NodeSpec } from './17/runtime-schema';
-import { runtimeSchema } from './17/runtime-schema';
+import type { NodeSpec } from './18/runtime-schema';
+import { runtimeSchema } from './18/runtime-schema';
 
 const schemaMap = new Map<string, NodeSpec>(runtimeSchema.map((spec: NodeSpec) => [spec.name, spec]));
 

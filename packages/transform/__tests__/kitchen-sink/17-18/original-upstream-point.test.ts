@@ -1,0 +1,53 @@
+
+import { FixtureTestUtils } from '../../../test-utils';
+const fixtures = new FixtureTestUtils(17, 18);
+
+it('original-upstream-point', async () => {
+  await fixtures.runFixtureTests([
+  "original/upstream/point-1.sql",
+  "original/upstream/point-2.sql",
+  "original/upstream/point-3.sql",
+  "original/upstream/point-4.sql",
+  "original/upstream/point-5.sql",
+  "original/upstream/point-6.sql",
+  "original/upstream/point-7.sql",
+  "original/upstream/point-8.sql",
+  "original/upstream/point-9.sql",
+  "original/upstream/point-10.sql",
+  "original/upstream/point-11.sql",
+  "original/upstream/point-12.sql",
+  "original/upstream/point-13.sql",
+  "original/upstream/point-14.sql",
+  "original/upstream/point-15.sql",
+  "original/upstream/point-16.sql",
+  "original/upstream/point-17.sql",
+  "original/upstream/point-18.sql",
+  "original/upstream/point-19.sql",
+  "original/upstream/point-20.sql",
+  "original/upstream/point-21.sql",
+  "original/upstream/point-22.sql",
+  "original/upstream/point-23.sql",
+  "original/upstream/point-24.sql",
+  "original/upstream/point-25.sql",
+  "original/upstream/point-26.sql",
+  "original/upstream/point-27.sql",
+  "original/upstream/point-28.sql",
+  "original/upstream/point-29.sql",
+  "original/upstream/point-30.sql",
+  "original/upstream/point-31.sql",
+  "original/upstream/point-32.sql",
+  "original/upstream/point-33.sql",
+  "original/upstream/point-34.sql",
+  "original/upstream/point-35.sql",
+  "original/upstream/point-36.sql",
+  "original/upstream/point-37.sql",
+  "original/upstream/point-38.sql",
+  "original/upstream/point-39.sql",
+  "original/upstream/point-40.sql",
+  "original/upstream/point-41.sql",
+  "original/upstream/point-42.sql",
+  "original/upstream/point-43.sql",
+  "original/upstream/point-44.sql",
+  "original/upstream/point-45.sql"
+]);
+});

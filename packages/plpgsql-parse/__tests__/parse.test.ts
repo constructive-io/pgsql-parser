@@ -1,4 +1,4 @@
-import { loadModule } from '@libpg-query/parser';
+import { loadModule } from 'libpg-query';
 import { parseSync } from '../src/parse';
 import { isRawComment, isRawWhitespace, isRawStmt } from 'pgsql-parse';
 

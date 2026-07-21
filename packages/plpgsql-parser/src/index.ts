@@ -28,4 +28,4 @@ export { deparse as deparseSql, Deparser } from 'pgsql-deparser';
 export {
   parseSync as parseSql,
   parsePlPgSQLSync as parsePlpgsqlBody
-} from '@libpg-query/parser';
+} from 'libpg-query';

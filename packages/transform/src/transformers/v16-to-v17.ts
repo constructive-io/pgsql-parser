@@ -1343,7 +1343,56 @@ export class V16ToV17Transformer {
   }
 
   MergeStmt(node: PG16.MergeStmt, context: TransformerContext): { MergeStmt: PG17.MergeStmt } {
-    return { MergeStmt: node as PG17.MergeStmt };
+    const result: any = {};
+
+    if (node.relation !== undefined) {
+      result.relation = node.relation;
+    }
+    if (node.sourceRelation !== undefined) {
+      result.sourceRelation = this.transform(node.sourceRelation as any, context);
+    }
+    if (node.joinCondition !== undefined) {
+      result.joinCondition = this.transform(node.joinCondition as any, context);
+    }
+    if (node.mergeWhenClauses !== undefined) {
+      result.mergeWhenClauses = Array.isArray(node.mergeWhenClauses)
+        ? node.mergeWhenClauses.map(item => this.transform(item as any, context))
+        : this.transform(node.mergeWhenClauses as any, context);
+    }
+    if (node.withClause !== undefined) {
+      result.withClause = this.WithClause(node.withClause, context);
+    }
+
+    return { MergeStmt: result };
+  }
+
+  MergeWhenClause(node: PG16.MergeWhenClause, context: TransformerContext): { MergeWhenClause: PG17.MergeWhenClause } {
+    const result: any = {};
+
+    // v17 replaces the boolean matched with matchKind
+    result.matchKind = node.matched ? 'MERGE_WHEN_MATCHED' : 'MERGE_WHEN_NOT_MATCHED_BY_TARGET';
+
+    if (node.commandType !== undefined) {
+      result.commandType = node.commandType;
+    }
+    if (node.override !== undefined) {
+      result.override = node.override;
+    }
+    if (node.condition !== undefined) {
+      result.condition = this.transform(node.condition as any, context);
+    }
+    if (node.targetList !== undefined) {
+      result.targetList = Array.isArray(node.targetList)
+        ? node.targetList.map(item => this.transform(item as any, context))
+        : this.transform(node.targetList as any, context);
+    }
+    if (node.values !== undefined) {
+      result.values = Array.isArray(node.values)
+        ? node.values.map(item => this.transform(item as any, context))
+        : this.transform(node.values as any, context);
+    }
+
+    return { MergeWhenClause: result };
   }
 
   AlterTableMoveAllStmt(node: PG16.AlterTableMoveAllStmt, context: TransformerContext): { AlterTableMoveAllStmt: PG17.AlterTableMoveAllStmt } {

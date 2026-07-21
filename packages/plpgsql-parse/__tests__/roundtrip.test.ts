@@ -1,4 +1,4 @@
-import { loadModule } from '@libpg-query/parser';
+import { loadModule } from 'libpg-query';
 import { parseSync } from '../src/parse';
 import { deparseSync } from '../src/deparse';
 import { readFileSync, readdirSync } from 'fs';

@@ -7,7 +7,7 @@
  */
 
 import type { Node } from '@pgsql/types';
-import { A_Expr_Kind, AggSplit, AlterPublicationAction, AlterSubscriptionType, AlterTSConfigType, AlterTableType, BoolExprType, BoolTestType, CTEMaterialize, CmdType, CoercionContext, CoercionForm, ConstrType, DefElemAction, DiscardMode, DropBehavior, FetchDirection, FunctionParameterMode, GrantTargetType, GroupingSetKind, ImportForeignSchemaType, JoinType, JsonBehaviorType, JsonConstructorType, JsonEncoding, JsonExprOp, JsonFormatType, JsonQuotes, JsonTableColumnType, JsonValueType, JsonWrapper, KeywordKind, LimitOption, LockClauseStrength, LockWaitPolicy, MergeMatchKind, MinMaxOp, NullTestType, ObjectType, OnCommitAction, OnConflictAction, OverridingKind, ParamKind, PartitionRangeDatumKind, PartitionStrategy, PublicationObjSpecType, QuerySource, RTEKind, ReindexObjectType, RoleSpecType, RoleStmtType, RowCompareType, SQLValueFunctionOp, SetOperation, SortByDir, SortByNulls, SubLinkType, TableFuncType, Token, TransactionStmtKind, VariableSetKind, ViewCheckOption, WCOKind, XmlExprOp, XmlOptionType } from '@pgsql/enums';
+import { A_Expr_Kind, AggSplit, AlterPublicationAction, AlterSubscriptionType, AlterTSConfigType, AlterTableType, BoolExprType, BoolTestType, CTEMaterialize, CmdType, CoercionContext, CoercionForm, CompareType, ConstrType, DefElemAction, DiscardMode, DropBehavior, FetchDirection, FunctionParameterMode, GrantTargetType, GroupingSetKind, ImportForeignSchemaType, JoinType, JsonBehaviorType, JsonConstructorType, JsonEncoding, JsonExprOp, JsonFormatType, JsonQuotes, JsonTableColumnType, JsonValueType, JsonWrapper, KeywordKind, LimitOption, LockClauseStrength, LockWaitPolicy, MergeMatchKind, MinMaxOp, NullTestType, ObjectType, OnCommitAction, OnConflictAction, OverridingKind, ParamKind, PartitionRangeDatumKind, PartitionStrategy, PublicationObjSpecType, QuerySource, RTEKind, ReindexObjectType, ReturningOptionKind, RoleSpecType, RoleStmtType, SQLValueFunctionOp, SetOperation, SortByDir, SortByNulls, SubLinkType, TableFuncType, Token, TransactionStmtKind, VarReturningType, VariableSetKind, ViewCheckOption, WCOKind, XmlExprOp, XmlOptionType } from '@pgsql/enums';
 export type { Node } from '@pgsql/types';
 export * from '@pgsql/enums';
 
@@ -54,7 +54,7 @@ type AlterTSConfigurationStmt_dicts = { List: List };
 type AlterTSConfigurationStmt_tokentype = { String: String };
 type AlterTSDictionaryStmt_dictname = { String: String };
 type AlterTSDictionaryStmt_options = { DefElem: DefElem };
-type AlterTableCmd_def = { A_Const: A_Const } | { A_Expr: A_Expr } | { ColumnDef: ColumnDef } | { Constraint: Constraint } | { FuncCall: FuncCall } | { Integer: Integer } | { List: List } | { PartitionCmd: PartitionCmd } | { RangeVar: RangeVar } | { ReplicaIdentityStmt: ReplicaIdentityStmt } | { String: String } | { TypeCast: TypeCast } | { TypeName: TypeName };
+type AlterTableCmd_def = { ATAlterConstraint: ATAlterConstraint } | { A_Const: A_Const } | { A_Expr: A_Expr } | { ColumnDef: ColumnDef } | { Constraint: Constraint } | { FuncCall: FuncCall } | { Integer: Integer } | { List: List } | { PartitionCmd: PartitionCmd } | { RangeVar: RangeVar } | { ReplicaIdentityStmt: ReplicaIdentityStmt } | { String: String } | { TypeCast: TypeCast } | { TypeName: TypeName };
 type AlterTableSpaceOptionsStmt_options = { DefElem: DefElem };
 type AlterTableStmt_cmds = { AlterTableCmd: AlterTableCmd };
 type AlterTypeStmt_options = { DefElem: DefElem };
@@ -85,7 +85,7 @@ type Constraint_including = { String: String };
 type Constraint_keys = { String: String };
 type Constraint_options = { DefElem: DefElem };
 type Constraint_pk_attrs = { String: String };
-type Constraint_raw_expr = { A_Const: A_Const } | { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { ColumnRef: ColumnRef } | { FuncCall: FuncCall } | { JsonFuncExpr: JsonFuncExpr } | { JsonIsPredicate: JsonIsPredicate } | { NullTest: NullTest } | { RowExpr: RowExpr } | { SQLValueFunction: SQLValueFunction } | { SubLink: SubLink } | { TypeCast: TypeCast };
+type Constraint_raw_expr = { A_Const: A_Const } | { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { CaseExpr: CaseExpr } | { ColumnRef: ColumnRef } | { FuncCall: FuncCall } | { JsonFuncExpr: JsonFuncExpr } | { JsonIsPredicate: JsonIsPredicate } | { NullTest: NullTest } | { RowExpr: RowExpr } | { SQLValueFunction: SQLValueFunction } | { SubLink: SubLink } | { TypeCast: TypeCast };
 type Constraint_where_clause = { A_Expr: A_Expr } | { NullTest: NullTest };
 type ConstraintsSetStmt_constraints = { RangeVar: RangeVar };
 type CopyStmt_attlist = { String: String };
@@ -149,7 +149,6 @@ type DefElem_arg = { A_Const: A_Const } | { A_Star: A_Star } | { Boolean: Boolea
 type DefineStmt_args = { Integer: Integer } | { List: List };
 type DefineStmt_definition = { DefElem: DefElem };
 type DefineStmt_defnames = { String: String };
-type DeleteStmt_returningList = { ResTarget: ResTarget };
 type DeleteStmt_usingClause = { JoinExpr: JoinExpr } | { RangeSubselect: RangeSubselect } | { RangeVar: RangeVar };
 type DeleteStmt_whereClause = { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { CurrentOfExpr: CurrentOfExpr } | { FuncCall: FuncCall } | { NullTest: NullTest } | { SubLink: SubLink };
 type DoStmt_args = { DefElem: DefElem };
@@ -184,7 +183,6 @@ type IndexStmt_indexParams = { IndexElem: IndexElem };
 type IndexStmt_options = { DefElem: DefElem };
 type IndexStmt_whereClause = { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { FuncCall: FuncCall } | { NullTest: NullTest };
 type InsertStmt_cols = { ResTarget: ResTarget };
-type InsertStmt_returningList = { ResTarget: ResTarget };
 type InsertStmt_selectStmt = { SelectStmt: SelectStmt };
 type JoinExpr_larg = { JoinExpr: JoinExpr } | { RangeFunction: RangeFunction } | { RangeSubselect: RangeSubselect } | { RangeVar: RangeVar };
 type JoinExpr_quals = { A_Const: A_Const } | { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { NullTest: NullTest } | { SubLink: SubLink };
@@ -207,9 +205,8 @@ type LockStmt_relations = { RangeVar: RangeVar };
 type LockingClause_lockedRels = { RangeVar: RangeVar };
 type MergeStmt_joinCondition = { A_Const: A_Const } | { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { SubLink: SubLink };
 type MergeStmt_mergeWhenClauses = { MergeWhenClause: MergeWhenClause };
-type MergeStmt_returningList = { ResTarget: ResTarget };
 type MergeStmt_sourceRelation = { JoinExpr: JoinExpr } | { RangeFunction: RangeFunction } | { RangeSubselect: RangeSubselect } | { RangeVar: RangeVar };
-type MergeWhenClause_condition = { A_Const: A_Const } | { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { FuncCall: FuncCall } | { NullTest: NullTest } | { SubLink: SubLink };
+type MergeWhenClause_condition = { A_Const: A_Const } | { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { ColumnRef: ColumnRef } | { FuncCall: FuncCall } | { NullTest: NullTest } | { SubLink: SubLink };
 type MergeWhenClause_targetList = { ResTarget: ResTarget };
 type MergeWhenClause_values = { A_Const: A_Const } | { A_Expr: A_Expr } | { ColumnRef: ColumnRef } | { TypeCast: TypeCast };
 type MinMaxExpr_args = { A_Const: A_Const } | { A_Expr: A_Expr } | { ColumnRef: ColumnRef };
@@ -246,7 +243,7 @@ type ReturnStmt_returnval = { A_Const: A_Const } | { A_Expr: A_Expr } | { A_Indi
 type RowExpr_args = { A_ArrayExpr: A_ArrayExpr } | { A_Const: A_Const } | { A_Expr: A_Expr } | { A_Indirection: A_Indirection } | { CollateClause: CollateClause } | { ColumnRef: ColumnRef } | { FuncCall: FuncCall } | { RowExpr: RowExpr } | { SetToDefault: SetToDefault } | { SubLink: SubLink } | { TypeCast: TypeCast };
 type RuleStmt_actions = { DeleteStmt: DeleteStmt } | { InsertStmt: InsertStmt } | { NotifyStmt: NotifyStmt } | { SelectStmt: SelectStmt } | { UpdateStmt: UpdateStmt };
 type RuleStmt_whereClause = { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { SubLink: SubLink };
-type SecLabelStmt_object = { List: List } | { String: String };
+type SecLabelStmt_object = { List: List } | { ObjectWithArgs: ObjectWithArgs } | { String: String };
 type SelectStmt_distinctClause = { A_Const: A_Const } | { ColumnRef: ColumnRef };
 type SelectStmt_fromClause = { JoinExpr: JoinExpr } | { JsonTable: JsonTable } | { RangeFunction: RangeFunction } | { RangeSubselect: RangeSubselect } | { RangeTableFunc: RangeTableFunc } | { RangeTableSample: RangeTableSample } | { RangeVar: RangeVar };
 type SelectStmt_groupClause = { A_Const: A_Const } | { A_Expr: A_Expr } | { CollateClause: CollateClause } | { ColumnRef: ColumnRef } | { FuncCall: FuncCall } | { GroupingSet: GroupingSet } | { RowExpr: RowExpr } | { TypeCast: TypeCast };
@@ -272,7 +269,6 @@ type TypeName_arrayBounds = { Integer: Integer };
 type TypeName_names = { String: String };
 type TypeName_typmods = { A_Const: A_Const } | { ColumnRef: ColumnRef };
 type UpdateStmt_fromClause = { JoinExpr: JoinExpr } | { RangeFunction: RangeFunction } | { RangeSubselect: RangeSubselect } | { RangeVar: RangeVar };
-type UpdateStmt_returningList = { ResTarget: ResTarget };
 type UpdateStmt_targetList = { ResTarget: ResTarget };
 type UpdateStmt_whereClause = { A_Const: A_Const } | { A_Expr: A_Expr } | { BoolExpr: BoolExpr } | { ColumnRef: ColumnRef } | { CurrentOfExpr: CurrentOfExpr } | { FuncCall: FuncCall } | { NullTest: NullTest } | { SubLink: SubLink };
 type VacuumRelation_va_cols = { String: String };
@@ -293,6 +289,8 @@ type XmlSerialize_expr = { A_Const: A_Const } | { ColumnRef: ColumnRef };
 // Interfaces with narrowed Node types
 export interface A_ArrayExpr {
   elements?: A_ArrayExpr_elements[];
+  list_end?: number;
+  list_start?: number;
   location?: number;
 }
 
@@ -312,6 +310,8 @@ export interface A_Expr {
   location?: number;
   name?: A_Expr_name[];
   rexpr?: A_Expr_rexpr;
+  rexpr_list_end?: number;
+  rexpr_list_start?: number;
 }
 
 export interface A_Indices {
@@ -604,9 +604,22 @@ export interface ArrayExpr {
   array_typeid?: number;
   element_typeid?: number;
   elements?: Node[];
+  list_end?: number;
+  list_start?: number;
   location?: number;
   multidims?: boolean;
   xpr?: Node;
+}
+
+export interface ATAlterConstraint {
+  alterDeferrability?: boolean;
+  alterEnforceability?: boolean;
+  alterInheritability?: boolean;
+  conname?: string;
+  deferrable?: boolean;
+  initdeferred?: boolean;
+  is_enforced?: boolean;
+  noinherit?: boolean;
 }
 
 export interface BitString {
@@ -792,13 +805,15 @@ export interface Constraint {
   fk_del_set_cols?: Constraint_fk_del_set_cols[];
   fk_matchtype?: string;
   fk_upd_action?: string;
+  fk_with_period?: boolean;
+  generated_kind?: string;
   generated_when?: string;
   including?: Constraint_including[];
   indexname?: string;
   indexspace?: string;
-  inhcount?: number;
   initdeferred?: boolean;
   initially_valid?: boolean;
+  is_enforced?: boolean;
   is_no_inherit?: boolean;
   keys?: Constraint_keys[];
   location?: number;
@@ -807,11 +822,13 @@ export interface Constraint {
   old_pktable_oid?: number;
   options?: Constraint_options[];
   pk_attrs?: Constraint_pk_attrs[];
+  pk_with_period?: boolean;
   pktable?: { RangeVar: RangeVar };
   raw_expr?: Constraint_raw_expr;
   reset_default_tblspc?: boolean;
   skip_validation?: boolean;
   where_clause?: Constraint_where_clause;
+  without_overlaps?: boolean;
 }
 
 export interface ConstraintsSetStmt {
@@ -1011,6 +1028,7 @@ export interface CreateStmt {
   constraints?: Node[];
   if_not_exists?: boolean;
   inhRelations?: CreateStmt_inhRelations[];
+  nnconstraints?: Node[];
   ofTypename?: { TypeName: TypeName };
   oncommit?: OnCommitAction;
   options?: CreateStmt_options[];
@@ -1135,7 +1153,7 @@ export interface DefineStmt {
 
 export interface DeleteStmt {
   relation?: { RangeVar: RangeVar };
-  returningList?: DeleteStmt_returningList[];
+  returningClause?: { ReturningClause: ReturningClause };
   usingClause?: DeleteStmt_usingClause[];
   whereClause?: DeleteStmt_whereClause;
   withClause?: { WithClause: WithClause };
@@ -1274,6 +1292,7 @@ export interface FuncExpr {
 export interface FunctionParameter {
   argType?: { TypeName: TypeName };
   defexpr?: FunctionParameter_defexpr;
+  location?: number;
   mode?: FunctionParameterMode;
   name?: string;
 }
@@ -1346,6 +1365,7 @@ export interface IndexStmt {
   indexParams?: IndexStmt_indexParams[];
   initdeferred?: boolean;
   isconstraint?: boolean;
+  iswithoutoverlaps?: boolean;
   nulls_not_distinct?: boolean;
   oldCreateSubid?: number;
   oldFirstRelfilelocatorSubid?: number;
@@ -1386,7 +1406,7 @@ export interface InsertStmt {
   onConflictClause?: { OnConflictClause: OnConflictClause };
   override?: OverridingKind;
   relation?: { RangeVar: RangeVar };
-  returningList?: InsertStmt_returningList[];
+  returningClause?: { ReturningClause: ReturningClause };
   selectStmt?: InsertStmt_selectStmt;
   withClause?: { WithClause: WithClause };
 }
@@ -1407,7 +1427,7 @@ export interface IntoClause {
   rel?: { RangeVar: RangeVar };
   skipData?: boolean;
   tableSpaceName?: string;
-  viewQuery?: Node;
+  viewQuery?: { Query: Query };
 }
 
 export interface JoinExpr {
@@ -1667,7 +1687,7 @@ export interface MergeStmt {
   joinCondition?: MergeStmt_joinCondition;
   mergeWhenClauses?: MergeStmt_mergeWhenClauses[];
   relation?: { RangeVar: RangeVar };
-  returningList?: MergeStmt_returningList[];
+  returningClause?: { ReturningClause: ReturningClause };
   sourceRelation?: MergeStmt_sourceRelation;
   withClause?: { WithClause: WithClause };
 }
@@ -1879,6 +1899,7 @@ export interface Query {
   hasAggs?: boolean;
   hasDistinctOn?: boolean;
   hasForUpdate?: boolean;
+  hasGroupRTE?: boolean;
   hasModifyingCTE?: boolean;
   hasRecursive?: boolean;
   hasRowSecurity?: boolean;
@@ -1899,6 +1920,8 @@ export interface Query {
   querySource?: QuerySource;
   resultRelation?: number;
   returningList?: Node[];
+  returningNewAlias?: string;
+  returningOldAlias?: string;
   rowMarks?: Node[];
   rtable?: Node[];
   rteperminfos?: Node[];
@@ -1967,6 +1990,7 @@ export interface RangeTblEntry {
   eref?: { Alias: Alias };
   funcordinality?: boolean;
   functions?: Node[];
+  groupexprs?: Node[];
   inFromCl?: boolean;
   inh?: boolean;
   join_using_alias?: { Alias: Alias };
@@ -2071,6 +2095,24 @@ export interface ResTarget {
   val?: ResTarget_val;
 }
 
+export interface ReturningClause {
+  exprs?: Node[];
+  options?: Node[];
+}
+
+export interface ReturningExpr {
+  retexpr?: Node;
+  retlevelsup?: number;
+  retold?: boolean;
+  xpr?: Node;
+}
+
+export interface ReturningOption {
+  location?: number;
+  option?: ReturningOptionKind;
+  value?: string;
+}
+
 export interface ReturnStmt {
   returnval?: ReturnStmt_returnval;
 }
@@ -2082,12 +2124,12 @@ export interface RoleSpec {
 }
 
 export interface RowCompareExpr {
+  cmptype?: CompareType;
   inputcollids?: Node[];
   largs?: Node[];
   opfamilies?: Node[];
   opnos?: Node[];
   rargs?: Node[];
-  rctype?: RowCompareType;
   xpr?: Node;
 }
 
@@ -2197,9 +2239,6 @@ export interface SetToDefault {
   xpr?: Node;
 }
 
-export interface SinglePartitionSpec {
-}
-
 export interface SortBy {
   location?: number;
   node?: SortBy_node;
@@ -2212,6 +2251,7 @@ export interface SortGroupClause {
   eqop?: number;
   hashable?: boolean;
   nulls_first?: boolean;
+  reverse_sort?: boolean;
   sortop?: number;
   tleSortGroupRef?: number;
 }
@@ -2364,7 +2404,7 @@ export interface UnlistenStmt {
 export interface UpdateStmt {
   fromClause?: UpdateStmt_fromClause[];
   relation?: { RangeVar: RangeVar };
-  returningList?: UpdateStmt_returningList[];
+  returningClause?: { ReturningClause: ReturningClause };
   targetList?: UpdateStmt_targetList[];
   whereClause?: UpdateStmt_whereClause;
   withClause?: { WithClause: WithClause };
@@ -2389,6 +2429,7 @@ export interface Var {
   varlevelsup?: number;
   varno?: number;
   varnullingrels?: number[];
+  varreturningtype?: VarReturningType;
   vartype?: number;
   vartypmod?: number;
   xpr?: Node;
@@ -2397,7 +2438,9 @@ export interface Var {
 export interface VariableSetStmt {
   args?: VariableSetStmt_args[];
   is_local?: boolean;
+  jumble_args?: boolean;
   kind?: VariableSetKind;
+  location?: number;
   name?: string;
 }
 

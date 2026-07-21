@@ -132,6 +132,9 @@ it('original-upstream-window', async () => {
   "original/upstream/window-126.sql",
   "original/upstream/window-127.sql",
   "original/upstream/window-128.sql",
-  "original/upstream/window-129.sql"
+  "original/upstream/window-129.sql",
+  "original/upstream/window-130.sql",
+  "original/upstream/window-131.sql",
+  "original/upstream/window-132.sql"
 ]);
 });
