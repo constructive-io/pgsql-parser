@@ -42,7 +42,7 @@
     "database"
   ],
   "devDependencies": {
-    "@libpg-query/parser": "^17.6.3",
+    "@libpg-query/parser": "^17.8.0",
     "libpg-query": "17.7.3",
     "makage": "^0.1.8"
   },
