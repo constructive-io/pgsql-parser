@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.8.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.13...plpgsql-deparser@0.8.0) (2026-07-21)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** keep RETURN NEXT bare when retvarno targets the function's OUT parameters ([68896e1](https://github.com/constructive-io/pgsql-parser/commit/68896e1ae9353e43c7c443be5c90582bd0291f3b))
+- **plpgsql-deparser:** unwrap the compiler-generated wrapper block around top-level EXCEPTION blocks ([ac04253](https://github.com/constructive-io/pgsql-parser/commit/ac04253799d2578869f626dfeec6df601f9326a1))
+
 ## [0.7.13](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.12...plpgsql-deparser@0.7.13) (2026-07-21)
 
 ### Bug Fixes

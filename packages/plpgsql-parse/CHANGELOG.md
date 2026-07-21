@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-parse@0.2.6...plpgsql-parse@0.3.0) (2026-07-21)
+
+### Bug Fixes
+
+- **plpgsql-parse:** comment reinjection fixes — pad stitched body with newlines, skip DECLARE sections during statement matching ([dd86a90](https://github.com/constructive-io/pgsql-parser/commit/dd86a90a54d822fb683be0f2c62f96129d113483))
+
 ## [0.2.6](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-parse@0.2.5...plpgsql-parse@0.2.6) (2026-07-21)
 
 **Note:** Version bump only for package plpgsql-parse
