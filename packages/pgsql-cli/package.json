@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/cli",
-  "version": "2.0.0",
+  "version": "18.0.0",
   "description": "Unified CLI for PostgreSQL AST parsing, deparsing, and code generation",
   "author": "Constructive <developers@constructive.io>",
   "main": "index.js",
