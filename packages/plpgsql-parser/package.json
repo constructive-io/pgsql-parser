@@ -1,6 +1,6 @@
 {
   "name": "plpgsql-parser",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "Combined SQL + PL/pgSQL parser with hydrated ASTs and transform API",
   "main": "index.js",
@@ -46,9 +46,9 @@
     "makage": "^0.1.8"
   },
   "dependencies": {
-    "libpg-query": "18.1.1",
     "@pgsql/traverse": "workspace:*",
     "@pgsql/types": "^18.0.0",
+    "libpg-query": "18.1.1",
     "pgsql-deparser": "workspace:*",
     "plpgsql-deparser": "workspace:*"
   }

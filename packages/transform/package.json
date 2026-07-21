@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/transform",
-  "version": "17.9.19",
+  "version": "18.0.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "Transform PostgreSQL AST types for pgsql-parser",
   "main": "index.js",
@@ -34,11 +34,11 @@
   },
   "devDependencies": {
     "@pgsql/parser": "^1.2.1",
+    "@pgsql/types": "^18.0.0",
+    "libpg-query": "18.1.1",
     "makage": "^0.1.8",
     "pg-proto-parser": "workspace:*",
-    "pgsql-deparser": "workspace:*",
-    "libpg-query": "18.1.1",
-    "@pgsql/types": "^18.0.0"
+    "pgsql-deparser": "workspace:*"
   },
   "keywords": []
 }

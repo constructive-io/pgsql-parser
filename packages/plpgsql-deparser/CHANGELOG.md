@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.8.0...plpgsql-deparser@1.0.0) (2026-07-21)
+
+### Bug Fixes
+
+- quote typname parts when hydration parse fails (PG18 unquoted typnames) ([033dfd6](https://github.com/constructive-io/pgsql-parser/commit/033dfd6d9c082ca62e879acd399136e8625f47a5))
+- retry typname hydration with quoted parts when unquoted parse yields no TypeName ([bdf6e90](https://github.com/constructive-io/pgsql-parser/commit/bdf6e902c3a9d5cecb48ce8a9ef4c39aede9d99f))
+
+### Features
+
+- PostgreSQL 18 support (libpg-query 18.1.1, @pgsql/types 18) ([a8d5cfe](https://github.com/constructive-io/pgsql-parser/commit/a8d5cfef9422a873a90a5736551bae291bbdff47))
+
 # [0.8.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@0.7.13...plpgsql-deparser@0.8.0) (2026-07-21)
 
 ### Bug Fixes

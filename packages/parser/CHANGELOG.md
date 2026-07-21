@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.0.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-parser@17.9.17...pgsql-parser@18.0.0) (2026-07-21)
+
+### Features
+
+- PostgreSQL 18 support (libpg-query 18.1.1, @pgsql/types 18) ([a8d5cfe](https://github.com/constructive-io/pgsql-parser/commit/a8d5cfef9422a873a90a5736551bae291bbdff47))
+
 ## [17.9.17](https://github.com/constructive-io/pgsql-parser/compare/pgsql-parser@17.9.16...pgsql-parser@17.9.17) (2026-07-20)
 
 **Note:** Version bump only for package pgsql-parser

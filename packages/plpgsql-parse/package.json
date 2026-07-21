@@ -1,6 +1,6 @@
 {
   "name": "plpgsql-parse",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "Comment and whitespace preserving PL/pgSQL parser",
   "main": "index.js",
@@ -41,8 +41,8 @@
     "round-trip"
   ],
   "dependencies": {
-    "libpg-query": "18.1.1",
     "@pgsql/types": "^18.0.0",
+    "libpg-query": "18.1.1",
     "pgsql-deparser": "workspace:*",
     "pgsql-parse": "workspace:*",
     "plpgsql-deparser": "workspace:*"
