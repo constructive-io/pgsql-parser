@@ -1,5 +1,34 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`plpgsql-deparser bug fixes ALIAS declarations should interleave aliases with variable declarations by source order 1`] = `
+"DECLARE
+  val ALIAS FOR input_value;
+  buffer text := 'x';
+  buf ALIAS FOR buffer;
+BEGIN
+  buf := buf || val;
+  RETURN buffer;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes ALIAS declarations should preserve ALIAS FOR OLD/NEW in trigger functions 1`] = `
+"DECLARE
+  prior ALIAS FOR old;
+  updated ALIAS FOR new;
+BEGIN
+  updated.updated_at := now();
+  RETURN NEW;
+END"
+`;
+
+exports[`plpgsql-deparser bug fixes ALIAS declarations should preserve ALIAS FOR a positional parameter 1`] = `
+"DECLARE
+  arg ALIAS FOR $1;
+BEGIN
+  RETURN arg + 1;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes DML RETURNING ... INTO re-insertion should handle multi-column RETURNING ... INTO 1`] = `
 "DECLARE
   v_id uuid;
