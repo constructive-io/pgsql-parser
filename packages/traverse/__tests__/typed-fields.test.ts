@@ -162,6 +162,73 @@ describe('walk — typed embedded fields (untagged)', () => {
     expect(aliases[0].node.aliasname).toBe('a');
   });
 
+  it('visits Query and its nested typed fields for IntoClause.viewQuery', () => {
+    // IntoClause.viewQuery and RangeTblEntry.subquery are the two concrete
+    // Query-typed fields in the PG18 runtime schema.
+    const ast = {
+      CreateTableAsStmt: {
+        into: {
+          rel: { relname: 'mv', inh: true, relpersistence: 'p' },
+          viewQuery: {
+            commandType: 'CMD_SELECT',
+            rtable: [
+              {
+                RangeTblEntry: {
+                  rtekind: 'RTE_SUBQUERY',
+                  subquery: {
+                    commandType: 'CMD_SELECT',
+                    jointree: { fromlist: [] as any[] }
+                  },
+                  eref: { aliasname: 'inner_q' }
+                }
+              }
+            ],
+            jointree: {
+              fromlist: [{ RangeVar: { relname: 'src', inh: true, relpersistence: 'p' } }]
+            }
+          }
+        },
+        objtype: 'OBJECT_MATVIEW'
+      }
+    };
+
+    const tags: string[] = [];
+    walk(ast, (path) => { tags.push(path.tag); });
+
+    // outer Query via IntoClause.viewQuery, inner Query via RangeTblEntry.subquery
+    expect(tags.filter((t) => t === 'Query')).toHaveLength(2);
+    // FromExpr synthesized for both Query.jointree fields
+    expect(tags.filter((t) => t === 'FromExpr')).toHaveLength(2);
+    // RangeVar: IntoClause.rel (untagged) + tagged one inside fromlist
+    expect(tags.filter((t) => t === 'RangeVar')).toHaveLength(2);
+    // Alias synthesized for RangeTblEntry.eref
+    expect(tags).toContain('Alias');
+    expect(tags).toContain('RangeTblEntry');
+    expect(tags).toContain('IntoClause');
+  });
+
+  it('handles empty untagged typed values and mixed tagged/untagged arrays', () => {
+    const emptyRel = { IndexStmt: { relation: {} } };
+    const visited: NodePath[] = [];
+    walk(emptyRel, { RangeVar: (path) => { visited.push(path); } });
+    expect(visited).toHaveLength(1);
+    expect(visited[0].node).toEqual({});
+
+    // ParseResult.stmts with one bare RawStmt and one already-tagged entry
+    const mixed = {
+      ParseResult: {
+        version: 180004,
+        stmts: [
+          { stmt: indexStmtAst, stmt_len: 34 },
+          { RawStmt: { stmt: createTrigAst, stmt_len: 66 } }
+        ]
+      }
+    };
+    const rawStmts: NodePath[] = [];
+    walk(mixed, { RawStmt: (path) => { rawStmts.push(path); } });
+    expect(rawStmts).toHaveLength(2);
+  });
+
   it('keeps existing behavior for tagged nodes', () => {
     const visited: string[] = [];
     const visitor: Visitor = {
