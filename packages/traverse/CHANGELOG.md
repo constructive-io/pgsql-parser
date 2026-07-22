@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.3.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/traverse@18.2.0...@pgsql/traverse@18.3.0) (2026-07-22)
+
+### Features
+
+- **traverse:** detect bare ParseResult/ScanResult roots and guard non-object node payloads ([c46d795](https://github.com/constructive-io/pgsql-parser/commit/c46d795165f90386622eaff500814d4cd1436ca5))
+
 # [18.2.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/traverse@18.1.0...@pgsql/traverse@18.2.0) (2026-07-22)
 
 ### Bug Fixes
