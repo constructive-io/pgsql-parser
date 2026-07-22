@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.1.2](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@18.1.1...plpgsql-deparser@18.1.2) (2026-07-22)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** emit ALIAS FOR declarations from parser alias metadata ([b6ffee2](https://github.com/constructive-io/pgsql-parser/commit/b6ffee2a72c5eae56fbf02493ee04521fd71d9af))
+
 ## [18.1.1](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@18.1.0...plpgsql-deparser@18.1.1) (2026-07-21)
 
 ### Bug Fixes
