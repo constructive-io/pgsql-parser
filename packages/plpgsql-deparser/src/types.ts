@@ -18,6 +18,18 @@ export interface PLpgSQL_function {
   datums?: PLpgSQLDatum[];
   action?: PLpgSQLStmtNode;
   out_param_varno?: number;
+  aliases?: PLpgSQLAliasNode[];
+}
+
+export type PLpgSQLAliasNode = {
+  PLpgSQL_alias: PLpgSQL_alias;
+};
+
+/** An ALIAS declaration (e.g. `arg ALIAS FOR $1`): a name bound to an existing datum */
+export interface PLpgSQL_alias {
+  name: string;
+  varno: number;
+  lineno?: number;
 }
 
 export type PLpgSQLDatum = 

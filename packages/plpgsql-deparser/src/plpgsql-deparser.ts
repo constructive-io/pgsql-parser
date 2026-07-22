@@ -17,6 +17,7 @@ import {
   PLpgSQLFunctionNode,
   PLpgSQL_function,
   PLpgSQLDatum,
+  PLpgSQLAliasNode,
   PLpgSQL_var,
   PLpgSQL_rec,
   PLpgSQL_row,
@@ -215,7 +216,8 @@ export class PLpgSQLDeparser {
       context,
       loopVarLinenos,
       undefined,  // includedIndices - not used for top-level
-      nestedDatumIndices  // excludedIndices - exclude datums that belong to nested blocks
+      nestedDatumIndices,  // excludedIndices - exclude datums that belong to nested blocks
+      func.aliases
     );
     if (declareSection) {
       parts.push(declareSection);
@@ -633,7 +635,8 @@ export class PLpgSQLDeparser {
     context: PLpgSQLDeparserContext,
     loopVarLinenos: Set<number> = new Set(),
     includedIndices?: Set<number>,
-    excludedIndices?: Set<number>
+    excludedIndices?: Set<number>,
+    aliases?: PLpgSQLAliasNode[]
   ): string {
     if (!datums || datums.length === 0) {
       return '';
@@ -700,18 +703,40 @@ export class PLpgSQLDeparser {
       return false;
     });
 
-    if (localVars.length === 0) {
-      return '';
+    // ALIAS declarations bind a new name to an existing datum (e.g. `arg ALIAS FOR $1`).
+    // They are interleaved with variable declarations by source lineno so an alias
+    // targeting a local variable is emitted after that variable's declaration.
+    // On equal linenos, variables sort before aliases so a same-line alias
+    // targeting a variable still follows its declaration.
+    const decls: { lineno: number; order: number; text: string }[] = [];
+    for (const alias of aliases ?? []) {
+      const { name, varno, lineno } = alias.PLpgSQL_alias;
+      const targetName = this.getVarName(varno, context);
+      decls.push({ lineno: lineno ?? 0, order: 1, text: `${name} ${this.keyword('ALIAS FOR')} ${targetName}` });
     }
-
-    const kw = this.keyword;
-    const parts: string[] = [kw('DECLARE')];
 
     for (const datum of localVars) {
       const varDecl = this.deparseDatum(datum, context);
       if (varDecl) {
-        parts.push(this.indent(varDecl + ';', context.indentLevel + 1));
+        const lineno =
+          ('PLpgSQL_var' in datum ? datum.PLpgSQL_var.lineno : undefined) ??
+          ('PLpgSQL_rec' in datum ? datum.PLpgSQL_rec.lineno : undefined) ??
+          0;
+        decls.push({ lineno, order: 0, text: varDecl });
       }
+    }
+
+    if (decls.length === 0) {
+      return '';
+    }
+
+    decls.sort((a, b) => a.lineno - b.lineno || a.order - b.order);
+
+    const kw = this.keyword;
+    const parts: string[] = [kw('DECLARE')];
+
+    for (const decl of decls) {
+      parts.push(this.indent(decl.text + ';', context.indentLevel + 1));
     }
 
     return parts.join(this.options.newline);
