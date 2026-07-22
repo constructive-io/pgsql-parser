@@ -229,6 +229,33 @@ describe('walk — typed embedded fields (untagged)', () => {
     expect(rawStmts).toHaveLength(2);
   });
 
+  it('detects a bare libpg-query parse result at the root', () => {
+    // libpg-query parseSync() returns {version, stmts} with no ParseResult wrapper
+    const parseResult = {
+      version: 180004,
+      stmts: [{ stmt: createPolicyAst, stmt_len: 52 }]
+    };
+    const tags: string[] = [];
+    walk(parseResult, (path) => { tags.push(path.tag); });
+
+    expect(tags[0]).toBe('ParseResult');
+    expect(tags[1]).toBe('RawStmt');
+    expect(tags).toContain('CreatePolicyStmt');
+    expect(tags).toContain('RangeVar');
+  });
+
+  it('does not treat non-root {version, stmts} shapes as ParseResult', () => {
+    const tags: string[] = [];
+    walk({ wrapper: { version: 180004, stmts: [] as any[] } }, (path) => { tags.push(path.tag); });
+    expect(tags).toEqual([]);
+  });
+
+  it('ignores tagged wrappers whose payload is not an object', () => {
+    const visited: NodePath[] = [];
+    walk({ Weird: 'not-an-object' }, (path) => { visited.push(path); });
+    expect(visited).toEqual([]);
+  });
+
   it('keeps existing behavior for tagged nodes', () => {
     const visited: string[] = [];
     const visitor: Visitor = {
@@ -274,6 +301,20 @@ describe('visit — typed embedded fields (untagged)', () => {
     expect(rawStmts).toHaveLength(1);
     expect(rangeVars).toHaveLength(1);
     expect(rangeVars[0].relname).toBe('posts');
+  });
+
+  it('detects a bare libpg-query parse result at the root', () => {
+    const parseResult = {
+      version: 180004,
+      stmts: [{ stmt: createPolicyAst, stmt_len: 52 }]
+    };
+    const visited: string[] = [];
+    visit(parseResult, {
+      ParseResult: () => { visited.push('ParseResult'); },
+      RawStmt: () => { visited.push('RawStmt'); },
+      RangeVar: (node) => { visited.push(`RangeVar:${node.relname}`); }
+    });
+    expect(visited).toEqual(['ParseResult', 'RawStmt', 'RangeVar:posts']);
   });
 
   it('keeps existing behavior for tagged nodes', () => {

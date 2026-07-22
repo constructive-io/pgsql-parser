@@ -61,12 +61,34 @@ export function walk(
     const keys = Object.keys(root);
     if (keys.length === 1 && /^[A-Z]/.test(keys[0])) {
       walkNode(keys[0], root[keys[0]], actualCallback, parent, keyPath);
-    } else {
-      for (const key of keys) {
-        walk(root[key], actualCallback, parent, [...keyPath, key]);
+      return;
+    }
+    if (parent === null && keyPath.length === 0) {
+      const rootTag = detectUntaggedRootTag(root);
+      if (rootTag) {
+        walkNode(rootTag, root, actualCallback, parent, keyPath);
+        return;
       }
     }
+    for (const key of keys) {
+      walk(root[key], actualCallback, parent, [...keyPath, key]);
+    }
   }
+}
+
+/**
+ * libpg-query returns the top-level ParseResult/ScanResult as a bare object
+ * (no `{ParseResult: {...}}` wrapper). Detect those shapes at the root so
+ * their visitors — and typed descendants like RawStmt — are dispatched.
+ */
+function detectUntaggedRootTag(root: any): string | null {
+  if (Array.isArray(root.stmts) && typeof root.version === 'number') {
+    return 'ParseResult';
+  }
+  if (Array.isArray(root.tokens) && typeof root.version === 'number') {
+    return 'ScanResult';
+  }
+  return null;
 }
 
 function isTaggedNode(value: any): boolean {
@@ -84,6 +106,10 @@ function walkNode(
   parent: NodePath | null,
   keyPath: readonly (string | number)[],
 ): void {
+  if (typeof nodeData !== 'object' || nodeData === null) {
+    return;
+  }
+
   const path = new NodePath(tag, nodeData, parent, keyPath);
 
   if (actualCallback(path) === false) {
@@ -158,6 +184,12 @@ export function visit(
   ctx: VisitorContext = { path: [], parent: null, key: '' }
 ): void {
   if (node == null || typeof node !== 'object') return;
+
+  const rootTag = detectUntaggedRootTag(node);
+  if (rootTag) {
+    visitNode(rootTag, node, visitor, ctx);
+    return;
+  }
 
   const nodeType = Object.keys(node)[0] as string;
   const nodeData = node[nodeType];
