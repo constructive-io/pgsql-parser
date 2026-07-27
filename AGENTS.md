@@ -16,7 +16,7 @@ A pnpm monorepo for PostgreSQL AST parsing, deparsing, and code generation. All 
 | `@pgsql/types` | (published from proto-parser codegen) | Core TypeScript type definitions for PostgreSQL AST nodes |
 | `@pgsql/utils` | `packages/utils` | Type-safe AST node creation utilities |
 | `@pgsql/traverse` | `packages/traverse` | Visitor-pattern AST traversal |
-| `@pgsql/transform` | `packages/transform` | Multi-version AST transformer (PG 13-17) |
+| `@pgsql/transform-ast` | `packages/transform-ast` | Multi-version AST transformer (PG 13-17) |
 | `@pgsql/quotes` | `packages/quotes` | SQL identifier/string quoting and keyword classification |
 | `@pgsql/cli` | `packages/pgsql-cli` | CLI tool for parse/deparse operations |
 | `pg-proto-parser` | `packages/proto-parser` | Generate TypeScript from PostgreSQL protobuf definitions |
@@ -79,8 +79,8 @@ Every package supports these scripts:
 | `deparser` | `npm run fixtures:sql` | Generate SQL fixtures via native deparse |
 | `deparser` | `npm run fixtures:upstream-diff` | Compare upstream (libpg-query) vs our deparser output |
 | `plpgsql-deparser` | `npm run fixtures` | Extract PL/pgSQL fixtures |
-| `transform` | `npm run kitchen-sink` | Generate transform kitchen-sink tests |
-| `transform` | `npm run test:ast` | AST round-trip validation |
+| `transform-ast` | `npm run kitchen-sink` | Generate transform kitchen-sink tests |
+| `transform-ast` | `npm run test:ast` | AST round-trip validation |
 | `parser` | `npm run test:ast` | AST round-trip validation |
 
 ### Code Generation Scripts (see code-generation skill)
@@ -89,7 +89,7 @@ Every package supports these scripts:
 |---------|--------|-------------|
 | `utils` | `npm run build:proto` | Generate AST helpers from protobuf |
 | `traverse` | `npm run build:proto` | Generate traversal utilities from protobuf |
-| `transform` | `npm run build:proto` | Generate transformer utilities from protobuf |
+| `transform-ast` | `npm run build:proto` | Generate transformer utilities from protobuf |
 | `pgsql-types` | `npm run infer` | Infer field metadata from SQL fixtures |
 | `pgsql-types` | `npm run generate` | Generate narrowed types from metadata |
 | `proto-parser` | `npm run generate:test-utils` | Generate test utilities from protobuf |

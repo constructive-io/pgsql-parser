@@ -14,7 +14,7 @@ Direct transformers provide optimized, tree-shakeable modules for transforming P
 ### Transform a Complete Parse Result
 
 ```typescript
-import { PG15ToPG17Transformer } from '@pgsql/transform/transformers-direct/v15-to-v17';
+import { PG15ToPG17Transformer } from '@pgsql/transform-ast/transformers-direct/v15-to-v17';
 import { Parser } from '@pgsql/parser';
 
 const parser = new Parser({ version: 15 });
@@ -28,7 +28,7 @@ const pg17Ast = transformer.transform(pg15Ast);
 ### Transform Any Node in the AST
 
 ```typescript
-import { PG15ToPG17Transformer } from '@pgsql/transform/transformers-direct/v15-to-v17';
+import { PG15ToPG17Transformer } from '@pgsql/transform-ast/transformers-direct/v15-to-v17';
 
 // Transform just a statement node
 const stmtNode = pg15Ast.stmts[0].stmt;
@@ -45,10 +45,10 @@ const transformedWhere = transformer.transform(whereClause);
 
 | Transformer | Import Path | Dependencies |
 |------------|-------------|--------------|
-| PG16→PG17 | `@pgsql/transform/transformers-direct/v16-to-v17` | v16→v17 only |
-| PG15→PG17 | `@pgsql/transform/transformers-direct/v15-to-v17` | v15→v16, v16→v17 |
-| PG14→PG17 | `@pgsql/transform/transformers-direct/v14-to-v17` | v14→v15, v15→v16, v16→v17 |
-| PG13→PG17 | `@pgsql/transform/transformers-direct/v13-to-v17` | All transformers |
+| PG16→PG17 | `@pgsql/transform-ast/transformers-direct/v16-to-v17` | v16→v17 only |
+| PG15→PG17 | `@pgsql/transform-ast/transformers-direct/v15-to-v17` | v15→v16, v16→v17 |
+| PG14→PG17 | `@pgsql/transform-ast/transformers-direct/v14-to-v17` | v14→v15, v15→v16, v16→v17 |
+| PG13→PG17 | `@pgsql/transform-ast/transformers-direct/v13-to-v17` | All transformers |
 
 ## API Reference
 
@@ -75,8 +75,8 @@ Legacy method for transforming statements. Use `transform()` instead.
 Import types directly from the version-specific type modules:
 
 ```typescript
-import * as PG15 from '@pgsql/transform/15/types';
-import * as PG17 from '@pgsql/transform/17/types';
+import * as PG15 from '@pgsql/transform-ast/15/types';
+import * as PG17 from '@pgsql/transform-ast/17/types';
 
 // Use types for type annotations
 const node: PG15.Node = ...;

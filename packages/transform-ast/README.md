@@ -1,4 +1,4 @@
-# @pgsql/transform
+# @pgsql/transform-ast
 
 <p align="center" width="100%">
   <img height="250" src="https://raw.githubusercontent.com/constructive-io/constructive/refs/heads/main/assets/outline-logo.svg" />
@@ -9,10 +9,10 @@
     <img height="20" src="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
   </a>
    <a href="https://github.com/constructive-io/pgsql-parser/blob/main/LICENSE-MIT"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
-   <a href="https://www.npmjs.com/package/@pgsql/transform"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/pgsql-parser?filename=packages%2Ftransform%2Fpackage.json"/></a>
+   <a href="https://www.npmjs.com/package/@pgsql/transform-ast"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/pgsql-parser?filename=packages%2Ftransform-ast%2Fpackage.json"/></a>
 </p>
 
-`@pgsql/transform` is a TypeScript library for transforming PostgreSQL ASTs between different PostgreSQL versions. It serves as a crucial component for building a single source of truth deparser that can handle SQL from multiple PostgreSQL versions while maintaining backward compatibility.
+`@pgsql/transform-ast` is a TypeScript library for transforming PostgreSQL ASTs between different PostgreSQL versions. It serves as a crucial component for building a single source of truth deparser that can handle SQL from multiple PostgreSQL versions while maintaining backward compatibility.
 
 ## Transforming ASTs Between PG Versions
 
@@ -35,7 +35,7 @@ This design ensures all transformed ASTs can be reliably deparsed using the late
 ## Installation
 
 ```bash
-npm install @pgsql/transform
+npm install @pgsql/transform-ast
 ```
 
 ## 🚀 Quick Start
@@ -43,7 +43,7 @@ npm install @pgsql/transform
 ### Multi-Version Transformer
 
 ```typescript
-import { ASTTransformer } from '@pgsql/transform';
+import { ASTTransformer } from '@pgsql/transform-ast';
 
 const transformer = new ASTTransformer();
 
@@ -62,7 +62,7 @@ const result = transformer.transform13To17(pg13Ast);
 For better performance when you know source and target versions:
 
 ```typescript
-import { PG13ToPG17Transformer } from '@pgsql/transform';
+import { PG13ToPG17Transformer } from '@pgsql/transform-ast';
 
 const transformer = new PG13ToPG17Transformer();
 const pg17Ast = transformer.transform(pg13Ast);
@@ -73,7 +73,7 @@ const pg17Ast = transformer.transform(pg13Ast);
 ```typescript
 import { parse } from '@pgsql/parser';
 import { deparse } from 'pgsql-deparser';
-import { PG13ToPG17Transformer } from '@pgsql/transform';
+import { PG13ToPG17Transformer } from '@pgsql/transform-ast';
 
 // Parse with older version
 const pg13Ast = await parse('SELECT * FROM users', { version: 13 });

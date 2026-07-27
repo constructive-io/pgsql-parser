@@ -389,7 +389,7 @@ importers:
         version: 0.1.8
     publishDirectory: dist
 
-  packages/transform:
+  packages/transform-ast:
     devDependencies:
       "@pgsql/parser":
         specifier: ^1.2.1

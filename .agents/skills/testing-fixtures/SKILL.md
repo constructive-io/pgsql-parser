@@ -40,7 +40,7 @@ packages/deparser/
 packages/plpgsql-deparser/
   scripts/
     make-fixtures.ts      # Extracts PL/pgSQL statements -> plpgsql-generated/generated.json
-packages/transform/
+packages/transform-ast/
   scripts/
     make-kitchen-sink.ts  # Generates transform kitchen-sink tests
     test-ast.ts           # AST round-trip validation for transform
@@ -163,7 +163,7 @@ This runs `scripts/make-fixtures.ts` which:
 The transform package has its own kitchen-sink and AST test scripts:
 
 ```bash
-cd packages/transform
+cd packages/transform-ast
 npm run kitchen-sink   # generate transform-specific kitchen-sink tests
 npm run test:ast       # run AST round-trip validation
 ```
@@ -189,7 +189,7 @@ npm run test:ast       # run AST round-trip validation
 |--------|---------|-------------|
 | `fixtures` | `ts-node scripts/make-fixtures.ts` | Extract PL/pgSQL fixtures to `plpgsql-generated/generated.json` |
 
-### `packages/transform`
+### `packages/transform-ast`
 
 | Script | Command | Description |
 |--------|---------|-------------|
