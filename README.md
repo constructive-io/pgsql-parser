@@ -174,6 +174,7 @@ walk(ast, visitor);
 | [**@pgsql/utils**](./packages/utils) | Type-safe AST node creation utilities | • Programmatic AST construction<br>• Runtime Schema<br>• Seamless integration with types |
 | [**pg-proto-parser**](./packages/proto-parser) | PostgreSQL protobuf parser and code generator | • Generate TypeScript interfaces from protobuf<br>• Create enum mappings and utilities<br>• AST helper generation |
 | [**@pgsql/transform-ast**](./packages/transform-ast) | Multi-version PostgreSQL AST transformer | • Transform ASTs between PostgreSQL versions (13→17)<br>• Single source of truth deparser pipeline<br>• Backward compatibility for legacy SQL |
+| [**@pgsql/transform**](./packages/transform) | SQL transformation & classification | • Schema-name rewriting (incl. PL/pgSQL bodies)<br>• Per-statement AST facts (`classifyStatements`)<br>• Transitive dependency closure & qualification |
 | [**@pgsql/traverse**](./packages/traverse) | PostgreSQL AST traversal utilities | • Visitor pattern for traversing PostgreSQL AST nodes<br>• NodePath context with parent/path information<br>• Runtime schema-based precise traversal |
 
 ## 🛠️ Development
