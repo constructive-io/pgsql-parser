@@ -1,26 +1,9 @@
 export type {
-  CategoryProfile,
-  ChangeCategory,
-} from './categorize';
-export {
-  buildCategoryOf,
-  categorizeChange,
-  TIER_PROFILE,
-} from './categorize';
-export type {
   QualifiedName,
   StatementFacts,
   StatementKind,
 } from './facts';
 export { classifyStatements } from './facts';
-export type {
-  ClosureChange,
-  ClosureInputChange,
-  ClosureReason,
-  FixtureClosure,
-  ResolveFixtureClosureOptions,
-} from './fixture-closure';
-export { resolveFixtureClosure } from './fixture-closure';
 export type {
   ObjectInventory,
   QualifyResult,

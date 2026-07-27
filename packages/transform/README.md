@@ -54,14 +54,6 @@ const facts = classifyStatements(sql);
 
 Qualify unqualified object references against an inventory of known objects, with multi-schema routing support.
 
-### `resolveFixtureClosure` — transitive dependency closure
-
-Given a set of changes (name + SQL + optional declared dependencies), compute the transitive closure of a selection: forward producers of every referenced object/schema/role, plus attached fixtures (policies/grants/RLS targeting closure members), with explicit unresolved-reference reporting.
-
-### `categorizeChange` / `buildCategoryOf` — change categorization
-
-Profile-driven categorization of migration changes (e.g. schema / functionality / security / fixtures) from their AST facts.
-
 ### Round-trip validation
 
 `normalizeTree` / `cleanTree` / `validateRoundTrip` — dependency-free AST normalization and mutation-aware parse→deparse→re-parse validation.

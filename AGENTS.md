@@ -17,7 +17,7 @@ A pnpm monorepo for PostgreSQL AST parsing, deparsing, and code generation. All 
 | `@pgsql/utils` | `packages/utils` | Type-safe AST node creation utilities |
 | `@pgsql/traverse` | `packages/traverse` | Visitor-pattern AST traversal |
 | `@pgsql/transform-ast` | `packages/transform-ast` | Multi-version AST transformer (PG 13-17) |
-| `@pgsql/transform` | `packages/transform` | SQL schema transformation, statement classification, qualification, dependency closure |
+| `@pgsql/transform` | `packages/transform` | SQL schema transformation, statement classification (AST facts), qualification, round-trip validation |
 | `@pgsql/quotes` | `packages/quotes` | SQL identifier/string quoting and keyword classification |
 | `@pgsql/cli` | `packages/pgsql-cli` | CLI tool for parse/deparse operations |
 | `pg-proto-parser` | `packages/proto-parser` | Generate TypeScript from PostgreSQL protobuf definitions |
