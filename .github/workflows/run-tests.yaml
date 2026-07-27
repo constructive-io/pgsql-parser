@@ -22,7 +22,7 @@ jobs:
           - plpgsql-parser
           - pg-proto-parser
           - '@pgsql/quotes'
-          - '@pgsql/transform'
+          - '@pgsql/transform-ast'
     steps:
       - name: checkout
         uses: actions/checkout@v3
