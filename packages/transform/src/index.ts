@@ -1,4 +1,14 @@
 export type {
+  BundleScriptContext,
+  NamespaceValidatorOptions,
+  SchemaTranspiler,
+  SchemaTranspilerOptions,
+} from './bundle-driver';
+export {
+  makeNamespaceValidator,
+  makeSchemaTranspiler,
+} from './bundle-driver';
+export type {
   CategoryProfile,
   ChangeCategory,
 } from './categorize';
