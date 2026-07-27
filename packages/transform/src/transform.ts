@@ -1,0 +1,1457 @@
+/**
+ * AST-based Schema Name Transformer (Core Logic)
+ * 
+ * Pure transformation functions for converting schema names in SQL strings.
+ * No file I/O — takes SQL strings in and returns transformed SQL strings out.
+ * 
+ * The transformer handles:
+ * - Schema-qualified identifiers in RangeVar nodes (schema.table)
+ * - Schema names in CreateSchemaStmt nodes
+ * - Schema-qualified function names in FuncCall and CreateFunctionStmt nodes
+ * - Schema-qualified type names in TypeName nodes
+ * - Schema names in GrantStmt objects array
+ * - Schema names in VariableSetStmt (SET search_path)
+ * - Schema names in AlterDefaultPrivilegesStmt
+ * - Schema names in DropStmt (DROP SCHEMA)
+ * - Schema-qualified trigger function names in CreateTrigStmt
+ * - Schema-qualified object references in CommentStmt
+ * - Schema-qualified names in DefineStmt (CREATE TYPE, CREATE AGGREGATE)
+ * - Schema-qualified names in CreateDomainStmt, CreateEnumStmt, AlterEnumStmt
+ * - Schema-qualified names in AlterDomainStmt, AlterTypeStmt
+ * - Schema-qualified names in ObjectWithArgs (ALTER FUNCTION, etc.)
+ * - Schema name in AlterObjectSchemaStmt (ALTER ... SET SCHEMA)
+ * - Schema names inside PL/pgSQL function bodies (hydrated AST)
+ * - Comment headers, verify function calls, JSON string values (regex fallback)
+ */
+
+import { QuoteUtils } from '@pgsql/quotes';
+import { walk as walkSql } from '@pgsql/traverse';
+import { Deparser,parseSql, transformSync, walk as walkPlpgsql } from 'plpgsql-parser';
+
+import type { QualifyUnqualifiedOptions } from './qualify';
+import { qualifyUnqualified } from './qualify';
+import type { CapturedAsts } from './round-trip';
+import { captureTransformAsts, validateRoundTrip } from './round-trip';
+
+export interface SchemaTransformResult {
+  schemasFound: Set<string>;
+  schemasTransformed: Map<string, string>;
+  errors: Array<{ file: string; error: string }>;
+}
+
+/**
+ * A pluggable string-level transform pass.
+ *
+ * Extension passes run on the raw SQL text before or after the core AST
+ * transformation.  They exist for content that is opaque to the SQL parser
+ * (string literals, comments, JSON values, etc.).
+ *
+ * Each pass receives the current content string, the schema mapping, and the
+ * shared result tracker, and must return the (possibly transformed) content.
+ */
+export type SchemaTransformPass = (
+  content: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+) => string;
+
+/**
+ * Options for transform_sql.
+ */
+export interface TransformSqlOptions {
+  /**
+   * Extension passes that run BEFORE the core AST transformation.
+   * Use these for app-specific string-level transforms that must happen
+   * before the parser sees the content (e.g. verify calls, JSON values).
+   */
+  prePasses?: SchemaTransformPass[];
+
+  /**
+   * Extension passes that run AFTER the core AST transformation.
+   * Use these for app-specific transforms on the deparsed output.
+   */
+  postPasses?: SchemaTransformPass[];
+
+  /**
+   * Validate that the emitted SQL re-parses to an AST structurally identical
+   * to the transformed AST that was deparsed (catches deparser fidelity bugs
+   * such as dropped array bounds). Adds a second parse per file.
+   */
+  roundTrip?: boolean;
+
+  /**
+   * Qualify unqualified object references BEFORE the schema mapping runs
+   * (an extra AST pass, opt-in). Pin unqualified references to a schema
+   * (typically `'public'`) so a mapping on that schema moves them too —
+   * the ingestion path for handwritten, unqualified SQL. Only names in the
+   * inventory (defaulting to objects the content itself creates) are
+   * qualified. See {@link qualifyUnqualified}.
+   */
+  qualifyUnqualified?: QualifyUnqualifiedOptions;
+
+  /**
+   * Schema names (post-mapping) whose `CREATE SCHEMA` statements should be
+   * emitted as `CREATE SCHEMA IF NOT EXISTS`. Use when mapping into a schema
+   * that always exists — e.g. mapping a named schema onto `public`.
+   */
+  assumeSchemasExist?: string[];
+}
+
+/**
+ * Create a fresh result object
+ */
+function createResult(): SchemaTransformResult {
+  return {
+    schemasFound: new Set(),
+    schemasTransformed: new Map(),
+    errors: [],
+  };
+}
+
+/**
+ * Transform a schema name if it exists in the mapping
+ */
+export function transformSchemaName(
+  schemaName: string | undefined,
+  schemaMapping: Map<string, string>
+): string | undefined {
+  if (!schemaName) return schemaName;
+  return schemaMapping.get(schemaName) ?? schemaName;
+}
+
+/**
+ * Check if a schema name should be transformed
+ */
+export function shouldTransformSchema(
+  schemaName: string | undefined,
+  schemaMapping: Map<string, string>
+): boolean {
+  if (!schemaName) return false;
+  return schemaMapping.has(schemaName);
+}
+
+/**
+ * Transform schema names in a String node array (used for funcname, names, etc.)
+ * These arrays contain String nodes like { String: { sval: 'schema_name' } }
+ */
+export function transformNameList(
+  names: any[] | undefined,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): void {
+  if (!names || names.length < 2) return;
+  
+  // For schema-qualified names, the first element is the schema
+  const first = names[0];
+  if (first?.String?.sval) {
+    const schemaName = first.String.sval;
+    if (shouldTransformSchema(schemaName, schemaMapping)) {
+      result.schemasFound.add(schemaName);
+      const newName = schemaMapping.get(schemaName);
+      if (newName) {
+        first.String.sval = newName;
+        result.schemasTransformed.set(schemaName, newName);
+      }
+    }
+  }
+}
+
+/**
+ * Transform a bare schema-name field on a node (e.g. { String: { sval } }
+ * entries in GrantStmt.objects, RenameStmt.subname, CommentStmt.object).
+ * Returns the (possibly new) schema name.
+ */
+export function transformSchemaNameField(
+  container: any,
+  field: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): void {
+  const schemaName = container?.[field];
+  if (typeof schemaName !== 'string') return;
+  if (shouldTransformSchema(schemaName, schemaMapping)) {
+    result.schemasFound.add(schemaName);
+    const newName = schemaMapping.get(schemaName);
+    if (newName) {
+      container[field] = newName;
+      result.schemasTransformed.set(schemaName, newName);
+    }
+  }
+}
+
+/**
+ * Transform a RangeVar-like relation object (has schemaname/relname fields).
+ * Many statement nodes embed a relation that the walker does NOT auto-recurse into.
+ */
+export function transformRelation(
+  relation: any,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): void {
+  if (relation?.schemaname && shouldTransformSchema(relation.schemaname, schemaMapping)) {
+    const oldName = relation.schemaname;
+    result.schemasFound.add(oldName);
+    const newName = schemaMapping.get(oldName);
+    if (newName) {
+      relation.schemaname = newName;
+      result.schemasTransformed.set(oldName, newName);
+    }
+  }
+}
+
+/**
+ * Transform schema-qualified references embedded in a plain string
+ * (e.g. advisory-lock keys like 'schema-name.fn_name', COMMENT text,
+ * RAISE messages). Only occurrences of a mapped schema name immediately
+ * followed by a dot are rewritten.
+ */
+export function transformSchemaRefsInString(
+  str: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): string {
+  let out = str;
+  for (const [oldSchema, newSchema] of schemaMapping) {
+    const pattern = new RegExp(`(?<![\\w-])("?)${escapeRegexp(oldSchema)}\\1(?=\\.)`, 'g');
+    const before = out;
+    out = out.replace(pattern, `$1${newSchema}$1`);
+    if (out !== before) {
+      result.schemasFound.add(oldSchema);
+      result.schemasTransformed.set(oldSchema, newSchema);
+    }
+  }
+  return out;
+}
+
+/**
+ * Create a SQL AST visitor that transforms schema names.
+ * 
+ * The walker from @pgsql/traverse auto-recurses into child nodes, so visitors
+ * like RangeVar and TypeName fire for every occurrence regardless of parent.
+ * However, some node types carry schema names as plain strings or name lists
+ * that require explicit handlers.
+ */
+export function createSqlVisitor(
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult,
+  visitorOptions?: { assumeSchemasExist?: Set<string> }
+) {
+  const assumeSchemasExist = visitorOptions?.assumeSchemasExist;
+  return {
+    // Transform RangeVar nodes (table references)
+    RangeVar: (path: any) => {
+      const node = path.node;
+      if (node.schemaname && shouldTransformSchema(node.schemaname, schemaMapping)) {
+        const oldName = node.schemaname;
+        result.schemasFound.add(oldName);
+        const newName = schemaMapping.get(oldName);
+        if (newName) {
+          node.schemaname = newName;
+          result.schemasTransformed.set(oldName, newName);
+        }
+      }
+    },
+    
+    // Transform CreateSchemaStmt nodes
+    CreateSchemaStmt: (path: any) => {
+      const node = path.node;
+      if (node.schemaname && shouldTransformSchema(node.schemaname, schemaMapping)) {
+        const oldName = node.schemaname;
+        result.schemasFound.add(oldName);
+        const newName = schemaMapping.get(oldName);
+        if (newName) {
+          node.schemaname = newName;
+          result.schemasTransformed.set(oldName, newName);
+        }
+      }
+      if (node.schemaname && assumeSchemasExist?.has(node.schemaname)) {
+        node.if_not_exists = true;
+      }
+    },
+    
+    // Transform FuncCall nodes (function calls with schema-qualified names)
+    FuncCall: (path: any) => {
+      const node = path.node;
+      transformNameList(node.funcname, schemaMapping, result);
+    },
+
+    // Transform CallStmt (CALL schema.procedure(...)).
+    // Note: The walker does NOT auto-recurse into CallStmt.funccall,
+    // so the FuncCall visitor above never sees it.
+    CallStmt: (path: any) => {
+      const node = path.node;
+      if (node.funccall?.funcname) {
+        transformNameList(node.funccall.funcname, schemaMapping, result);
+      }
+    },
+    
+    // Transform TypeName nodes (type references with schema-qualified names)
+    TypeName: (path: any) => {
+      const node = path.node;
+      transformNameList(node.names, schemaMapping, result);
+    },
+    
+    // Transform ColumnRef nodes (column references with schema-qualified names)
+    ColumnRef: (path: any) => {
+      const node = path.node;
+      transformNameList(node.fields, schemaMapping, result);
+    },
+    
+    // Transform GrantStmt objects (GRANT ON SCHEMA schema;
+    // GRANT ... ON ALL TABLES/FUNCTIONS/SEQUENCES IN SCHEMA schema)
+    GrantStmt: (path: any) => {
+      const node = path.node;
+      // For schema-name targets, objects contains String nodes with schema names
+      if ((node.objtype === 'OBJECT_SCHEMA' || node.targtype === 'ACL_TARGET_ALL_IN_SCHEMA') && node.objects) {
+        for (const obj of node.objects) {
+          if (obj?.String) {
+            transformSchemaNameField(obj.String, 'sval', schemaMapping, result);
+          }
+        }
+      }
+    },
+    
+    // Transform VariableSetStmt (SET search_path)
+    VariableSetStmt: (path: any) => {
+      const node = path.node;
+      if (node.name === 'search_path' && node.args) {
+        for (const arg of node.args) {
+          // search_path args can be String nodes or A_Const with sval
+          if (arg?.String?.sval) {
+            const schemaName = arg.String.sval;
+            if (shouldTransformSchema(schemaName, schemaMapping)) {
+              result.schemasFound.add(schemaName);
+              const newName = schemaMapping.get(schemaName);
+              if (newName) {
+                arg.String.sval = newName;
+                result.schemasTransformed.set(schemaName, newName);
+              }
+            }
+          } else if (arg?.A_Const?.sval?.sval) {
+            const schemaName = arg.A_Const.sval.sval;
+            if (shouldTransformSchema(schemaName, schemaMapping)) {
+              result.schemasFound.add(schemaName);
+              const newName = schemaMapping.get(schemaName);
+              if (newName) {
+                arg.A_Const.sval.sval = newName;
+                result.schemasTransformed.set(schemaName, newName);
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    // Transform AlterDefaultPrivilegesStmt (ALTER DEFAULT PRIVILEGES IN SCHEMA)
+    AlterDefaultPrivilegesStmt: (path: any) => {
+      const node = path.node;
+      if (node.options) {
+        for (const opt of node.options) {
+          if (opt?.DefElem?.defname === 'schemas' && opt.DefElem.arg?.List?.items) {
+            for (const item of opt.DefElem.arg.List.items) {
+              if (item?.String?.sval) {
+                const schemaName = item.String.sval;
+                if (shouldTransformSchema(schemaName, schemaMapping)) {
+                  result.schemasFound.add(schemaName);
+                  const newName = schemaMapping.get(schemaName);
+                  if (newName) {
+                    item.String.sval = newName;
+                    result.schemasTransformed.set(schemaName, newName);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    // Transform DropStmt (DROP SCHEMA name; DROP TABLE/INDEX/POLICY/TRIGGER/
+    // TYPE/FUNCTION schema.obj). The walker does NOT auto-recurse into
+    // DropStmt.objects.
+    DropStmt: (path: any) => {
+      const node = path.node;
+      if (node.removeType !== 'OBJECT_SCHEMA' && Array.isArray(node.objects)) {
+        for (const obj of node.objects) {
+          if (obj?.List?.items) {
+            transformNameList(obj.List.items, schemaMapping, result);
+          } else if (obj?.ObjectWithArgs?.objname) {
+            transformNameList(obj.ObjectWithArgs.objname, schemaMapping, result);
+          } else if (obj?.TypeName?.names) {
+            transformNameList(obj.TypeName.names, schemaMapping, result);
+          }
+        }
+        return;
+      }
+      if (node.removeType === 'OBJECT_SCHEMA' && node.objects) {
+        for (const obj of node.objects) {
+          // DROP SCHEMA objects can be List of String nodes
+          if (obj?.List?.items) {
+            for (const item of obj.List.items) {
+              if (item?.String?.sval) {
+                const schemaName = item.String.sval;
+                if (shouldTransformSchema(schemaName, schemaMapping)) {
+                  result.schemasFound.add(schemaName);
+                  const newName = schemaMapping.get(schemaName);
+                  if (newName) {
+                    item.String.sval = newName;
+                    result.schemasTransformed.set(schemaName, newName);
+                  }
+                }
+              }
+            }
+          } else if (obj?.String?.sval) {
+            const schemaName = obj.String.sval;
+            if (shouldTransformSchema(schemaName, schemaMapping)) {
+              result.schemasFound.add(schemaName);
+              const newName = schemaMapping.get(schemaName);
+              if (newName) {
+                obj.String.sval = newName;
+                result.schemasTransformed.set(schemaName, newName);
+              }
+            }
+          }
+        }
+      }
+    },
+    
+    // Transform InsertStmt (INSERT INTO schema.table)
+    // Note: The walker does NOT auto-recurse into InsertStmt.relation.
+    InsertStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform CreateStmt (CREATE TABLE schema.table)
+    // Note: The walker does NOT auto-recurse into CreateStmt.relation.
+    CreateStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform UpdateStmt (UPDATE schema.table SET ...)
+    // Note: The walker does NOT auto-recurse into UpdateStmt.relation.
+    UpdateStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform DeleteStmt (DELETE FROM schema.table)
+    // Note: The walker does NOT auto-recurse into DeleteStmt.relation.
+    DeleteStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform MergeStmt (MERGE INTO schema.table USING ...)
+    // Note: The walker does NOT auto-recurse into MergeStmt.relation.
+    MergeStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform IndexStmt (CREATE INDEX ... ON schema.table)
+    // Note: The walker does NOT auto-recurse into IndexStmt.relation.
+    IndexStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform Constraint (REFERENCES schema.table for foreign keys)
+    // Note: The walker does NOT auto-recurse into Constraint.pktable.
+    Constraint: (path: any) => {
+      const node = path.node;
+      if (node.contype === 'CONSTR_FOREIGN' && node.pktable) {
+        transformRelation(node.pktable, schemaMapping, result);
+      }
+    },
+
+    // Transform CompositeTypeStmt (CREATE TYPE schema.name AS (...))
+    // Note: The walker does NOT auto-recurse into CompositeTypeStmt.typevar.
+    CompositeTypeStmt: (path: any) => {
+      transformRelation(path.node.typevar, schemaMapping, result);
+    },
+
+    // Transform ColumnDef (column definitions with schema-qualified types)
+    // Note: The walker does NOT auto-recurse into ColumnDef.typeName.
+    ColumnDef: (path: any) => {
+      const node = path.node;
+      if (node.typeName?.names) {
+        transformNameList(node.typeName.names, schemaMapping, result);
+      }
+    },
+
+    // Transform ViewStmt (CREATE VIEW schema.viewname AS ...)
+    // Note: The walker does NOT auto-recurse into ViewStmt.view.
+    ViewStmt: (path: any) => {
+      transformRelation(path.node.view, schemaMapping, result);
+    },
+
+    // Transform AlterTableStmt (ALTER TABLE schema.table ...)
+    // Note: The walker does NOT auto-recurse into AlterTableStmt.relation.
+    AlterTableStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform CreateSeqStmt (CREATE SEQUENCE schema.seqname)
+    // Note: The walker does NOT auto-recurse into CreateSeqStmt.sequence.
+    CreateSeqStmt: (path: any) => {
+      transformRelation(path.node.sequence, schemaMapping, result);
+    },
+
+    // Transform AlterSeqStmt (ALTER SEQUENCE schema.seqname [OWNED BY schema.table.col])
+    // Note: The walker does NOT auto-recurse into AlterSeqStmt.sequence.
+    // Also handles OWNED BY clause where the schema name is in DefElem.arg.List.items.
+    AlterSeqStmt: (path: any) => {
+      const node = path.node;
+      transformRelation(node.sequence, schemaMapping, result);
+      // Handle OWNED BY option: schema name is in the name list
+      if (node.options) {
+        for (const opt of node.options) {
+          if (opt?.DefElem?.defname === 'owned_by' && opt.DefElem?.arg?.List?.items) {
+            transformNameList(opt.DefElem.arg.List.items, schemaMapping, result);
+          }
+        }
+      }
+    },
+
+    // Transform CreatePolicyStmt (CREATE POLICY ... ON schema.table)
+    // Note: The walker does NOT auto-recurse into CreatePolicyStmt.table.
+    CreatePolicyStmt: (path: any) => {
+      transformRelation(path.node.table, schemaMapping, result);
+    },
+
+    // Transform RuleStmt (CREATE RULE ... ON schema.table)
+    // Note: The walker does NOT auto-recurse into RuleStmt.relation.
+    RuleStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform CopyStmt (COPY schema.table ...)
+    // Note: The walker does NOT auto-recurse into CopyStmt.relation.
+    CopyStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform ClusterStmt (CLUSTER schema.table USING index)
+    // Note: The walker does NOT auto-recurse into ClusterStmt.relation.
+    ClusterStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform VacuumRelation (VACUUM/ANALYZE schema.table)
+    // Note: The walker visits VacuumRelation but does NOT recurse into its relation.
+    VacuumRelation: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform RefreshMatViewStmt (REFRESH MATERIALIZED VIEW schema.view)
+    // Note: The walker does NOT auto-recurse into RefreshMatViewStmt.relation.
+    RefreshMatViewStmt: (path: any) => {
+      transformRelation(path.node.relation, schemaMapping, result);
+    },
+
+    // Transform CreateTableAsStmt (CREATE MATERIALIZED VIEW schema.viewname AS ...)
+    // Note: The walker does NOT auto-recurse into CreateTableAsStmt.into.rel.
+    CreateTableAsStmt: (path: any) => {
+      transformRelation(path.node.into?.rel, schemaMapping, result);
+    },
+
+    // Transform TypeCast nodes (type casts like NULL::schema.type)
+    // Note: The walker visits TypeCast but does NOT recurse into the TypeName node.
+    TypeCast: (path: any) => {
+      const node = path.node;
+      if (node.typeName?.names) {
+        transformNameList(node.typeName.names, schemaMapping, result);
+      }
+    },
+
+    // Transform CreateFunctionStmt (CREATE FUNCTION schema.funcname)
+    // Also handles RETURNS [SETOF] schema.type via returnType.names
+    CreateFunctionStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.funcname, schemaMapping, result);
+      // Transform the return type (e.g., RETURNS SETOF schema.tablename)
+      if (node.returnType?.names) {
+        transformNameList(node.returnType.names, schemaMapping, result);
+      }
+      // Transform parameter types (the walker does NOT auto-recurse into
+      // FunctionParameter.argType TypeName nodes)
+      if (Array.isArray(node.parameters)) {
+        for (const param of node.parameters) {
+          if (param?.FunctionParameter?.argType?.names) {
+            transformNameList(param.FunctionParameter.argType.names, schemaMapping, result);
+          }
+        }
+      }
+      // Transform schema-qualified references inside the function body
+      // (AS $$...$$ is a String under the 'as' DefElem, which the walker
+      // does not parse as SQL). LANGUAGE plpgsql bodies are additionally
+      // rebuilt from the PL/pgSQL AST by transformSync; for LANGUAGE sql
+      // functions this string is the deparsed body.
+      if (Array.isArray(node.options)) {
+        for (const opt of node.options) {
+          if (opt?.DefElem?.defname === 'as' && opt.DefElem.arg?.List?.items) {
+            for (const item of opt.DefElem.arg.List.items) {
+              if (typeof item?.String?.sval === 'string' && item.String.sval.includes('.')) {
+                item.String.sval = transformSchemaRefsInString(item.String.sval, schemaMapping, result);
+              }
+            }
+          }
+        }
+      }
+    },
+
+    // Transform CreateTrigStmt (CREATE TRIGGER ... EXECUTE PROCEDURE schema.func)
+    // Note: The walker does NOT auto-recurse into CreateTrigStmt.relation,
+    // so we must explicitly transform the RangeVar here.
+    CreateTrigStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.funcname, schemaMapping, result);
+      transformRelation(node.relation, schemaMapping, result);
+    },
+
+    // Transform CommentStmt (COMMENT ON TABLE/COLUMN/FUNCTION schema.obj,
+    // COMMENT ON SCHEMA schema)
+    CommentStmt: (path: any) => {
+      const node = path.node;
+      // The object field structure varies by objtype.
+      // For tables/views/etc, object is { List: { items: [{ String: ... }, ...] } }
+      // For functions, object is { ObjectWithArgs: { objname: [...] } }
+      // For schemas, object is a bare { String: { sval } }
+      if (node.object) {
+        // Handle List-wrapped objects (COMMENT ON TABLE schema.tbl, COMMENT ON COLUMN schema.tbl.col)
+        if (node.object?.List?.items) {
+          transformNameList(node.object.List.items, schemaMapping, result);
+        }
+        // Handle ObjectWithArgs-style objects (COMMENT ON FUNCTION schema.func(args))
+        else if (node.object?.ObjectWithArgs?.objname) {
+          transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+        }
+        // Handle bare schema names (COMMENT ON SCHEMA schema)
+        else if (node.object?.String && node.objtype === 'OBJECT_SCHEMA') {
+          transformSchemaNameField(node.object.String, 'sval', schemaMapping, result);
+        }
+      }
+      // Transform schema-qualified references inside the comment text itself
+      if (typeof node.comment === 'string') {
+        node.comment = transformSchemaRefsInString(node.comment, schemaMapping, result);
+      }
+    },
+
+    // Transform schema-qualified references embedded in string constants
+    // (e.g. advisory-lock keys: hashtextextended('schema.fn_name', 0))
+    A_Const: (path: any) => {
+      const node = path.node;
+      if (typeof node.sval?.sval === 'string' && node.sval.sval.includes('.')) {
+        node.sval.sval = transformSchemaRefsInString(node.sval.sval, schemaMapping, result);
+      }
+    },
+
+    // Transform DefineStmt (CREATE TYPE schema.name, CREATE AGGREGATE schema.agg)
+    DefineStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.defnames, schemaMapping, result);
+    },
+
+    // Transform CreateDomainStmt (CREATE DOMAIN schema.domname)
+    CreateDomainStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.domainname, schemaMapping, result);
+    },
+
+    // Transform CreateEnumStmt (CREATE TYPE schema.enumname AS ENUM)
+    CreateEnumStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.typeName, schemaMapping, result);
+    },
+
+    // Transform AlterEnumStmt (ALTER TYPE schema.enumname ADD VALUE)
+    AlterEnumStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.typeName, schemaMapping, result);
+    },
+
+    // Transform AlterDomainStmt (ALTER DOMAIN schema.domname)
+    AlterDomainStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.typeName, schemaMapping, result);
+    },
+
+    // Transform AlterTypeStmt (ALTER TYPE schema.typename)
+    // Note: composite type alters use RangeVar (handled by RangeVar visitor),
+    // but some ALTER TYPE statements use typeName as a name list
+    AlterTypeStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.typeName, schemaMapping, result);
+    },
+
+    // Transform ObjectWithArgs (used in ALTER FUNCTION, DROP FUNCTION with args, etc.)
+    ObjectWithArgs: (path: any) => {
+      const node = path.node;
+      transformNameList(node.objname, schemaMapping, result);
+    },
+
+    // Transform AlterObjectSchemaStmt (ALTER ... SET SCHEMA newschema)
+    // The walker does NOT auto-recurse into AlterObjectSchemaStmt.relation
+    // or .object, so we must transform relation, object names, and newschema.
+    AlterObjectSchemaStmt: (path: any) => {
+      const node = path.node;
+      transformRelation(node.relation, schemaMapping, result);
+      // Non-relation objects (ALTER TYPE/FUNCTION ... SET SCHEMA)
+      if (node.object?.List?.items) {
+        transformNameList(node.object.List.items, schemaMapping, result);
+      } else if (node.object?.ObjectWithArgs?.objname) {
+        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+      } else if (node.object?.TypeName?.names) {
+        transformNameList(node.object.TypeName.names, schemaMapping, result);
+      }
+      // Transform the newschema (destination schema)
+      transformSchemaNameField(node, 'newschema', schemaMapping, result);
+    },
+
+    // Transform RenameStmt (ALTER SCHEMA old RENAME TO new;
+    // ALTER TABLE schema.tbl RENAME ...). The walker does NOT auto-recurse
+    // into RenameStmt.relation or .object.
+    RenameStmt: (path: any) => {
+      const node = path.node;
+      transformRelation(node.relation, schemaMapping, result);
+      if (node.renameType === 'OBJECT_SCHEMA') {
+        // subname is the old schema name; newname is the target
+        transformSchemaNameField(node, 'subname', schemaMapping, result);
+        transformSchemaNameField(node, 'newname', schemaMapping, result);
+      }
+      if (node.object?.List?.items) {
+        transformNameList(node.object.List.items, schemaMapping, result);
+      } else if (node.object?.ObjectWithArgs?.objname) {
+        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+      }
+    },
+
+    // Transform AlterFunctionStmt (ALTER FUNCTION schema.fn(...) SET ...)
+    AlterFunctionStmt: (path: any) => {
+      const node = path.node;
+      if (node.func?.objname) {
+        transformNameList(node.func.objname, schemaMapping, result);
+      }
+    },
+
+    // Transform AlterOwnerStmt (ALTER ... OWNER TO role)
+    AlterOwnerStmt: (path: any) => {
+      const node = path.node;
+      transformRelation(node.relation, schemaMapping, result);
+      if (node.object?.List?.items) {
+        transformNameList(node.object.List.items, schemaMapping, result);
+      } else if (node.object?.ObjectWithArgs?.objname) {
+        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+      } else if (node.object?.String && node.objectType === 'OBJECT_SCHEMA') {
+        transformSchemaNameField(node.object.String, 'sval', schemaMapping, result);
+      }
+    },
+
+    // Transform CreateCastStmt (CREATE CAST (src AS tgt) WITH FUNCTION fn)
+    CreateCastStmt: (path: any) => {
+      const node = path.node;
+      if (node.sourcetype?.names) {
+        transformNameList(node.sourcetype.names, schemaMapping, result);
+      }
+      if (node.targettype?.names) {
+        transformNameList(node.targettype.names, schemaMapping, result);
+      }
+      if (node.func?.objname) {
+        transformNameList(node.func.objname, schemaMapping, result);
+      }
+      if (Array.isArray(node.func?.objargs)) {
+        for (const arg of node.func.objargs) {
+          if (arg?.TypeName?.names) {
+            transformNameList(arg.TypeName.names, schemaMapping, result);
+          } else if (arg?.names) {
+            transformNameList(arg.names, schemaMapping, result);
+          }
+        }
+      }
+      if (Array.isArray(node.func?.objfuncargs)) {
+        for (const param of node.func.objfuncargs) {
+          if (param?.FunctionParameter?.argType?.names) {
+            transformNameList(param.FunctionParameter.argType.names, schemaMapping, result);
+          }
+        }
+      }
+    },
+
+    // Transform CreateEventTrigStmt (CREATE EVENT TRIGGER ... EXECUTE FUNCTION schema.fn())
+    CreateEventTrigStmt: (path: any) => {
+      const node = path.node;
+      transformNameList(node.funcname, schemaMapping, result);
+    },
+
+    // Transform IndexElem opclass (CREATE INDEX ... (col schema.opclass))
+    IndexElem: (path: any) => {
+      const node = path.node;
+      transformNameList(node.opclass, schemaMapping, result);
+    },
+
+    // Transform SecLabelStmt object (SECURITY LABEL ... ON COLUMN schema.tbl.col)
+    SecLabelStmt: (path: any) => {
+      const node = path.node;
+      if (node.object?.List?.items) {
+        transformNameList(node.object.List.items, schemaMapping, result);
+      } else if (node.object?.ObjectWithArgs?.objname) {
+        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+      }
+    },
+
+    // Transform DO block bodies. The body is an opaque string under the 'as'
+    // DefElem; schema-qualified references are rewritten with the strict
+    // schema-followed-by-dot pattern.
+    DoStmt: (path: any) => {
+      const node = path.node;
+      if (Array.isArray(node.args)) {
+        for (const arg of node.args) {
+          if (arg?.DefElem?.defname === 'as' && typeof arg.DefElem.arg?.String?.sval === 'string') {
+            arg.DefElem.arg.String.sval = transformSchemaRefsInString(
+              arg.DefElem.arg.String.sval, schemaMapping, result
+            );
+          }
+        }
+      }
+    },
+  };
+}
+
+/**
+ * Validate that no untransformed schema names remain in the output.
+ * Checks both schema-qualified references (schema.object) and standalone
+ * schema name contexts (ON SCHEMA, IN SCHEMA, CREATE SCHEMA, etc.).
+ * 
+ * Throws an error if any schema names from the mapping are found in the output,
+ * indicating that the AST visitor is missing a handler for that node type.
+ */
+export function validateNoUntransformedSchemas(
+  content: string,
+  schemaMapping: Map<string, string>
+): void {
+  if (schemaMapping.size === 0) {
+    return;
+  }
+  
+  for (const [oldSchema, newSchema] of schemaMapping) {
+    const escapedSchema = escapeRegexp(oldSchema);
+    
+    // Pattern 1: quoted or unquoted schema name followed by dot (schema-qualified)
+    const dotPattern = new RegExp(`(?:"${escapedSchema}"|\\b${escapedSchema})(?=\\.)`, 'g');
+    
+    // Pattern 2: standalone schema name in known SQL contexts
+    // Note: We don't use trailing \b because it fails after closing quotes
+    // (both '"' and whitespace are non-word characters, so no boundary exists).
+    const standalonePattern = new RegExp(
+      `(?:ON\\s+SCHEMA\\s+|IN\\s+SCHEMA\\s+|CREATE\\s+SCHEMA\\s+|DROP\\s+SCHEMA\\s+(?:IF\\s+EXISTS\\s+)?|SET\\s+SCHEMA\\s+)` +
+      `(?:"${escapedSchema}"|\\b${escapedSchema}\\b)`,
+      'gi'
+    );
+    
+    const dotMatches = content.match(dotPattern);
+    const standaloneMatches = content.match(standalonePattern);
+    const totalMatches = (dotMatches?.length || 0) + (standaloneMatches?.length || 0);
+    
+    if (totalMatches > 0) {
+      const lines = content.split('\n');
+      const locations: string[] = [];
+      
+      const combinedPattern = new RegExp(
+        `(?:"${escapedSchema}"|\\b${escapedSchema})(?=\\.)|` +
+        `(?:ON\\s+SCHEMA\\s+|IN\\s+SCHEMA\\s+|CREATE\\s+SCHEMA\\s+|DROP\\s+SCHEMA\\s+(?:IF\\s+EXISTS\\s+)?|SET\\s+SCHEMA\\s+)` +
+        `(?:"${escapedSchema}"|\\b${escapedSchema}\\b)`,
+        'gi'
+      );
+      
+      for (let i = 0; i < lines.length; i++) {
+        if (combinedPattern.test(lines[i])) {
+          locations.push(`  Line ${i + 1}: ${lines[i].trim()}`);
+        }
+        combinedPattern.lastIndex = 0;
+      }
+      
+      throw new Error(
+        `AST transformation incomplete: found ${totalMatches} untransformed schema name(s) "${oldSchema}" ` +
+        `that should have been transformed to "${newSchema}". ` +
+        `This indicates a missing visitor handler in create_sql_visitor or walk_plpgsql_for_schemas.\n` +
+        `Locations:\n${locations.join('\n')}`
+      );
+    }
+  }
+}
+
+/**
+ * Create a PL/pgSQL visitor that transforms schema names in PL/pgSQL-specific nodes.
+ */
+export function createPlpgsqlVisitor(
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+) {
+  return {
+    PLpgSQL_type: (path: any) => {
+      const node = path.node;
+      if (node.typname) {
+        for (const [oldSchema, newSchema] of schemaMapping.entries()) {
+          if (node.typname.startsWith(oldSchema + '.')) {
+            const typeName = node.typname.substring(oldSchema.length + 1);
+            result.schemasFound.add(oldSchema);
+            node.typname = newSchema + '.' + typeName;
+            result.schemasTransformed.set(oldSchema, newSchema);
+            break;
+          }
+        }
+      }
+    },
+    
+    PLpgSQL_var: (path: any) => {
+      const node = path.node;
+      if (node.refname) {
+        for (const [oldSchema, newSchema] of schemaMapping.entries()) {
+          if (node.refname.startsWith(oldSchema + '.')) {
+            const rest = node.refname.substring(oldSchema.length + 1);
+            result.schemasFound.add(oldSchema);
+            node.refname = newSchema + '.' + rest;
+            result.schemasTransformed.set(oldSchema, newSchema);
+            break;
+          }
+        }
+      }
+    },
+  };
+}
+
+/**
+ * Transform a PLpgSQL_type typname using proper AST parsing.
+ */
+export function transformPlpgsqlTypeAst(
+  typname: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): string {
+  let suffix = '';
+  let baseTypname = typname;
+  
+  const rowtypeMatch = typname.match(/(%rowtype|%type)$/i);
+  if (rowtypeMatch) {
+    suffix = rowtypeMatch[1];
+    baseTypname = typname.substring(0, typname.length - suffix.length);
+  }
+  
+  let needsTransform = false;
+  for (const oldSchema of schemaMapping.keys()) {
+    if (baseTypname.startsWith(oldSchema + '.') || baseTypname.startsWith('"' + oldSchema + '".')) {
+      needsTransform = true;
+      break;
+    }
+  }
+  
+  if (!needsTransform) {
+    return typname;
+  }
+  
+  try {
+    const sql = `SELECT NULL::${baseTypname}`;
+    const parseResult = parseSql(sql);
+    
+    if (!parseResult?.stmts?.[0]?.stmt) {
+      return transformPlpgsqlTypeString(typname, schemaMapping, result);
+    }
+    
+    const sqlVisitor = {
+      TypeName: (path: any) => {
+        const typeNode = path.node;
+        if (typeNode.names && Array.isArray(typeNode.names)) {
+          transformNameList(typeNode.names, schemaMapping, result);
+        }
+      }
+    };
+    
+    walkSql(parseResult.stmts[0].stmt, sqlVisitor);
+    
+    const deparsed = Deparser.deparse(parseResult.stmts[0].stmt);
+    
+    const match = deparsed.match(/SELECT\s+NULL::(.+)/i);
+    if (match) {
+      const transformedTypname = match[1].trim().replace(/;$/, '');
+      return transformedTypname + suffix;
+    }
+    
+    return transformPlpgsqlTypeString(typname, schemaMapping, result);
+  } catch {
+    return transformPlpgsqlTypeString(typname, schemaMapping, result);
+  }
+}
+
+/**
+ * Fallback string-based transformation for PLpgSQL_type typname.
+ * Uses @pgsql/quotes QuoteUtils for proper identifier quoting.
+ */
+export function transformPlpgsqlTypeString(
+  typname: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): string {
+  for (const [oldSchema, newSchema] of schemaMapping.entries()) {
+    // Unquoted schema: old_schema.rest
+    if (typname.startsWith(oldSchema + '.')) {
+      const rest = typname.substring(oldSchema.length + 1);
+      result.schemasFound.add(oldSchema);
+      result.schemasTransformed.set(oldSchema, newSchema);
+      return QuoteUtils.quoteIdentifier(newSchema) + '.' + rest;
+    }
+    // Quoted schema: "old_schema".rest
+    if (typname.startsWith('"' + oldSchema + '".')) {
+      const rest = typname.substring(oldSchema.length + 3);
+      result.schemasFound.add(oldSchema);
+      result.schemasTransformed.set(oldSchema, newSchema);
+      return QuoteUtils.quoteIdentifier(newSchema) + '.' + rest;
+    }
+  }
+  return typname;
+}
+
+/**
+ * Recursively walk the PL/pgSQL AST to transform schema names.
+ */
+export function walkPlpgsqlForSchemas(
+  node: any,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): void {
+  if (node === null || node === undefined || typeof node !== 'object') {
+    return;
+  }
+
+  if (Array.isArray(node)) {
+    for (let i = 0; i < node.length; i++) {
+      walkPlpgsqlForSchemas(node[i], schemaMapping, result);
+    }
+    return;
+  }
+
+  // Fallback for SQL expressions the plpgsql walker does not reach with the
+  // SQL visitor (e.g. statements inside EXCEPTION handler bodies). The
+  // deparser renders exprs from their query string, so rewriting mapped
+  // schema-followed-by-dot references here is safe and idempotent.
+  if ('PLpgSQL_expr' in node) {
+    const expr = node.PLpgSQL_expr;
+    if (typeof expr.query === 'string' && expr.query.includes('.')) {
+      expr.query = transformSchemaRefsInString(expr.query, schemaMapping, result);
+    } else if (expr.query && typeof expr.query === 'object' && expr.query.kind === 'sql-stmt') {
+      // Hydrated exprs carry { original, parseResult }; the deparser renders
+      // from parseResult, so visit its statements with the SQL visitor.
+      const sqlVisitor = createSqlVisitor(schemaMapping, result);
+      if (Array.isArray(expr.query.parseResult?.stmts)) {
+        for (const stmt of expr.query.parseResult.stmts) {
+          if (stmt?.stmt) {
+            walkSql(stmt.stmt, sqlVisitor);
+          }
+        }
+      }
+      if (typeof expr.query.original === 'string' && expr.query.original.includes('.')) {
+        expr.query.original = transformSchemaRefsInString(expr.query.original, schemaMapping, result);
+      }
+    }
+  }
+
+  // Transform schema-qualified references inside RAISE message strings
+  if ('PLpgSQL_stmt_raise' in node) {
+    const raise = node.PLpgSQL_stmt_raise;
+    if (typeof raise.message === 'string' && raise.message.includes('.')) {
+      raise.message = transformSchemaRefsInString(raise.message, schemaMapping, result);
+    }
+  }
+
+  if ('PLpgSQL_type' in node) {
+    const plType = node.PLpgSQL_type;
+    if (plType.typname) {
+      if (typeof plType.typname === 'object' && plType.typname.kind === 'type-name') {
+        // Transform schema names directly in the typeNameNode.names array.
+        // We cannot use walkSql here because the raw typeNameNode is not
+        // wrapped in the expected AST envelope that the traverse walker needs.
+        if (plType.typname.typeNameNode?.names) {
+          transformNameList(plType.typname.typeNameNode.names, schemaMapping, result);
+        }
+        // The deparser can fall back to the 'original' string to render
+        // DECLARE types, so update it as well. Rewrite only the schema
+        // prefix within the string so array bounds ([]) and %rowtype/%type
+        // suffixes are preserved.
+        if (typeof plType.typname.original === 'string') {
+          plType.typname.original = transformPlpgsqlTypeString(
+            plType.typname.original,
+            schemaMapping,
+            result
+          );
+        }
+      } else if (typeof plType.typname === 'string') {
+        plType.typname = transformPlpgsqlTypeAst(
+          plType.typname,
+          schemaMapping,
+          result
+        );
+      }
+    }
+  }
+
+  for (const value of Object.values(node)) {
+    walkPlpgsqlForSchemas(value, schemaMapping, result);
+  }
+}
+
+/**
+ * Escape a string for use in a regular expression
+ */
+export function escapeRegexp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Extract pgpm header comments from the beginning of SQL content.
+ */
+export function extractPgpmHeader(content: string): { header: string; body: string } {
+  const lines = content.split('\n');
+  let headerEndIndex = 0;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    
+    if (trimmed === '') {
+      headerEndIndex = i + 1;
+      continue;
+    }
+    
+    if (trimmed === '--') {
+      headerEndIndex = i + 1;
+      continue;
+    }
+    
+    if (trimmed.startsWith('-- Deploy') ||
+        trimmed.startsWith('-- Revert') ||
+        trimmed.startsWith('-- Verify') ||
+        trimmed.startsWith('-- requires:') ||
+        trimmed.startsWith('-- made with')) {
+      headerEndIndex = i + 1;
+      continue;
+    }
+    
+    if (trimmed.startsWith('--')) {
+      headerEndIndex = i + 1;
+      continue;
+    }
+    
+    // psql meta-command guard emitted by pgpm package exports, e.g.
+    // \echo Use "CREATE EXTENSION foo" to load this file. \quit
+    if (trimmed.startsWith('\\echo')) {
+      headerEndIndex = i + 1;
+      continue;
+    }
+    
+    break;
+  }
+  
+  const headerLines = lines.slice(0, headerEndIndex);
+  const bodyLines = lines.slice(headerEndIndex);
+  
+  return {
+    header: headerLines.join('\n') + (headerLines.length > 0 ? '\n' : ''),
+    body: bodyLines.join('\n')
+  };
+}
+
+/**
+ * Transform comment headers (-- Deploy:, -- requires:, etc.)
+ * These are not part of the SQL AST, so we use regexp for these.
+ */
+export function transformComments(
+  content: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): string {
+  const commentPattern = /^(-- (?:Deploy|requires|Revert|Verify):?\s*)(.*)$/gm;
+  
+  const schemas = Array.from(schemaMapping.keys()).sort((a, b) => b.length - a.length);
+  
+  return content.replace(commentPattern, (match, prefix, pathPart) => {
+    let newPath = pathPart;
+    
+    for (const schema of schemas) {
+      const newName = schemaMapping.get(schema);
+      if (!newName) continue;
+      
+      result.schemasFound.add(schema);
+      
+      const pathPattern = new RegExp(`(schemas/)${escapeRegexp(schema)}(/|$)`, 'g');
+      const before = newPath;
+      newPath = newPath.replace(pathPattern, `$1${newName}$2`);
+      
+      if (newPath !== before) {
+        result.schemasTransformed.set(schema, newName);
+      }
+    }
+    
+    return prefix + newPath;
+  });
+}
+
+/**
+ * Transform verify function calls that use string literals.
+ * These are inside SQL strings and not part of the main AST.
+ */
+export function transformVerifyCalls(
+  content: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): string {
+  const schemas = Array.from(schemaMapping.keys()).sort((a, b) => b.length - a.length);
+  
+  let newContent = content;
+  
+  for (const schema of schemas) {
+    const newName = schemaMapping.get(schema);
+    if (!newName) continue;
+    
+    const escapedSchema = escapeRegexp(schema);
+    
+    const verifyPattern = new RegExp(
+      `(verify_(?:function|table|trigger|type|domain|view|index|constraint|schema|policy|table_grant|function_grant|sequence_grant|type_grant)\\s*\\(\\s*')${escapedSchema}(\\.|'\\s*\\))`,
+      'gi'
+    );
+    
+    const before = newContent;
+    newContent = newContent.replace(verifyPattern, `$1${newName}$2`);
+    
+    if (newContent !== before) {
+      result.schemasFound.add(schema);
+      result.schemasTransformed.set(schema, newName);
+    }
+  }
+  
+  return newContent;
+}
+
+/**
+ * Transform schema names inside JSON/JSONB string values.
+ */
+export function transformJsonStringValues(
+  content: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult
+): string {
+  const schemas = Array.from(schemaMapping.keys()).sort((a, b) => b.length - a.length);
+  
+  let newContent = content;
+  
+  for (const schema of schemas) {
+    const newName = schemaMapping.get(schema);
+    if (!newName) continue;
+    
+    const escapedSchema = escapeRegexp(schema);
+    
+    const jsonValuePattern = new RegExp(
+      `(:")${escapedSchema}(")`,
+      'g'
+    );
+    
+    const before = newContent;
+    newContent = newContent.replace(jsonValuePattern, `$1${newName}$2`);
+    
+    if (newContent !== before) {
+      result.schemasFound.add(schema);
+      result.schemasTransformed.set(schema, newName);
+    }
+  }
+  
+  return newContent;
+}
+
+/**
+ * Transform a single SQL string using full AST-based transformation.
+ *
+ * This is the main entry point for transforming SQL content. It:
+ * 1. Runs any user-supplied pre-passes (string-level)
+ * 2. Extracts pgpm header comments and transforms them
+ * 3. Runs full AST transformation on the SQL body
+ * 4. Runs any user-supplied post-passes (string-level)
+ * 5. Validates no untransformed schema names remain
+ * 6. Returns the combined result
+ *
+ * App-specific string-level transforms (verify calls, JSON values, etc.)
+ * are NOT included by default — pass them via `options.pre_passes` or
+ * `options.post_passes`.  The built-in passes `transform_verify_calls`
+ * and `transform_json_string_values` are exported for convenience.
+ */
+export function transformSql(
+  content: string,
+  schemaMapping: Map<string, string>,
+  options?: TransformSqlOptions | SchemaTransformResult,
+  result?: SchemaTransformResult
+): { content: string; result: SchemaTransformResult } {
+  // Support legacy signature: transform_sql(content, mapping, result?)
+  let opts: TransformSqlOptions = {};
+  let r: SchemaTransformResult;
+  if (options && 'schemasFound' in options) {
+    // Called with legacy signature: (content, mapping, result)
+    r = options as SchemaTransformResult;
+  } else {
+    opts = (options as TransformSqlOptions) || {};
+    r = result || createResult();
+  }
+
+  if (schemaMapping.size === 0) {
+    return { content, result: r };
+  }
+
+  let newContent = content;
+
+  // Run pre-passes (app-specific string-level transforms)
+  if (opts.prePasses) {
+    for (const pass of opts.prePasses) {
+      newContent = pass(newContent, schemaMapping, r);
+    }
+  }
+
+  // Main pass: AST transformation with header handling
+  newContent = transformSqlContentAst(newContent, schemaMapping, r, opts);
+
+  // Run post-passes (app-specific string-level transforms)
+  if (opts.postPasses) {
+    for (const pass of opts.postPasses) {
+      newContent = pass(newContent, schemaMapping, r);
+    }
+  }
+
+  return { content: newContent, result: r };
+}
+
+/**
+ * Transform a single SQL statement string using AST.
+ * Unlike transform_sql, this does NOT handle headers, verify calls, or JSON values.
+ * Use this for testing individual SQL statements.
+ */
+export function transformSqlStatement(
+  sql: string,
+  schemaMapping: Map<string, string>,
+  result?: SchemaTransformResult
+): { sql: string; result: SchemaTransformResult } {
+  const r = result || createResult();
+  
+  if (schemaMapping.size === 0) {
+    return { sql, result: r };
+  }
+
+  try {
+    const transformed = transformSync(sql, (ctx) => {
+      const sqlVisitor = createSqlVisitor(schemaMapping, r);
+      
+      if (ctx.sql?.stmts) {
+        for (const stmt of ctx.sql.stmts) {
+          if (stmt?.stmt) {
+            walkSql(stmt.stmt, sqlVisitor);
+          }
+        }
+      }
+      
+      for (const fn of ctx.functions) {
+        if (fn.plpgsql?.hydrated) {
+          walkPlpgsql(fn.plpgsql.hydrated, {}, {
+            walkSqlExpressions: true,
+            sqlVisitor: sqlVisitor
+          });
+          
+          walkPlpgsqlForSchemas(fn.plpgsql.hydrated, schemaMapping, r);
+        }
+      }
+    }, { hydrate: true, pretty: true });
+
+    return { sql: transformed, result: r };
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    r.errors.push({ file: 'inline', error: errMsg });
+    throw error;
+  }
+}
+
+/**
+ * Internal: Transform SQL content with header extraction and AST transformation.
+ */
+function transformSqlContentAst(
+  content: string,
+  schemaMapping: Map<string, string>,
+  result: SchemaTransformResult,
+  options?: TransformSqlOptions
+): string {
+  if (schemaMapping.size === 0) {
+    return content;
+  }
+
+  const roundTrip = options?.roundTrip;
+  const assumeSchemasExist = options?.assumeSchemasExist?.length
+    ? new Set(options.assumeSchemasExist)
+    : undefined;
+
+  const { header, body } = extractPgpmHeader(content);
+  
+  let transformedHeader = header;
+  if (header.length > 0) {
+    transformedHeader = transformComments(header, schemaMapping, result);
+  }
+  
+  let transformedBody = body;
+
+  if (options?.qualifyUnqualified && transformedBody.trim().length > 0) {
+    try {
+      transformedBody = qualifyUnqualified(transformedBody, options.qualifyUnqualified).sql;
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      result.errors.push({ file: 'inline', error: errMsg });
+      throw error;
+    }
+  }
+
+  if (transformedBody.trim().length > 0) {
+    let before: CapturedAsts | undefined;
+    try {
+      transformedBody = transformSync(transformedBody, (ctx) => {
+        const sqlVisitor = createSqlVisitor(schemaMapping, result, { assumeSchemasExist });
+        
+        if (ctx.sql?.stmts) {
+          for (const stmt of ctx.sql.stmts) {
+            if (stmt?.stmt) {
+              walkSql(stmt.stmt, sqlVisitor);
+            }
+          }
+        }
+        
+        for (const fn of ctx.functions) {
+          if (fn.plpgsql?.hydrated) {
+            walkPlpgsql(fn.plpgsql.hydrated, {}, {
+              walkSqlExpressions: true,
+              sqlVisitor: sqlVisitor
+            });
+            
+            walkPlpgsqlForSchemas(fn.plpgsql.hydrated, schemaMapping, result);
+          }
+        }
+
+        if (roundTrip) {
+          before = captureTransformAsts(ctx);
+        }
+      }, { hydrate: true, pretty: true });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      result.errors.push({ file: 'inline', error: errMsg });
+      throw error;
+    }
+    
+    validateNoUntransformedSchemas(transformedBody, schemaMapping);
+
+    if (roundTrip && before) {
+      try {
+        validateRoundTrip(before, transformedBody);
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        result.errors.push({ file: 'inline', error: errMsg });
+        throw error;
+      }
+    }
+  }
+  
+  return transformedHeader + transformedBody;
+}

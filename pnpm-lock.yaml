@@ -389,6 +389,23 @@ importers:
         version: 0.1.8
     publishDirectory: dist
 
+  packages/transform:
+    dependencies:
+      "@pgsql/quotes":
+        specifier: workspace:*
+        version: link:../quotes/dist
+      "@pgsql/traverse":
+        specifier: workspace:*
+        version: link:../traverse/dist
+      plpgsql-parser:
+        specifier: workspace:*
+        version: link:../plpgsql-parser/dist
+    devDependencies:
+      makage:
+        specifier: ^0.1.8
+        version: 0.1.8
+    publishDirectory: dist
+
   packages/transform-ast:
     devDependencies:
       "@pgsql/parser":
