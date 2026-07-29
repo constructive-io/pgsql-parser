@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.5.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.4.1...@pgsql/transform@18.5.0) (2026-07-29)
+
+### Features
+
+- **transform:** classify references inside LANGUAGE sql function bodies ([b164789](https://github.com/constructive-io/pgsql-parser/commit/b164789f45d3081d9635779c5f36327a61aedde5))
+
 ## [18.4.1](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.4.0...@pgsql/transform@18.4.1) (2026-07-29)
 
 **Note:** Version bump only for package @pgsql/transform
