@@ -81,6 +81,31 @@ describe('classifyStatements', () => {
     expect(facts[0].referencedSchemas).toEqual(expect.arrayContaining(['billing', 'store']));
   });
 
+  it('extracts references from LANGUAGE sql string bodies', () => {
+    const facts = classifyStatements(`
+      CREATE FUNCTION catalog.product_slug() RETURNS text AS $$
+        SELECT catalog.slugify(name) FROM catalog.products LIMIT 1;
+      $$ LANGUAGE sql STABLE;
+    `);
+
+    expect(facts).toHaveLength(1);
+    expect(facts[0].creates).toEqual([{ schema: 'catalog', name: 'product_slug' }]);
+    // references inside the opaque LANGUAGE sql body are discovered
+    expect(facts[0].references).toContainEqual({ schema: 'catalog', name: 'products' });
+    expect(facts[0].references).toContainEqual({ schema: 'catalog', name: 'slugify' });
+    expect(facts[0].bodyReferences).toContainEqual({ schema: 'catalog', name: 'products' });
+    // the function does not depend on itself
+    expect(facts[0].references).not.toContainEqual({ schema: 'catalog', name: 'product_slug' });
+  });
+
+  it('does not treat a C-language function body string as SQL', () => {
+    const facts = classifyStatements(
+      `CREATE FUNCTION ext.thing() RETURNS void AS 'MODULE_PATHNAME', 'thing_fn' LANGUAGE c;`
+    );
+    expect(facts[0].creates).toEqual([{ schema: 'ext', name: 'thing' }]);
+    expect(facts[0].references).toEqual([]);
+  });
+
   it('separates body-only references as late-binding bodyReferences', () => {
     const facts = classifyStatements(`
       CREATE FUNCTION app_public.quota_gate(org app_types.org_ref) RETURNS boolean

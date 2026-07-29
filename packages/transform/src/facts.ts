@@ -1,5 +1,5 @@
 import { walk as walkSql } from '@pgsql/traverse';
-import { transformSync, walk as walkPlpgsql } from 'plpgsql-parser';
+import { parseSql, transformSync, walk as walkPlpgsql } from 'plpgsql-parser';
 
 /**
  * A (possibly schema-qualified) object name extracted from a statement.
@@ -321,6 +321,42 @@ function classifyOne(nodeTag: string, node: any): StatementFacts {
   return facts;
 }
 
+/** Read a `CreateFunctionStmt` DefElem option's scalar/list value. */
+function functionOption(node: any, defname: string): any {
+  for (const opt of node.options ?? []) {
+    if (opt?.DefElem?.defname === defname) return opt.DefElem.arg;
+  }
+  return undefined;
+}
+
+/**
+ * Collect references from a `LANGUAGE sql` function body supplied as a string
+ * literal (`AS $$ ... $$`). That body is an opaque String node the AST walker
+ * never parses, so — mirroring the schema transformer's body rewrite — parse
+ * it standalone and walk each statement with the facts visitor. The standard
+ * `BEGIN ATOMIC` / `RETURN` `sql_body` form is already part of the AST and is
+ * covered by the outer walk, so only the string form needs this.
+ */
+function collectSqlBodyReferences(node: any, facts: StatementFacts): void {
+  const language = functionOption(node, 'language')?.String?.sval;
+  if (typeof language !== 'string' || language.toLowerCase() !== 'sql') return;
+
+  const asArg = functionOption(node, 'as');
+  const items: any[] = asArg?.List?.items ?? [];
+  const body = items[0]?.String?.sval;
+  if (typeof body !== 'string') return;
+
+  try {
+    const stmts: any[] = parseSql(body)?.stmts ?? [];
+    const visitor = createFactsVisitor(facts, facts.bodyReferences);
+    for (const stmt of stmts) {
+      if (stmt?.stmt) walkSql(stmt.stmt, visitor);
+    }
+  } catch {
+    // A non-parseable body (C symbol name, etc.) contributes no references.
+  }
+}
+
 /**
  * Classify each top-level statement in a SQL script into {@link StatementFacts}.
  *
@@ -341,6 +377,9 @@ export function classifyStatements(sql: string): StatementFacts[] {
 
       if (stmtNode) {
         walkSql(stmtNode, createFactsVisitor(facts));
+      }
+      if (nodeTag === 'CreateFunctionStmt') {
+        collectSqlBodyReferences(node, facts);
       }
       allFacts.push(facts);
     }
