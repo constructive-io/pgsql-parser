@@ -32,6 +32,21 @@ import type { QualifyUnqualifiedOptions } from './qualify';
 import { qualifyUnqualified } from './qualify';
 import type { CapturedAsts } from './round-trip';
 import { captureTransformAsts, validateRoundTrip } from './round-trip';
+import type { RouteNamespace } from './router';
+import { SchemaRouter } from './router';
+
+/** A schema mapping accepted by the transform: the classic whole-schema map or a router. */
+export type SchemaMappingInput = Map<string, string> | SchemaRouter;
+
+/** Coerce any accepted mapping form into a {@link SchemaRouter}. */
+function asRouter(mapping: SchemaMappingInput): SchemaRouter {
+  return SchemaRouter.from(mapping);
+}
+
+/** Flat schema-level view for string-level passes that operate per source schema. */
+function schemaLevelMap(mapping: SchemaMappingInput): Map<string, string> {
+  return mapping instanceof SchemaRouter ? mapping.schemaLevelMap() : mapping;
+}
 
 export interface SchemaTransformResult {
   schemasFound: Set<string>;
@@ -133,25 +148,31 @@ export function shouldTransformSchema(
 /**
  * Transform schema names in a String node array (used for funcname, names, etc.)
  * These arrays contain String nodes like { String: { sval: 'schema_name' } }
+ *
+ * `ns` names the namespace of the referenced object so object-level routes can
+ * apply; the object's own name is the last element of the list. When `ns` is
+ * `unknown` (the default) only the schema-level default applies — identical to
+ * the historic whole-schema behaviour.
  */
 export function transformNameList(
   names: any[] | undefined,
-  schemaMapping: Map<string, string>,
-  result: SchemaTransformResult
+  schemaMapping: SchemaMappingInput,
+  result: SchemaTransformResult,
+  ns: RouteNamespace = 'unknown'
 ): void {
   if (!names || names.length < 2) return;
-  
-  // For schema-qualified names, the first element is the schema
+  const router = asRouter(schemaMapping);
+
+  // For schema-qualified names, the first element is the schema.
   const first = names[0];
   if (first?.String?.sval) {
     const schemaName = first.String.sval;
-    if (shouldTransformSchema(schemaName, schemaMapping)) {
+    const objName = names[names.length - 1]?.String?.sval;
+    const newName = router.resolve(schemaName, objName, ns);
+    if (newName && newName !== schemaName) {
       result.schemasFound.add(schemaName);
-      const newName = schemaMapping.get(schemaName);
-      if (newName) {
-        first.String.sval = newName;
-        result.schemasTransformed.set(schemaName, newName);
-      }
+      first.String.sval = newName;
+      result.schemasTransformed.set(schemaName, newName);
     }
   }
 }
@@ -164,18 +185,18 @@ export function transformNameList(
 export function transformSchemaNameField(
   container: any,
   field: string,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult
 ): void {
   const schemaName = container?.[field];
   if (typeof schemaName !== 'string') return;
-  if (shouldTransformSchema(schemaName, schemaMapping)) {
+  // A bare schema name is an operation on the schema itself: only the
+  // schema-level default applies.
+  const newName = asRouter(schemaMapping).resolve(schemaName, undefined, 'schema');
+  if (newName && newName !== schemaName) {
     result.schemasFound.add(schemaName);
-    const newName = schemaMapping.get(schemaName);
-    if (newName) {
-      container[field] = newName;
-      result.schemasTransformed.set(schemaName, newName);
-    }
+    container[field] = newName;
+    result.schemasTransformed.set(schemaName, newName);
   }
 }
 
@@ -185,17 +206,18 @@ export function transformSchemaNameField(
  */
 export function transformRelation(
   relation: any,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult
 ): void {
-  if (relation?.schemaname && shouldTransformSchema(relation.schemaname, schemaMapping)) {
-    const oldName = relation.schemaname;
+  if (!relation?.schemaname) return;
+  const oldName = relation.schemaname;
+  // A RangeVar names a relation (table/view/sequence/matview); route by the
+  // relation name so object-level routes can send it to its own schema.
+  const newName = asRouter(schemaMapping).resolve(oldName, relation.relname, 'relation');
+  if (newName && newName !== oldName) {
     result.schemasFound.add(oldName);
-    const newName = schemaMapping.get(oldName);
-    if (newName) {
-      relation.schemaname = newName;
-      result.schemasTransformed.set(oldName, newName);
-    }
+    relation.schemaname = newName;
+    result.schemasTransformed.set(oldName, newName);
   }
 }
 
@@ -207,11 +229,13 @@ export function transformRelation(
  */
 export function transformSchemaRefsInString(
   str: string,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult
 ): string {
   let out = str;
-  for (const [oldSchema, newSchema] of schemaMapping) {
+  // References embedded in opaque strings carry no object identity, so only
+  // whole-schema (schema-level default) routes can be applied here.
+  for (const [oldSchema, newSchema] of schemaLevelMap(schemaMapping)) {
     const pattern = new RegExp(`(?<![\\w-])("?)${escapeRegexp(oldSchema)}\\1(?=\\.)`, 'g');
     const before = out;
     out = out.replace(pattern, `$1${newSchema}$1`);
@@ -232,35 +256,66 @@ export function transformSchemaRefsInString(
  * that require explicit handlers.
  */
 export function createSqlVisitor(
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult,
   visitorOptions?: { assumeSchemasExist?: Set<string> }
 ) {
+  const router = asRouter(schemaMapping);
   const assumeSchemasExist = visitorOptions?.assumeSchemasExist;
+  const useAstBodies = router.hasObjectRoutes();
+
+  // Rewrite a bare schema-name string field in place (schema-level default).
+  const rewriteSchemaField = (container: any, key: string): void => {
+    const schemaName = container?.[key];
+    if (typeof schemaName !== 'string') return;
+    const newName = router.resolve(schemaName, undefined, 'schema');
+    if (newName && newName !== schemaName) {
+      result.schemasFound.add(schemaName);
+      container[key] = newName;
+      result.schemasTransformed.set(schemaName, newName);
+    }
+  };
+
+  // Namespace of the object a DROP/ALTER targets, from its removeType, so
+  // object routes apply to DROP TABLE/FUNCTION/TYPE (e.g. revert scripts).
+  const namespaceOfObjectType = (objType: string | undefined): RouteNamespace => {
+    switch (objType) {
+      case 'OBJECT_TABLE':
+      case 'OBJECT_VIEW':
+      case 'OBJECT_SEQUENCE':
+      case 'OBJECT_MATVIEW':
+      case 'OBJECT_FOREIGN_TABLE':
+      case 'OBJECT_INDEX':
+        return 'relation';
+      case 'OBJECT_FUNCTION':
+      case 'OBJECT_PROCEDURE':
+      case 'OBJECT_AGGREGATE':
+      case 'OBJECT_ROUTINE':
+        return 'function';
+      case 'OBJECT_TYPE':
+      case 'OBJECT_DOMAIN':
+        return 'type';
+      default:
+        return 'unknown';
+    }
+  };
+
   return {
     // Transform RangeVar nodes (table references)
     RangeVar: (path: any) => {
-      const node = path.node;
-      if (node.schemaname && shouldTransformSchema(node.schemaname, schemaMapping)) {
-        const oldName = node.schemaname;
-        result.schemasFound.add(oldName);
-        const newName = schemaMapping.get(oldName);
-        if (newName) {
-          node.schemaname = newName;
-          result.schemasTransformed.set(oldName, newName);
-        }
-      }
+      transformRelation(path.node, router, result);
     },
     
     // Transform CreateSchemaStmt nodes
     CreateSchemaStmt: (path: any) => {
       const node = path.node;
-      if (node.schemaname && shouldTransformSchema(node.schemaname, schemaMapping)) {
+      if (node.schemaname) {
         const oldName = node.schemaname;
-        result.schemasFound.add(oldName);
-        const newName = schemaMapping.get(oldName);
-        if (newName) {
+        // The schema object itself: schema-level default only.
+        const newName = router.resolve(oldName, undefined, 'schema');
+        if (newName && newName !== oldName) {
           node.schemaname = newName;
+          result.schemasFound.add(oldName);
           result.schemasTransformed.set(oldName, newName);
         }
       }
@@ -272,7 +327,7 @@ export function createSqlVisitor(
     // Transform FuncCall nodes (function calls with schema-qualified names)
     FuncCall: (path: any) => {
       const node = path.node;
-      transformNameList(node.funcname, schemaMapping, result);
+      transformNameList(node.funcname, router, result, 'function');
     },
 
     // Transform CallStmt (CALL schema.procedure(...)).
@@ -281,20 +336,23 @@ export function createSqlVisitor(
     CallStmt: (path: any) => {
       const node = path.node;
       if (node.funccall?.funcname) {
-        transformNameList(node.funccall.funcname, schemaMapping, result);
+        transformNameList(node.funccall.funcname, router, result, 'function');
       }
     },
     
     // Transform TypeName nodes (type references with schema-qualified names)
     TypeName: (path: any) => {
       const node = path.node;
-      transformNameList(node.names, schemaMapping, result);
+      transformNameList(node.names, router, result, 'type');
     },
     
-    // Transform ColumnRef nodes (column references with schema-qualified names)
+    // Transform ColumnRef nodes (column references with schema-qualified names).
+    // A qualified column is schema.table.column — the routed object is the
+    // table, which we cannot disambiguate from the schema here, so only the
+    // schema-level default applies.
     ColumnRef: (path: any) => {
       const node = path.node;
-      transformNameList(node.fields, schemaMapping, result);
+      transformNameList(node.fields, router, result);
     },
     
     // Transform GrantStmt objects (GRANT ON SCHEMA schema;
@@ -318,25 +376,9 @@ export function createSqlVisitor(
         for (const arg of node.args) {
           // search_path args can be String nodes or A_Const with sval
           if (arg?.String?.sval) {
-            const schemaName = arg.String.sval;
-            if (shouldTransformSchema(schemaName, schemaMapping)) {
-              result.schemasFound.add(schemaName);
-              const newName = schemaMapping.get(schemaName);
-              if (newName) {
-                arg.String.sval = newName;
-                result.schemasTransformed.set(schemaName, newName);
-              }
-            }
+            rewriteSchemaField(arg.String, 'sval');
           } else if (arg?.A_Const?.sval?.sval) {
-            const schemaName = arg.A_Const.sval.sval;
-            if (shouldTransformSchema(schemaName, schemaMapping)) {
-              result.schemasFound.add(schemaName);
-              const newName = schemaMapping.get(schemaName);
-              if (newName) {
-                arg.A_Const.sval.sval = newName;
-                result.schemasTransformed.set(schemaName, newName);
-              }
-            }
+            rewriteSchemaField(arg.A_Const.sval, 'sval');
           }
         }
       }
@@ -350,15 +392,7 @@ export function createSqlVisitor(
           if (opt?.DefElem?.defname === 'schemas' && opt.DefElem.arg?.List?.items) {
             for (const item of opt.DefElem.arg.List.items) {
               if (item?.String?.sval) {
-                const schemaName = item.String.sval;
-                if (shouldTransformSchema(schemaName, schemaMapping)) {
-                  result.schemasFound.add(schemaName);
-                  const newName = schemaMapping.get(schemaName);
-                  if (newName) {
-                    item.String.sval = newName;
-                    result.schemasTransformed.set(schemaName, newName);
-                  }
-                }
+                rewriteSchemaField(item.String, 'sval');
               }
             }
           }
@@ -372,13 +406,14 @@ export function createSqlVisitor(
     DropStmt: (path: any) => {
       const node = path.node;
       if (node.removeType !== 'OBJECT_SCHEMA' && Array.isArray(node.objects)) {
+        const ns = namespaceOfObjectType(node.removeType);
         for (const obj of node.objects) {
           if (obj?.List?.items) {
-            transformNameList(obj.List.items, schemaMapping, result);
+            transformNameList(obj.List.items, router, result, ns);
           } else if (obj?.ObjectWithArgs?.objname) {
-            transformNameList(obj.ObjectWithArgs.objname, schemaMapping, result);
+            transformNameList(obj.ObjectWithArgs.objname, router, result, ns);
           } else if (obj?.TypeName?.names) {
-            transformNameList(obj.TypeName.names, schemaMapping, result);
+            transformNameList(obj.TypeName.names, router, result, ns);
           }
         }
         return;
@@ -389,27 +424,11 @@ export function createSqlVisitor(
           if (obj?.List?.items) {
             for (const item of obj.List.items) {
               if (item?.String?.sval) {
-                const schemaName = item.String.sval;
-                if (shouldTransformSchema(schemaName, schemaMapping)) {
-                  result.schemasFound.add(schemaName);
-                  const newName = schemaMapping.get(schemaName);
-                  if (newName) {
-                    item.String.sval = newName;
-                    result.schemasTransformed.set(schemaName, newName);
-                  }
-                }
+                rewriteSchemaField(item.String, 'sval');
               }
             }
           } else if (obj?.String?.sval) {
-            const schemaName = obj.String.sval;
-            if (shouldTransformSchema(schemaName, schemaMapping)) {
-              result.schemasFound.add(schemaName);
-              const newName = schemaMapping.get(schemaName);
-              if (newName) {
-                obj.String.sval = newName;
-                result.schemasTransformed.set(schemaName, newName);
-              }
-            }
+            rewriteSchemaField(obj.String, 'sval');
           }
         }
       }
@@ -471,7 +490,7 @@ export function createSqlVisitor(
     ColumnDef: (path: any) => {
       const node = path.node;
       if (node.typeName?.names) {
-        transformNameList(node.typeName.names, schemaMapping, result);
+        transformNameList(node.typeName.names, schemaMapping, result, 'type');
       }
     },
 
@@ -556,7 +575,7 @@ export function createSqlVisitor(
     TypeCast: (path: any) => {
       const node = path.node;
       if (node.typeName?.names) {
-        transformNameList(node.typeName.names, schemaMapping, result);
+        transformNameList(node.typeName.names, schemaMapping, result, 'type');
       }
     },
 
@@ -564,17 +583,17 @@ export function createSqlVisitor(
     // Also handles RETURNS [SETOF] schema.type via returnType.names
     CreateFunctionStmt: (path: any) => {
       const node = path.node;
-      transformNameList(node.funcname, schemaMapping, result);
+      transformNameList(node.funcname, schemaMapping, result, 'function');
       // Transform the return type (e.g., RETURNS SETOF schema.tablename)
       if (node.returnType?.names) {
-        transformNameList(node.returnType.names, schemaMapping, result);
+        transformNameList(node.returnType.names, schemaMapping, result, 'type');
       }
       // Transform parameter types (the walker does NOT auto-recurse into
       // FunctionParameter.argType TypeName nodes)
       if (Array.isArray(node.parameters)) {
         for (const param of node.parameters) {
           if (param?.FunctionParameter?.argType?.names) {
-            transformNameList(param.FunctionParameter.argType.names, schemaMapping, result);
+            transformNameList(param.FunctionParameter.argType.names, schemaMapping, result, 'type');
           }
         }
       }
@@ -587,8 +606,14 @@ export function createSqlVisitor(
         for (const opt of node.options) {
           if (opt?.DefElem?.defname === 'as' && opt.DefElem.arg?.List?.items) {
             for (const item of opt.DefElem.arg.List.items) {
-              if (typeof item?.String?.sval === 'string' && item.String.sval.includes('.')) {
-                item.String.sval = transformSchemaRefsInString(item.String.sval, schemaMapping, result);
+              if (typeof item?.String?.sval !== 'string') continue;
+              // With object routes, references inside a LANGUAGE sql body must
+              // be rewritten AST-precisely; whole-schema routes keep the
+              // cheaper (and quoting-preserving) string pass.
+              if (useAstBodies) {
+                item.String.sval = transformSqlBodyString(item.String.sval, router, result);
+              } else if (item.String.sval.includes('.')) {
+                item.String.sval = transformSchemaRefsInString(item.String.sval, router, result);
               }
             }
           }
@@ -601,7 +626,7 @@ export function createSqlVisitor(
     // so we must explicitly transform the RangeVar here.
     CreateTrigStmt: (path: any) => {
       const node = path.node;
-      transformNameList(node.funcname, schemaMapping, result);
+      transformNameList(node.funcname, schemaMapping, result, 'function');
       transformRelation(node.relation, schemaMapping, result);
     },
 
@@ -651,25 +676,25 @@ export function createSqlVisitor(
     // Transform CreateDomainStmt (CREATE DOMAIN schema.domname)
     CreateDomainStmt: (path: any) => {
       const node = path.node;
-      transformNameList(node.domainname, schemaMapping, result);
+      transformNameList(node.domainname, schemaMapping, result, 'type');
     },
 
     // Transform CreateEnumStmt (CREATE TYPE schema.enumname AS ENUM)
     CreateEnumStmt: (path: any) => {
       const node = path.node;
-      transformNameList(node.typeName, schemaMapping, result);
+      transformNameList(node.typeName, schemaMapping, result, 'type');
     },
 
     // Transform AlterEnumStmt (ALTER TYPE schema.enumname ADD VALUE)
     AlterEnumStmt: (path: any) => {
       const node = path.node;
-      transformNameList(node.typeName, schemaMapping, result);
+      transformNameList(node.typeName, schemaMapping, result, 'type');
     },
 
     // Transform AlterDomainStmt (ALTER DOMAIN schema.domname)
     AlterDomainStmt: (path: any) => {
       const node = path.node;
-      transformNameList(node.typeName, schemaMapping, result);
+      transformNameList(node.typeName, schemaMapping, result, 'type');
     },
 
     // Transform AlterTypeStmt (ALTER TYPE schema.typename)
@@ -677,7 +702,7 @@ export function createSqlVisitor(
     // but some ALTER TYPE statements use typeName as a name list
     AlterTypeStmt: (path: any) => {
       const node = path.node;
-      transformNameList(node.typeName, schemaMapping, result);
+      transformNameList(node.typeName, schemaMapping, result, 'type');
     },
 
     // Transform ObjectWithArgs (used in ALTER FUNCTION, DROP FUNCTION with args, etc.)
@@ -726,7 +751,7 @@ export function createSqlVisitor(
     AlterFunctionStmt: (path: any) => {
       const node = path.node;
       if (node.func?.objname) {
-        transformNameList(node.func.objname, schemaMapping, result);
+        transformNameList(node.func.objname, schemaMapping, result, 'function');
       }
     },
 
@@ -747,27 +772,27 @@ export function createSqlVisitor(
     CreateCastStmt: (path: any) => {
       const node = path.node;
       if (node.sourcetype?.names) {
-        transformNameList(node.sourcetype.names, schemaMapping, result);
+        transformNameList(node.sourcetype.names, schemaMapping, result, 'type');
       }
       if (node.targettype?.names) {
-        transformNameList(node.targettype.names, schemaMapping, result);
+        transformNameList(node.targettype.names, schemaMapping, result, 'type');
       }
       if (node.func?.objname) {
-        transformNameList(node.func.objname, schemaMapping, result);
+        transformNameList(node.func.objname, schemaMapping, result, 'function');
       }
       if (Array.isArray(node.func?.objargs)) {
         for (const arg of node.func.objargs) {
           if (arg?.TypeName?.names) {
-            transformNameList(arg.TypeName.names, schemaMapping, result);
+            transformNameList(arg.TypeName.names, schemaMapping, result, 'type');
           } else if (arg?.names) {
-            transformNameList(arg.names, schemaMapping, result);
+            transformNameList(arg.names, schemaMapping, result, 'type');
           }
         }
       }
       if (Array.isArray(node.func?.objfuncargs)) {
         for (const param of node.func.objfuncargs) {
           if (param?.FunctionParameter?.argType?.names) {
-            transformNameList(param.FunctionParameter.argType.names, schemaMapping, result);
+            transformNameList(param.FunctionParameter.argType.names, schemaMapping, result, 'type');
           }
         }
       }
@@ -776,7 +801,7 @@ export function createSqlVisitor(
     // Transform CreateEventTrigStmt (CREATE EVENT TRIGGER ... EXECUTE FUNCTION schema.fn())
     CreateEventTrigStmt: (path: any) => {
       const node = path.node;
-      transformNameList(node.funcname, schemaMapping, result);
+      transformNameList(node.funcname, schemaMapping, result, 'function');
     },
 
     // Transform IndexElem opclass (CREATE INDEX ... (col schema.opclass))
@@ -823,13 +848,18 @@ export function createSqlVisitor(
  */
 export function validateNoUntransformedSchemas(
   content: string,
-  schemaMapping: Map<string, string>
+  schemaMapping: SchemaMappingInput
 ): void {
-  if (schemaMapping.size === 0) {
+  // Only schemas with a schema-level default are guaranteed to move entirely;
+  // partially (object-only) routed schemas may legitimately keep some
+  // references, so they are excluded from the strict leftover check.
+  const moved =
+    schemaMapping instanceof SchemaRouter ? schemaMapping.fullyMovedSchemas() : schemaMapping;
+  if (moved.size === 0) {
     return;
   }
   
-  for (const [oldSchema, newSchema] of schemaMapping) {
+  for (const [oldSchema, newSchema] of moved) {
     const escapedSchema = escapeRegexp(oldSchema);
     
     // Pattern 1: quoted or unquoted schema name followed by dot (schema-qualified)
@@ -880,14 +910,15 @@ export function validateNoUntransformedSchemas(
  * Create a PL/pgSQL visitor that transforms schema names in PL/pgSQL-specific nodes.
  */
 export function createPlpgsqlVisitor(
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult
 ) {
+  const schemaMap = schemaLevelMap(schemaMapping);
   return {
     PLpgSQL_type: (path: any) => {
       const node = path.node;
       if (node.typname) {
-        for (const [oldSchema, newSchema] of schemaMapping.entries()) {
+        for (const [oldSchema, newSchema] of schemaMap.entries()) {
           if (node.typname.startsWith(oldSchema + '.')) {
             const typeName = node.typname.substring(oldSchema.length + 1);
             result.schemasFound.add(oldSchema);
@@ -902,7 +933,7 @@ export function createPlpgsqlVisitor(
     PLpgSQL_var: (path: any) => {
       const node = path.node;
       if (node.refname) {
-        for (const [oldSchema, newSchema] of schemaMapping.entries()) {
+        for (const [oldSchema, newSchema] of schemaMap.entries()) {
           if (node.refname.startsWith(oldSchema + '.')) {
             const rest = node.refname.substring(oldSchema.length + 1);
             result.schemasFound.add(oldSchema);
@@ -921,9 +952,10 @@ export function createPlpgsqlVisitor(
  */
 export function transformPlpgsqlTypeAst(
   typname: string,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult
 ): string {
+  const schemaMap = schemaLevelMap(schemaMapping);
   let suffix = '';
   let baseTypname = typname;
   
@@ -934,7 +966,7 @@ export function transformPlpgsqlTypeAst(
   }
   
   let needsTransform = false;
-  for (const oldSchema of schemaMapping.keys()) {
+  for (const oldSchema of schemaMap.keys()) {
     if (baseTypname.startsWith(oldSchema + '.') || baseTypname.startsWith('"' + oldSchema + '".')) {
       needsTransform = true;
       break;
@@ -957,7 +989,7 @@ export function transformPlpgsqlTypeAst(
       TypeName: (path: any) => {
         const typeNode = path.node;
         if (typeNode.names && Array.isArray(typeNode.names)) {
-          transformNameList(typeNode.names, schemaMapping, result);
+          transformNameList(typeNode.names, schemaMapping, result, 'type');
         }
       }
     };
@@ -984,10 +1016,10 @@ export function transformPlpgsqlTypeAst(
  */
 export function transformPlpgsqlTypeString(
   typname: string,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult
 ): string {
-  for (const [oldSchema, newSchema] of schemaMapping.entries()) {
+  for (const [oldSchema, newSchema] of schemaLevelMap(schemaMapping).entries()) {
     // Unquoted schema: old_schema.rest
     if (typname.startsWith(oldSchema + '.')) {
       const rest = typname.substring(oldSchema.length + 1);
@@ -1011,7 +1043,7 @@ export function transformPlpgsqlTypeString(
  */
 export function walkPlpgsqlForSchemas(
   node: any,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult
 ): void {
   if (node === null || node === undefined || typeof node !== 'object') {
@@ -1066,7 +1098,7 @@ export function walkPlpgsqlForSchemas(
         // We cannot use walkSql here because the raw typeNameNode is not
         // wrapped in the expected AST envelope that the traverse walker needs.
         if (plType.typname.typeNameNode?.names) {
-          transformNameList(plType.typname.typeNameNode.names, schemaMapping, result);
+          transformNameList(plType.typname.typeNameNode.names, schemaMapping, result, 'type');
         }
         // The deparser can fall back to the 'original' string to render
         // DECLARE types, so update it as well. Rewrite only the schema
@@ -1091,6 +1123,38 @@ export function walkPlpgsqlForSchemas(
 
   for (const value of Object.values(node)) {
     walkPlpgsqlForSchemas(value, schemaMapping, result);
+  }
+}
+
+/**
+ * Rewrite a `LANGUAGE sql` function-body string using the full AST visitor so
+ * object-level routes reach references inside the body (the body is an opaque
+ * String node the outer walker never parses). Parses each statement, walks it
+ * with the router-aware SQL visitor, and deparses. Falls back to the
+ * schema-level string pass for anything that does not parse standalone (e.g.
+ * PL/pgSQL blocks or C symbol names).
+ */
+function transformSqlBodyString(
+  body: string,
+  router: SchemaRouter,
+  result: SchemaTransformResult
+): string {
+  try {
+    const parseResult = parseSql(body);
+    const stmts: any[] = parseResult?.stmts ?? [];
+    if (stmts.length === 0) {
+      return body.includes('.') ? transformSchemaRefsInString(body, router, result) : body;
+    }
+    const visitor = createSqlVisitor(router, result);
+    const pieces: string[] = [];
+    for (const stmt of stmts) {
+      if (!stmt?.stmt) continue;
+      walkSql(stmt.stmt, visitor);
+      pieces.push(Deparser.deparse(stmt.stmt));
+    }
+    return pieces.join(';\n');
+  } catch {
+    return body.includes('.') ? transformSchemaRefsInString(body, router, result) : body;
   }
 }
 
@@ -1279,7 +1343,7 @@ export function transformJsonStringValues(
  */
 export function transformSql(
   content: string,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   options?: TransformSqlOptions | SchemaTransformResult,
   result?: SchemaTransformResult
 ): { content: string; result: SchemaTransformResult } {
@@ -1298,12 +1362,14 @@ export function transformSql(
     return { content, result: r };
   }
 
+  // String-level passes operate on whole schemas; give them the flat view.
+  const passMap = schemaLevelMap(schemaMapping);
   let newContent = content;
 
   // Run pre-passes (app-specific string-level transforms)
   if (opts.prePasses) {
     for (const pass of opts.prePasses) {
-      newContent = pass(newContent, schemaMapping, r);
+      newContent = pass(newContent, passMap, r);
     }
   }
 
@@ -1313,7 +1379,7 @@ export function transformSql(
   // Run post-passes (app-specific string-level transforms)
   if (opts.postPasses) {
     for (const pass of opts.postPasses) {
-      newContent = pass(newContent, schemaMapping, r);
+      newContent = pass(newContent, passMap, r);
     }
   }
 
@@ -1327,7 +1393,7 @@ export function transformSql(
  */
 export function transformSqlStatement(
   sql: string,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result?: SchemaTransformResult
 ): { sql: string; result: SchemaTransformResult } {
   const r = result || createResult();
@@ -1373,7 +1439,7 @@ export function transformSqlStatement(
  */
 function transformSqlContentAst(
   content: string,
-  schemaMapping: Map<string, string>,
+  schemaMapping: SchemaMappingInput,
   result: SchemaTransformResult,
   options?: TransformSqlOptions
 ): string {
@@ -1390,7 +1456,8 @@ function transformSqlContentAst(
   
   let transformedHeader = header;
   if (header.length > 0) {
-    transformedHeader = transformComments(header, schemaMapping, result);
+    // Header/path rewrites (-- Deploy: schemas/<schema>/...) are whole-schema.
+    transformedHeader = transformComments(header, schemaLevelMap(schemaMapping), result);
   }
   
   let transformedBody = body;

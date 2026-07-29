@@ -17,6 +17,13 @@ export {
   mergeInventories,
   qualifyUnqualified,
 } from './qualify';
+export type {
+  ObjectNamespace,
+  RouteNamespace,
+  RouteSpec,
+  SchemaRoute,
+} from './router';
+export { SchemaRouter } from './router';
 export type { CapturedAsts } from './round-trip';
 export {
   captureAstsFromSql,
@@ -33,6 +40,7 @@ export {
   trimDefElemBody,
 } from './round-trip-core';
 export type {
+  SchemaMappingInput,
   SchemaTransformPass,
   SchemaTransformResult,
   TransformSqlOptions,
