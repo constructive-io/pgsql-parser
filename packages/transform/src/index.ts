@@ -1,9 +1,35 @@
 export type {
+  ExtensionAction,
+  ExtensionFact,
   QualifiedName,
   StatementFacts,
   StatementKind,
 } from './facts';
 export { classifyStatements } from './facts';
+export type {
+  ExtensionDefinition,
+  ExtensionRoute,
+  ExtensionRouteSpec,
+  ExtensionRouterOptions,
+  ExtensionSymbol,
+  ExtensionSymbolNamespace,
+  SymbolRewrite,
+} from './extension-router';
+export { COMMON_EXTENSIONS, ExtensionRouter } from './extension-router';
+export type { ExtensionTransformResult } from './extension-transform';
+export {
+  createExtensionResult,
+  createExtensionVisitor,
+  transformExtensions,
+} from './extension-transform';
+export type { RoleRouteSpec } from './role-router';
+export { RoleRouter } from './role-router';
+export type { RoleTransformResult } from './role-transform';
+export {
+  createRoleResult,
+  createRoleVisitor,
+  transformRoles,
+} from './role-transform';
 export type {
   ObjectInventory,
   QualifyResult,
