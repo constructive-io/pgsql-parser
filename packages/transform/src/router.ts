@@ -20,6 +20,19 @@
  * `types` — matching `pg_class` / `pg_proc` / `pg_type`), mirroring the routing
  * model already used by {@link qualifyUnqualified}. Resolution is
  * object-route-first, then the schema-level default, then "leave unchanged".
+ *
+ * An object route may also *rebind* — change the object's **name**, not just
+ * the schema it lives in. Routing preserves identity (the same function, a new
+ * address); rebinding repoints a reference at a *different* object, which is
+ * what lets one implementation of a contract be substituted for another:
+ *
+ * ```ts
+ * { auth: { functions: { uid: { schema: null, name: 'current_user_id' } } } }
+ * // auth.uid()  ->  current_user_id()
+ * ```
+ *
+ * A `null` target schema de-qualifies the reference (relying on `search_path`),
+ * matching the convention used by the extension router.
  */
 
 /** PostgreSQL object namespaces relevant to schema routing. */
@@ -33,6 +46,26 @@ export type ObjectNamespace = 'relation' | 'function' | 'type';
  */
 export type RouteNamespace = ObjectNamespace | 'schema' | 'unknown';
 
+/**
+ * Where a specific object should be reached instead. Either field may be
+ * omitted: omitting `schema` keeps the schema-level default (or the current
+ * schema when the route has none), and omitting `name` keeps the object's own
+ * name — so `{ name }` alone is a pure rebind and `{ schema }` alone is
+ * equivalent to the shorthand string form.
+ */
+export interface ObjectRoute {
+  /** Target schema, or `null` to make the reference unqualified. */
+  schema?: string | null;
+  /** Target object name — rebinds the reference to a different object. */
+  name?: string;
+}
+
+/**
+ * An object route target. The shorthand `string` form is the target schema,
+ * identical to `{ schema: target }`.
+ */
+export type ObjectRouteTarget = string | ObjectRoute;
+
 /** Per-source-schema routing: a schema-level default plus per-object routes. */
 export interface SchemaRoute {
   /**
@@ -41,12 +74,12 @@ export interface SchemaRoute {
    * and leave the rest (and the schema itself) untouched.
    */
   schema?: string;
-  /** Relation name (table/view/sequence/matview) → target schema. */
-  relations?: Record<string, string>;
-  /** Function/procedure/aggregate name → target schema. */
-  functions?: Record<string, string>;
-  /** Type/domain name → target schema. */
-  types?: Record<string, string>;
+  /** Relation name (table/view/sequence/matview) → target schema or rebind. */
+  relations?: Record<string, ObjectRouteTarget>;
+  /** Function/procedure/aggregate name → target schema or rebind. */
+  functions?: Record<string, ObjectRouteTarget>;
+  /** Type/domain name → target schema or rebind. */
+  types?: Record<string, ObjectRouteTarget>;
 }
 
 /** The full routing specification: one {@link SchemaRoute} per source schema. */
@@ -106,6 +139,35 @@ export class SchemaRouter {
     return false;
   }
 
+  /**
+   * True when any object route changes a name or de-qualifies (rather than
+   * only moving between schemas). Such rewrites cannot be expressed by the
+   * string-level passes at all, so callers use this to require the AST path.
+   */
+  hasNameRebinds(): boolean {
+    return this.nameRebinds().length > 0;
+  }
+
+  /**
+   * Every object route that rebinds a name or de-qualifies, keyed by source
+   * schema and namespace. Callers use this to report or verify substitutions.
+   */
+  nameRebinds(): Array<{ schema: string; ns: ObjectNamespace; from: string; to: ObjectRoute }> {
+    const out: Array<{ schema: string; ns: ObjectNamespace; from: string; to: ObjectRoute }> = [];
+    for (const [schema, route] of this.routes) {
+      for (const ns of ['relation', 'function', 'type'] as ObjectNamespace[]) {
+        const bucket = route[NS_BUCKET[ns]];
+        if (!bucket) continue;
+        for (const [from, target] of Object.entries(bucket)) {
+          if (typeof target === 'string') continue;
+          if (target.name === undefined && target.schema !== null) continue;
+          out.push({ schema, ns, from, to: target });
+        }
+      }
+    }
+    return out;
+  }
+
   /** Every source schema this router may touch. */
   sourceSchemas(): string[] {
     return [...this.routes.keys()];
@@ -122,16 +184,42 @@ export class SchemaRouter {
     name?: string,
     ns: RouteNamespace = 'unknown'
   ): string | undefined {
+    // A `null` target de-qualifies the reference; the schema-only API cannot
+    // express that, so it reads as "unchanged" here.
+    return this.resolveObject(sourceSchema, name, ns)?.schema ?? undefined;
+  }
+
+  /**
+   * Resolve the full target for `(sourceSchema, name)` in namespace `ns` — both
+   * the schema the reference should live in and, when the route rebinds, the
+   * name it should be reached by. Returns `undefined` to leave it unchanged.
+   *
+   * In the result, `schema` is `null` when the reference should become
+   * unqualified and `undefined` when only the name changes; `name` is
+   * `undefined` when only the schema changes.
+   */
+  resolveObject(
+    sourceSchema: string | undefined | null,
+    name?: string,
+    ns: RouteNamespace = 'unknown'
+  ): ObjectRoute | undefined {
     if (!sourceSchema) return undefined;
     const route = this.routes.get(sourceSchema);
     if (!route) return undefined;
 
     if (name && (ns === 'relation' || ns === 'function' || ns === 'type')) {
-      const bucket = route[NS_BUCKET[ns]];
-      const mapped = bucket?.[name];
-      if (mapped !== undefined) return mapped;
+      const target = route[NS_BUCKET[ns]]?.[name];
+      if (target !== undefined) {
+        if (typeof target === 'string') return { schema: target };
+        // An object route naming no schema inherits the schema-level default,
+        // so a pure rebind leaves placement alone.
+        return {
+          schema: target.schema !== undefined ? target.schema : route.schema,
+          name: target.name
+        };
+      }
     }
-    return route.schema;
+    return route.schema !== undefined ? { schema: route.schema } : undefined;
   }
 
   /**

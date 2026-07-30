@@ -167,12 +167,22 @@ export function transformNameList(
   const first = names[0];
   if (first?.String?.sval) {
     const schemaName = first.String.sval;
-    const objName = names[names.length - 1]?.String?.sval;
-    const newName = router.resolve(schemaName, objName, ns);
-    if (newName && newName !== schemaName) {
+    const last = names[names.length - 1];
+    const objName = last?.String?.sval;
+    const target = router.resolveObject(schemaName, objName, ns);
+    if (!target) return;
+    if (target.name !== undefined && last?.String?.sval) {
       result.schemasFound.add(schemaName);
-      first.String.sval = newName;
-      result.schemasTransformed.set(schemaName, newName);
+      last.String.sval = target.name;
+    }
+    if (target.schema === null) {
+      // De-qualify: drop the schema element and rely on search_path.
+      result.schemasFound.add(schemaName);
+      names.splice(0, 1);
+    } else if (target.schema && target.schema !== schemaName) {
+      result.schemasFound.add(schemaName);
+      first.String.sval = target.schema;
+      result.schemasTransformed.set(schemaName, target.schema);
     }
   }
 }
@@ -213,11 +223,20 @@ export function transformRelation(
   const oldName = relation.schemaname;
   // A RangeVar names a relation (table/view/sequence/matview); route by the
   // relation name so object-level routes can send it to its own schema.
-  const newName = asRouter(schemaMapping).resolve(oldName, relation.relname, 'relation');
-  if (newName && newName !== oldName) {
+  const target = asRouter(schemaMapping).resolveObject(oldName, relation.relname, 'relation');
+  if (!target) return;
+  if (target.name !== undefined && relation.relname) {
     result.schemasFound.add(oldName);
-    relation.schemaname = newName;
-    result.schemasTransformed.set(oldName, newName);
+    relation.relname = target.name;
+  }
+  if (target.schema === null) {
+    // De-qualify: drop the schema qualifier and rely on search_path.
+    result.schemasFound.add(oldName);
+    delete relation.schemaname;
+  } else if (target.schema && target.schema !== oldName) {
+    result.schemasFound.add(oldName);
+    relation.schemaname = target.schema;
+    result.schemasTransformed.set(oldName, target.schema);
   }
 }
 
