@@ -45,6 +45,8 @@ export {
 } from './qualify';
 export type {
   ObjectNamespace,
+  ObjectRoute,
+  ObjectRouteTarget,
   RouteNamespace,
   RouteSpec,
   SchemaRoute,

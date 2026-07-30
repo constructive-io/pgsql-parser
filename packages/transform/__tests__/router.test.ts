@@ -223,3 +223,152 @@ describe('object-level routing (transformSql, full module content)', () => {
     expect(viaRouter).toEqual(viaMap);
   });
 });
+
+// =============================================================================
+// Name rebinding (substitution: repoint a reference at a different object)
+// =============================================================================
+
+describe('SchemaRouter name rebinding (unit)', () => {
+  it('resolves a full rebind target and keeps the schema-only API unchanged', () => {
+    const router = new SchemaRouter({
+      accounts: {
+        functions: { current_actor: { schema: null, name: 'current_user_id' } },
+      },
+    });
+    expect(router.resolveObject('accounts', 'current_actor', 'function')).toEqual({
+      schema: null,
+      name: 'current_user_id',
+    });
+    // schema-only API cannot express de-qualification → reads as unchanged
+    expect(router.resolve('accounts', 'current_actor', 'function')).toBeUndefined();
+  });
+
+  it('inherits the schema-level default for a pure name rebind', () => {
+    const router = new SchemaRouter({
+      accounts: {
+        schema: 'app',
+        relations: { members: { name: 'users' } },
+      },
+    });
+    expect(router.resolveObject('accounts', 'members', 'relation')).toEqual({
+      schema: 'app',
+      name: 'users',
+    });
+    expect(router.resolve('accounts', 'members', 'relation')).toBe('app');
+  });
+
+  it('treats the string shorthand as { schema } and reports rebinds', () => {
+    const router = new SchemaRouter({
+      accounts: {
+        relations: { members: 'app' },
+        functions: { current_actor: { schema: null, name: 'current_user_id' } },
+      },
+    });
+    expect(router.resolveObject('accounts', 'members', 'relation')).toEqual({ schema: 'app' });
+    expect(router.hasNameRebinds()).toBe(true);
+    expect(router.nameRebinds()).toEqual([
+      {
+        schema: 'accounts',
+        ns: 'function',
+        from: 'current_actor',
+        to: { schema: null, name: 'current_user_id' },
+      },
+    ]);
+
+    const plain = new SchemaRouter({ accounts: { relations: { members: 'app' } } });
+    expect(plain.hasNameRebinds()).toBe(false);
+  });
+});
+
+describe('name rebinding (transformSqlStatement)', () => {
+  it('rebinds a function call site to a different, unqualified function', () => {
+    const router = new SchemaRouter({
+      accounts: {
+        functions: { current_actor: { schema: null, name: 'current_user_id' } },
+      },
+    });
+    const out = transformSqlStatement(
+      'ALTER TABLE app.posts ADD COLUMN owner uuid DEFAULT accounts.current_actor();',
+      router,
+      freshResult()
+    ).sql;
+    expect(out).toContain('current_user_id()');
+    expect(out).not.toContain('accounts.');
+    expect(out).not.toContain('current_actor');
+  });
+
+  it('rebinds a FK target table to a replacement table in another schema', () => {
+    const router = new SchemaRouter({
+      accounts: {
+        relations: { members: { schema: 'app', name: 'users' } },
+      },
+    });
+    const out = transformSqlStatement(
+      'ALTER TABLE storage.objects ADD CONSTRAINT objects_owner_fkey FOREIGN KEY (owner) REFERENCES accounts.members(id);',
+      router,
+      freshResult()
+    ).sql;
+    expect(out).toContain('app.users');
+    expect(out).not.toContain('accounts.members');
+  });
+
+  it('rebinds a call site inside a LANGUAGE sql body', () => {
+    const router = new SchemaRouter({
+      accounts: {
+        functions: { current_actor: { schema: null, name: 'current_user_id' } },
+      },
+    });
+    const out = transformSqlStatement(
+      'CREATE FUNCTION app.is_owner(row_owner uuid) RETURNS boolean AS $$ SELECT row_owner = accounts.current_actor() $$ LANGUAGE sql STABLE;',
+      router,
+      freshResult()
+    ).sql;
+    expect(out).toContain('current_user_id()');
+    expect(out).not.toContain('accounts.current_actor');
+  });
+
+  it('rebinds a policy predicate call site', () => {
+    const router = new SchemaRouter({
+      accounts: {
+        functions: { current_actor: { schema: null, name: 'current_user_id' } },
+      },
+    });
+    const out = transformSqlStatement(
+      'CREATE POLICY owner_select ON app.posts FOR SELECT USING (owner = accounts.current_actor());',
+      router,
+      freshResult()
+    ).sql;
+    expect(out).toContain('current_user_id()');
+    expect(out).not.toContain('accounts.');
+  });
+
+  it('de-qualifies a relation reference when the target schema is null', () => {
+    const router = new SchemaRouter({
+      legacy: {
+        relations: { settings: { schema: null } },
+      },
+    });
+    const out = transformSqlStatement(
+      'SELECT * FROM legacy.settings;',
+      router,
+      freshResult()
+    ).sql;
+    expect(out).toContain('FROM settings');
+    expect(out).not.toContain('legacy.');
+  });
+
+  it('leaves siblings untouched when only one object is rebound', () => {
+    const router = new SchemaRouter({
+      accounts: {
+        functions: { current_actor: { schema: null, name: 'current_user_id' } },
+      },
+    });
+    const out = transformSqlStatement(
+      'SELECT accounts.current_actor(), accounts.display_name(1);',
+      router,
+      freshResult()
+    ).sql;
+    expect(out).toContain('current_user_id()');
+    expect(out).toContain('accounts.display_name(1)');
+  });
+});
