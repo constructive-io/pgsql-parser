@@ -117,6 +117,22 @@ export interface StatementFacts {
    * are incomplete and slicing should treat it conservatively.
    */
   dynamicSql: boolean;
+  /**
+   * The statement's source span in the classified script, as reported by the
+   * parser: `start` is the byte offset of the statement's first token, `len`
+   * runs to the end of the statement (the parser excludes the trailing `;`;
+   * for the final statement the span extends to the end of the script).
+   * `sql.slice(span.start, span.start + span.len)` is the statement's
+   * verbatim source, so consumers can carry original text alongside the
+   * facts without a second parse.
+   */
+  span: StatementSpan;
+}
+
+/** A statement's location in the source script (byte offsets). */
+export interface StatementSpan {
+  start: number;
+  len: number;
 }
 
 const SECURITY_TAGS = new Set([
@@ -272,7 +288,8 @@ function classifyOne(nodeTag: string, node: any): StatementFacts {
     bodyReferences: [],
     securityRelevant: SECURITY_TAGS.has(nodeTag),
     securityDefiner: false,
-    dynamicSql: false
+    dynamicSql: false,
+    span: { start: 0, len: 0 }
   };
 
   switch (nodeTag) {
@@ -467,6 +484,8 @@ export function classifyStatements(sql: string): StatementFacts[] {
       const nodeTag = stmtNode ? Object.keys(stmtNode)[0] : 'other';
       const node = stmtNode?.[nodeTag] ?? {};
       const facts = classifyOne(nodeTag, node);
+      const start = stmt?.stmt_location ?? 0;
+      facts.span = { start, len: stmt?.stmt_len ?? Math.max(0, sql.length - start) };
 
       if (stmtNode) {
         walkSql(stmtNode, createFactsVisitor(facts));
