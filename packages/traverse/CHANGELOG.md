@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.4.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/traverse@18.3.0...@pgsql/traverse@18.4.0) (2026-07-30)
+
+### Features
+
+- **traverse:** mutation-capable traversal — MutablePath with replaceWith/remove/insert/skip/stop and enter/exit visitors ([614ffab](https://github.com/constructive-io/pgsql-parser/commit/614ffab278c1417240be74ec6fbb0a8b48828149))
+
 # [18.3.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/traverse@18.2.0...@pgsql/traverse@18.3.0) (2026-07-22)
 
 ### Features

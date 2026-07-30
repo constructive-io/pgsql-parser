@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.8.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.7.0...@pgsql/transform@18.8.0) (2026-07-30)
+
+### Features
+
+- **transform:** single routing pass via claims, namespace-aware handlers, statement spans ([537c88e](https://github.com/constructive-io/pgsql-parser/commit/537c88e2b8e48e5fd9247b89b6a1e171210b44b4))
+
 # [18.7.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.6.0...@pgsql/transform@18.7.0) (2026-07-30)
 
 ### Features
