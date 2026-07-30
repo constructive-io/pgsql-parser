@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.6.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.5.0...@pgsql/transform@18.6.0) (2026-07-30)
+
+### Features
+
+- **transform:** extension + role routing (schema-portable installs, symbol qualification, role renaming) ([fdbb791](https://github.com/constructive-io/pgsql-parser/commit/fdbb7919641fbc52d0a4209a8679b4e97ad6f07b))
+
 # [18.5.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.4.1...@pgsql/transform@18.5.0) (2026-07-29)
 
 ### Features
