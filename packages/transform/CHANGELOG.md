@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.7.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.6.0...@pgsql/transform@18.7.0) (2026-07-30)
+
+### Features
+
+- **transform:** name rebinding in SchemaRouter (repoint references at a different object) ([34d9216](https://github.com/constructive-io/pgsql-parser/commit/34d92163dff617fe7ae2f727ca1018c4a299c3e7))
+
 # [18.6.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.5.0...@pgsql/transform@18.6.0) (2026-07-30)
 
 ### Features
