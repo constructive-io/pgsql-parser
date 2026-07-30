@@ -124,6 +124,37 @@ function createResult(): SchemaTransformResult {
 }
 
 /**
+ * Routing claims: each routable site (a RangeVar, a qualified name list, a
+ * bare schema-name field) is resolved through the router at most once per
+ * transform result.
+ *
+ * The walker visits parents before children, so a statement-level handler
+ * with namespace context (e.g. `AlterFunctionStmt` routing its
+ * `ObjectWithArgs` as a `function`) claims the site before a generic child
+ * visitor (`ObjectWithArgs`, namespace `unknown`) reaches it — first (most
+ * contextual) visitor wins. Without claims a site is routed twice, which
+ * corrupts cyclic mappings (a→b, b→a swaps back) and applies the less precise
+ * namespace second.
+ */
+const routingClaims = new WeakMap<SchemaTransformResult, WeakMap<object, Set<string>>>();
+
+function claimSite(result: SchemaTransformResult, site: object, field = '*'): boolean {
+  let byNode = routingClaims.get(result);
+  if (!byNode) {
+    byNode = new WeakMap();
+    routingClaims.set(result, byNode);
+  }
+  let fields = byNode.get(site);
+  if (!fields) {
+    fields = new Set();
+    byNode.set(site, fields);
+  }
+  if (fields.has(field)) return false;
+  fields.add(field);
+  return true;
+}
+
+/**
  * Transform a schema name if it exists in the mapping
  */
 export function transformSchemaName(
@@ -161,6 +192,7 @@ export function transformNameList(
   ns: RouteNamespace = 'unknown'
 ): void {
   if (!names || names.length < 2) return;
+  if (!claimSite(result, names)) return;
   const router = asRouter(schemaMapping);
 
   // For schema-qualified names, the first element is the schema.
@@ -200,6 +232,7 @@ export function transformSchemaNameField(
 ): void {
   const schemaName = container?.[field];
   if (typeof schemaName !== 'string') return;
+  if (!claimSite(result, container, field)) return;
   // A bare schema name is an operation on the schema itself: only the
   // schema-level default applies.
   const newName = asRouter(schemaMapping).resolve(schemaName, undefined, 'schema');
@@ -212,7 +245,10 @@ export function transformSchemaNameField(
 
 /**
  * Transform a RangeVar-like relation object (has schemaname/relname fields).
- * Many statement nodes embed a relation that the walker does NOT auto-recurse into.
+ * The walker auto-recurses into embedded relations (concrete `RangeVar`
+ * fields are tag-synthesized), so the generic `RangeVar` visitor covers
+ * every occurrence; statement handlers call this directly only when they
+ * carry extra context, and the claim guard keeps each relation routed once.
  */
 export function transformRelation(
   relation: any,
@@ -220,6 +256,7 @@ export function transformRelation(
   result: SchemaTransformResult
 ): void {
   if (!relation?.schemaname) return;
+  if (!claimSite(result, relation)) return;
   const oldName = relation.schemaname;
   // A RangeVar names a relation (table/view/sequence/matview); route by the
   // relation name so object-level routes can send it to its own schema.
@@ -287,6 +324,7 @@ export function createSqlVisitor(
   const rewriteSchemaField = (container: any, key: string): void => {
     const schemaName = container?.[key];
     if (typeof schemaName !== 'string') return;
+    if (!claimSite(result, container, key)) return;
     const newName = router.resolve(schemaName, undefined, 'schema');
     if (newName && newName !== schemaName) {
       result.schemasFound.add(schemaName);
@@ -349,15 +387,6 @@ export function createSqlVisitor(
       transformNameList(node.funcname, router, result, 'function');
     },
 
-    // Transform CallStmt (CALL schema.procedure(...)).
-    // Note: The walker does NOT auto-recurse into CallStmt.funccall,
-    // so the FuncCall visitor above never sees it.
-    CallStmt: (path: any) => {
-      const node = path.node;
-      if (node.funccall?.funcname) {
-        transformNameList(node.funccall.funcname, router, result, 'function');
-      }
-    },
     
     // Transform TypeName nodes (type references with schema-qualified names)
     TypeName: (path: any) => {
@@ -420,8 +449,9 @@ export function createSqlVisitor(
     },
     
     // Transform DropStmt (DROP SCHEMA name; DROP TABLE/INDEX/POLICY/TRIGGER/
-    // TYPE/FUNCTION schema.obj). The walker does NOT auto-recurse into
-    // DropStmt.objects.
+    // TYPE/FUNCTION schema.obj) with the namespace derived from removeType,
+    // so object routes apply; claims stop the generic List/ObjectWithArgs
+    // visitors from re-routing the same names with namespace `unknown`.
     DropStmt: (path: any) => {
       const node = path.node;
       if (node.removeType !== 'OBJECT_SCHEMA' && Array.isArray(node.objects)) {
@@ -453,91 +483,10 @@ export function createSqlVisitor(
       }
     },
     
-    // Transform InsertStmt (INSERT INTO schema.table)
-    // Note: The walker does NOT auto-recurse into InsertStmt.relation.
-    InsertStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform CreateStmt (CREATE TABLE schema.table)
-    // Note: The walker does NOT auto-recurse into CreateStmt.relation.
-    CreateStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform UpdateStmt (UPDATE schema.table SET ...)
-    // Note: The walker does NOT auto-recurse into UpdateStmt.relation.
-    UpdateStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform DeleteStmt (DELETE FROM schema.table)
-    // Note: The walker does NOT auto-recurse into DeleteStmt.relation.
-    DeleteStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform MergeStmt (MERGE INTO schema.table USING ...)
-    // Note: The walker does NOT auto-recurse into MergeStmt.relation.
-    MergeStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform IndexStmt (CREATE INDEX ... ON schema.table)
-    // Note: The walker does NOT auto-recurse into IndexStmt.relation.
-    IndexStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform Constraint (REFERENCES schema.table for foreign keys)
-    // Note: The walker does NOT auto-recurse into Constraint.pktable.
-    Constraint: (path: any) => {
-      const node = path.node;
-      if (node.contype === 'CONSTR_FOREIGN' && node.pktable) {
-        transformRelation(node.pktable, schemaMapping, result);
-      }
-    },
-
-    // Transform CompositeTypeStmt (CREATE TYPE schema.name AS (...))
-    // Note: The walker does NOT auto-recurse into CompositeTypeStmt.typevar.
-    CompositeTypeStmt: (path: any) => {
-      transformRelation(path.node.typevar, schemaMapping, result);
-    },
-
-    // Transform ColumnDef (column definitions with schema-qualified types)
-    // Note: The walker does NOT auto-recurse into ColumnDef.typeName.
-    ColumnDef: (path: any) => {
-      const node = path.node;
-      if (node.typeName?.names) {
-        transformNameList(node.typeName.names, schemaMapping, result, 'type');
-      }
-    },
-
-    // Transform ViewStmt (CREATE VIEW schema.viewname AS ...)
-    // Note: The walker does NOT auto-recurse into ViewStmt.view.
-    ViewStmt: (path: any) => {
-      transformRelation(path.node.view, schemaMapping, result);
-    },
-
-    // Transform AlterTableStmt (ALTER TABLE schema.table ...)
-    // Note: The walker does NOT auto-recurse into AlterTableStmt.relation.
-    AlterTableStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform CreateSeqStmt (CREATE SEQUENCE schema.seqname)
-    // Note: The walker does NOT auto-recurse into CreateSeqStmt.sequence.
-    CreateSeqStmt: (path: any) => {
-      transformRelation(path.node.sequence, schemaMapping, result);
-    },
-
-    // Transform AlterSeqStmt (ALTER SEQUENCE schema.seqname [OWNED BY schema.table.col])
-    // Note: The walker does NOT auto-recurse into AlterSeqStmt.sequence.
-    // Also handles OWNED BY clause where the schema name is in DefElem.arg.List.items.
+    // Transform AlterSeqStmt OWNED BY (schema name in DefElem.arg.List.items;
+    // a bare name list no generic visitor covers)
     AlterSeqStmt: (path: any) => {
       const node = path.node;
-      transformRelation(node.sequence, schemaMapping, result);
-      // Handle OWNED BY option: schema name is in the name list
       if (node.options) {
         for (const opt of node.options) {
           if (opt?.DefElem?.defname === 'owned_by' && opt.DefElem?.arg?.List?.items) {
@@ -547,75 +496,12 @@ export function createSqlVisitor(
       }
     },
 
-    // Transform CreatePolicyStmt (CREATE POLICY ... ON schema.table)
-    // Note: The walker does NOT auto-recurse into CreatePolicyStmt.table.
-    CreatePolicyStmt: (path: any) => {
-      transformRelation(path.node.table, schemaMapping, result);
-    },
-
-    // Transform RuleStmt (CREATE RULE ... ON schema.table)
-    // Note: The walker does NOT auto-recurse into RuleStmt.relation.
-    RuleStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform CopyStmt (COPY schema.table ...)
-    // Note: The walker does NOT auto-recurse into CopyStmt.relation.
-    CopyStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform ClusterStmt (CLUSTER schema.table USING index)
-    // Note: The walker does NOT auto-recurse into ClusterStmt.relation.
-    ClusterStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform VacuumRelation (VACUUM/ANALYZE schema.table)
-    // Note: The walker visits VacuumRelation but does NOT recurse into its relation.
-    VacuumRelation: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform RefreshMatViewStmt (REFRESH MATERIALIZED VIEW schema.view)
-    // Note: The walker does NOT auto-recurse into RefreshMatViewStmt.relation.
-    RefreshMatViewStmt: (path: any) => {
-      transformRelation(path.node.relation, schemaMapping, result);
-    },
-
-    // Transform CreateTableAsStmt (CREATE MATERIALIZED VIEW schema.viewname AS ...)
-    // Note: The walker does NOT auto-recurse into CreateTableAsStmt.into.rel.
-    CreateTableAsStmt: (path: any) => {
-      transformRelation(path.node.into?.rel, schemaMapping, result);
-    },
-
-    // Transform TypeCast nodes (type casts like NULL::schema.type)
-    // Note: The walker visits TypeCast but does NOT recurse into the TypeName node.
-    TypeCast: (path: any) => {
-      const node = path.node;
-      if (node.typeName?.names) {
-        transformNameList(node.typeName.names, schemaMapping, result, 'type');
-      }
-    },
-
-    // Transform CreateFunctionStmt (CREATE FUNCTION schema.funcname)
-    // Also handles RETURNS [SETOF] schema.type via returnType.names
+    // Transform CreateFunctionStmt (CREATE FUNCTION schema.funcname).
+    // funcname is a bare name list (no generic visitor); return and parameter
+    // types are TypeName nodes the walker reaches on its own.
     CreateFunctionStmt: (path: any) => {
       const node = path.node;
       transformNameList(node.funcname, schemaMapping, result, 'function');
-      // Transform the return type (e.g., RETURNS SETOF schema.tablename)
-      if (node.returnType?.names) {
-        transformNameList(node.returnType.names, schemaMapping, result, 'type');
-      }
-      // Transform parameter types (the walker does NOT auto-recurse into
-      // FunctionParameter.argType TypeName nodes)
-      if (Array.isArray(node.parameters)) {
-        for (const param of node.parameters) {
-          if (param?.FunctionParameter?.argType?.names) {
-            transformNameList(param.FunctionParameter.argType.names, schemaMapping, result, 'type');
-          }
-        }
-      }
       // Transform schema-qualified references inside the function body
       // (AS $$...$$ is a String under the 'as' DefElem, which the walker
       // does not parse as SQL). LANGUAGE plpgsql bodies are additionally
@@ -641,12 +527,11 @@ export function createSqlVisitor(
     },
 
     // Transform CreateTrigStmt (CREATE TRIGGER ... EXECUTE PROCEDURE schema.func)
-    // Note: The walker does NOT auto-recurse into CreateTrigStmt.relation,
-    // so we must explicitly transform the RangeVar here.
+    // funcname is a bare name list; the ON relation is a RangeVar the walker
+    // reaches on its own.
     CreateTrigStmt: (path: any) => {
       const node = path.node;
       transformNameList(node.funcname, schemaMapping, result, 'function');
-      transformRelation(node.relation, schemaMapping, result);
     },
 
     // Transform CommentStmt (COMMENT ON TABLE/COLUMN/FUNCTION schema.obj,
@@ -658,13 +543,14 @@ export function createSqlVisitor(
       // For functions, object is { ObjectWithArgs: { objname: [...] } }
       // For schemas, object is a bare { String: { sval } }
       if (node.object) {
+        const ns = namespaceOfObjectType(node.objtype);
         // Handle List-wrapped objects (COMMENT ON TABLE schema.tbl, COMMENT ON COLUMN schema.tbl.col)
         if (node.object?.List?.items) {
-          transformNameList(node.object.List.items, schemaMapping, result);
+          transformNameList(node.object.List.items, schemaMapping, result, ns);
         }
         // Handle ObjectWithArgs-style objects (COMMENT ON FUNCTION schema.func(args))
         else if (node.object?.ObjectWithArgs?.objname) {
-          transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+          transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result, ns);
         }
         // Handle bare schema names (COMMENT ON SCHEMA schema)
         else if (node.object?.String && node.objtype === 'OBJECT_SCHEMA') {
@@ -730,39 +616,39 @@ export function createSqlVisitor(
       transformNameList(node.objname, schemaMapping, result);
     },
 
-    // Transform AlterObjectSchemaStmt (ALTER ... SET SCHEMA newschema)
-    // The walker does NOT auto-recurse into AlterObjectSchemaStmt.relation
-    // or .object, so we must transform relation, object names, and newschema.
+    // Transform AlterObjectSchemaStmt (ALTER ... SET SCHEMA newschema):
+    // object name lists and the destination schema. The relation form is a
+    // RangeVar the walker reaches on its own.
     AlterObjectSchemaStmt: (path: any) => {
       const node = path.node;
-      transformRelation(node.relation, schemaMapping, result);
+      const ns = namespaceOfObjectType(node.objectType);
       // Non-relation objects (ALTER TYPE/FUNCTION ... SET SCHEMA)
       if (node.object?.List?.items) {
-        transformNameList(node.object.List.items, schemaMapping, result);
+        transformNameList(node.object.List.items, schemaMapping, result, ns);
       } else if (node.object?.ObjectWithArgs?.objname) {
-        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result, ns);
       } else if (node.object?.TypeName?.names) {
-        transformNameList(node.object.TypeName.names, schemaMapping, result);
+        transformNameList(node.object.TypeName.names, schemaMapping, result, ns);
       }
       // Transform the newschema (destination schema)
       transformSchemaNameField(node, 'newschema', schemaMapping, result);
     },
 
     // Transform RenameStmt (ALTER SCHEMA old RENAME TO new;
-    // ALTER TABLE schema.tbl RENAME ...). The walker does NOT auto-recurse
-    // into RenameStmt.relation or .object.
+    // ALTER TABLE schema.tbl RENAME ...). The relation form is a RangeVar
+    // the walker reaches on its own.
     RenameStmt: (path: any) => {
       const node = path.node;
-      transformRelation(node.relation, schemaMapping, result);
       if (node.renameType === 'OBJECT_SCHEMA') {
         // subname is the old schema name; newname is the target
         transformSchemaNameField(node, 'subname', schemaMapping, result);
         transformSchemaNameField(node, 'newname', schemaMapping, result);
       }
+      const ns = namespaceOfObjectType(node.renameType);
       if (node.object?.List?.items) {
-        transformNameList(node.object.List.items, schemaMapping, result);
+        transformNameList(node.object.List.items, schemaMapping, result, ns);
       } else if (node.object?.ObjectWithArgs?.objname) {
-        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result, ns);
       }
     },
 
@@ -777,43 +663,24 @@ export function createSqlVisitor(
     // Transform AlterOwnerStmt (ALTER ... OWNER TO role)
     AlterOwnerStmt: (path: any) => {
       const node = path.node;
-      transformRelation(node.relation, schemaMapping, result);
+      const ns = namespaceOfObjectType(node.objectType);
       if (node.object?.List?.items) {
-        transformNameList(node.object.List.items, schemaMapping, result);
+        transformNameList(node.object.List.items, schemaMapping, result, ns);
       } else if (node.object?.ObjectWithArgs?.objname) {
-        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result);
+        transformNameList(node.object.ObjectWithArgs.objname, schemaMapping, result, ns);
       } else if (node.object?.String && node.objectType === 'OBJECT_SCHEMA') {
         transformSchemaNameField(node.object.String, 'sval', schemaMapping, result);
       }
     },
 
-    // Transform CreateCastStmt (CREATE CAST (src AS tgt) WITH FUNCTION fn)
+    // Transform CreateCastStmt (CREATE CAST (src AS tgt) WITH FUNCTION fn).
+    // The function name gets its `function` namespace here; the cast's
+    // source/target/argument types are TypeName nodes the walker reaches on
+    // its own.
     CreateCastStmt: (path: any) => {
       const node = path.node;
-      if (node.sourcetype?.names) {
-        transformNameList(node.sourcetype.names, schemaMapping, result, 'type');
-      }
-      if (node.targettype?.names) {
-        transformNameList(node.targettype.names, schemaMapping, result, 'type');
-      }
       if (node.func?.objname) {
         transformNameList(node.func.objname, schemaMapping, result, 'function');
-      }
-      if (Array.isArray(node.func?.objargs)) {
-        for (const arg of node.func.objargs) {
-          if (arg?.TypeName?.names) {
-            transformNameList(arg.TypeName.names, schemaMapping, result, 'type');
-          } else if (arg?.names) {
-            transformNameList(arg.names, schemaMapping, result, 'type');
-          }
-        }
-      }
-      if (Array.isArray(node.func?.objfuncargs)) {
-        for (const param of node.func.objfuncargs) {
-          if (param?.FunctionParameter?.argType?.names) {
-            transformNameList(param.FunctionParameter.argType.names, schemaMapping, result, 'type');
-          }
-        }
       }
     },
 
