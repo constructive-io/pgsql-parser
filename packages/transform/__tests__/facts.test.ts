@@ -167,4 +167,48 @@ describe('classifyStatements', () => {
     expect(facts[0].securityRelevant).toBe(true);
     expect(facts[0].roles).toEqual(['administrator']);
   });
+
+  it('classifies CREATE EXTENSION with and without a schema clause', () => {
+    const facts = classifyStatements(`
+      CREATE EXTENSION pgcrypto;
+      CREATE EXTENSION IF NOT EXISTS pg_partman WITH SCHEMA partman;
+    `);
+    expect(facts.map(f => f.kind)).toEqual(['extension', 'extension']);
+    expect(facts[0].extension).toEqual({
+      name: 'pgcrypto',
+      schema: null,
+      action: 'create',
+      ifNotExists: false
+    });
+    expect(facts[1].extension).toEqual({
+      name: 'pg_partman',
+      schema: 'partman',
+      action: 'create',
+      ifNotExists: true
+    });
+  });
+
+  it('classifies ALTER EXTENSION ... SET SCHEMA and DROP EXTENSION', () => {
+    const facts = classifyStatements(`
+      ALTER EXTENSION pg_partman SET SCHEMA public;
+      DROP EXTENSION IF EXISTS pgcrypto CASCADE;
+    `);
+    expect(facts.map(f => f.kind)).toEqual(['extension', 'extension']);
+    expect(facts[0].extension).toEqual({
+      name: 'pg_partman',
+      schema: 'public',
+      action: 'set_schema'
+    });
+    expect(facts[1].extension).toEqual({
+      name: 'pgcrypto',
+      schema: null,
+      action: 'drop'
+    });
+  });
+
+  it('does not classify non-extension ALTER ... SET SCHEMA as extension', () => {
+    const facts = classifyStatements(`ALTER TABLE app.t SET SCHEMA app2;`);
+    expect(facts[0].kind).not.toBe('extension');
+    expect(facts[0].extension).toBeUndefined();
+  });
 });

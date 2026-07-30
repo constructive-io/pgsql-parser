@@ -14,6 +14,7 @@ export interface QualifiedName {
  */
 export type StatementKind =
   | 'schema'
+  | 'extension'
   | 'table'
   | 'view'
   | 'index'
@@ -28,6 +29,39 @@ export type StatementKind =
   | 'comment'
   | 'seed_dml'
   | 'other';
+
+/**
+ * The action a statement performs on a PostgreSQL extension.
+ *
+ * - `create` — `CREATE EXTENSION` (`CreateExtensionStmt`).
+ * - `set_schema` — `ALTER EXTENSION ... SET SCHEMA` (`AlterObjectSchemaStmt`
+ *   with `objectType: OBJECT_EXTENSION`); only succeeds for relocatable
+ *   extensions, so it is surfaced as its own action.
+ * - `drop` — `DROP EXTENSION` (`DropStmt` with `removeType: OBJECT_EXTENSION`).
+ */
+export type ExtensionAction = 'create' | 'set_schema' | 'drop';
+
+/**
+ * Facts about an extension-level statement. Unlike ordinary objects, an
+ * extension is installed into exactly one schema and its member objects are
+ * renamed with it, so the relevant fact is the extension name plus the schema
+ * it is (being) placed in.
+ */
+export interface ExtensionFact {
+  /** The extension name (`CREATE EXTENSION <name>`). */
+  name: string;
+  /**
+   * The schema the statement places the extension in, or `null` when none is
+   * specified (`CREATE EXTENSION <name>` with no `SCHEMA` clause installs into
+   * the current default — typically `public` or the extension's fixed schema).
+   * `DROP EXTENSION` carries no schema.
+   */
+  schema: string | null;
+  /** Which extension operation this statement performs. */
+  action: ExtensionAction;
+  /** `CREATE EXTENSION IF NOT EXISTS`. */
+  ifNotExists?: boolean;
+}
 
 /**
  * AST-derived facts about a single top-level SQL statement.
@@ -62,6 +96,11 @@ export interface StatementFacts {
   referencedSchemas: string[];
   /** Role names granted to, owning, or bound by this statement. */
   roles: string[];
+  /**
+   * For extension-level statements (`kind: 'extension'`): the extension being
+   * created, relocated, or dropped. Absent for every other statement.
+   */
+  extension?: ExtensionFact;
   /** Foreign-key target tables (from column/table FK constraints). */
   fkTargets: QualifiedName[];
   /**
@@ -94,6 +133,7 @@ const SECURITY_TAGS = new Set([
 
 const KIND_BY_TAG: Record<string, StatementKind> = {
   CreateSchemaStmt: 'schema',
+  CreateExtensionStmt: 'extension',
   CreateStmt: 'table',
   ViewStmt: 'view',
   IndexStmt: 'index',
@@ -118,6 +158,23 @@ const KIND_BY_TAG: Record<string, StatementKind> = {
 
 function qn(schema: string | null | undefined, name: string): QualifiedName {
   return { schema: schema ?? null, name };
+}
+
+/**
+ * Read the `SCHEMA <name>` clause of a `CreateExtensionStmt` from its options
+ * (`{ DefElem: { defname: 'schema', arg: { String: { sval } } } }`), or `null`
+ * when the statement specifies no schema.
+ */
+function extensionSchemaOption(options: any[] | undefined): string | null {
+  if (!Array.isArray(options)) return null;
+  for (const opt of options) {
+    const def = opt?.DefElem;
+    if (def?.defname === 'schema') {
+      const sval = def.arg?.String?.sval;
+      return typeof sval === 'string' ? sval : null;
+    }
+  }
+  return null;
 }
 
 function nameListToQualified(names: any[] | undefined): QualifiedName | null {
@@ -222,6 +279,14 @@ function classifyOne(nodeTag: string, node: any): StatementFacts {
     case 'CreateSchemaStmt':
       facts.creates.push(qn(null, node.schemaname));
       break;
+    case 'CreateExtensionStmt':
+      facts.extension = {
+        name: node.extname,
+        schema: extensionSchemaOption(node.options),
+        action: 'create',
+        ifNotExists: node.if_not_exists === true
+      };
+      break;
     case 'CreateStmt':
     case 'ViewStmt': {
       const rel = nodeTag === 'ViewStmt' ? node.view : node.relation;
@@ -284,6 +349,34 @@ function classifyOne(nodeTag: string, node: any): StatementFacts {
       if (name) facts.creates.push(name);
       break;
     }
+    case 'AlterObjectSchemaStmt':
+      // ALTER EXTENSION <name> SET SCHEMA <newschema>. Other object types
+      // (TABLE/TYPE/FUNCTION ... SET SCHEMA) keep their default classification.
+      if (node.objectType === 'OBJECT_EXTENSION') {
+        const name = node.object?.String?.sval;
+        if (typeof name === 'string') {
+          facts.kind = 'extension';
+          facts.extension = {
+            name,
+            schema: typeof node.newschema === 'string' ? node.newschema : null,
+            action: 'set_schema'
+          };
+        }
+      }
+      break;
+    case 'DropStmt':
+      // DROP EXTENSION <name> [, ...]. Extension names are bare String nodes.
+      // Other DROP object types keep their default classification. When
+      // several extensions are dropped in one statement the first names the
+      // fact; the full list stays available via the raw node.
+      if (node.removeType === 'OBJECT_EXTENSION' && Array.isArray(node.objects)) {
+        const name = node.objects[0]?.String?.sval;
+        if (typeof name === 'string') {
+          facts.kind = 'extension';
+          facts.extension = { name, schema: null, action: 'drop' };
+        }
+      }
+      break;
     case 'AlterTableStmt': {
       if (node.relation) {
         facts.creates.push(qn(node.relation.schemaname ?? null, node.relation.relname));
