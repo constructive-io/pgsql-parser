@@ -127,6 +127,14 @@ export interface StatementFacts {
    * facts without a second parse.
    */
   span: StatementSpan;
+  /**
+   * The raw parsed statement node (`{ CreateStmt: {...} }` etc.), exactly as
+   * the parser produced it. Facts are still read-only — the node is carried
+   * so consumers like `revertFor`/`verifyFor` can derive inverse or
+   * existence-check statements without a second parse. Absent only for
+   * facts constructed by hand.
+   */
+  stmt?: Record<string, any>;
 }
 
 /** A statement's location in the source script (byte offsets). */
@@ -360,9 +368,14 @@ function classifyOne(nodeTag: string, node: any): StatementFacts {
       }
       break;
     case 'CreateEnumStmt':
-    case 'CreateDomainStmt':
     case 'CreateRangeStmt': {
-      const name = nameListToQualified(node.typeName ?? node.domainname);
+      const name = nameListToQualified(node.typeName);
+      if (name) facts.creates.push(name);
+      break;
+    }
+    case 'CreateDomainStmt': {
+      // `typeName` on a domain is the base type; the name is `domainname`.
+      const name = nameListToQualified(node.domainname);
       if (name) facts.creates.push(name);
       break;
     }
@@ -488,6 +501,7 @@ export function classifyStatements(sql: string): StatementFacts[] {
       facts.span = { start, len: stmt?.stmt_len ?? Math.max(0, sql.length - start) };
 
       if (stmtNode) {
+        facts.stmt = stmtNode;
         walkSql(stmtNode, createFactsVisitor(facts));
       }
       if (nodeTag === 'CreateFunctionStmt') {
