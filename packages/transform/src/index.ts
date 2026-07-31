@@ -14,6 +14,11 @@ export type {
 } from './graph';
 export { buildStatementGraph } from './graph';
 export type {
+  ObjectIdentity,
+  ObjectIdentityKind,
+} from './naming';
+export { identityOf } from './naming';
+export type {
   Granularity,
   RestructureOptions,
   RestructureResult,
