@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.11.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.10.0...@pgsql/transform@18.11.0) (2026-07-31)
+
+### Features
+
+- **transform:** revertFor/verifyFor — revert and verify script generation from statement facts ([134f0e8](https://github.com/constructive-io/pgsql-parser/commit/134f0e8fafb67db5794356f3eae444510374a7f5))
+
 # [18.10.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.9.0...@pgsql/transform@18.10.0) (2026-07-31)
 
 ### Features
