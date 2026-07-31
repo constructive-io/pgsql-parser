@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.4.0](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-parser@18.2.3...plpgsql-parser@18.4.0) (2026-07-31)
+
+### Features
+
+- **traverse:** derive walk context from the nearest enclosing statement ([265914e](https://github.com/constructive-io/pgsql-parser/commit/265914e672f1ce3296894e467dc64774189d1afe))
+- **traverse:** one walk() for any AST; walkSql(text) in plpgsql-parser ([9e3af40](https://github.com/constructive-io/pgsql-parser/commit/9e3af405a8ca025139808ba5192ed1cfa2bfdf36))
+
 ## [18.2.3](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-parser@18.2.2...plpgsql-parser@18.2.3) (2026-07-31)
 
 **Note:** Version bump only for package plpgsql-parser

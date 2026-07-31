@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.13.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.11.1...@pgsql/transform@18.13.0) (2026-07-31)
+
+### Features
+
+- **traverse:** one walk() for any AST; walkSql(text) in plpgsql-parser ([9e3af40](https://github.com/constructive-io/pgsql-parser/commit/9e3af405a8ca025139808ba5192ed1cfa2bfdf36))
+
 ## [18.11.1](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.11.0...@pgsql/transform@18.11.1) (2026-07-31)
 
 **Note:** Version bump only for package @pgsql/transform
