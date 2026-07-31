@@ -8419,6 +8419,14 @@ export class Deparser implements DeparserVisitor {
         } else {
           output.push(this.visit(node.object, context));
         }
+      } else if ((node.renameType === 'OBJECT_TYPE' || node.renameType === 'OBJECT_DOMAIN') && (node.object as any).List) {
+        // Qualified type names - join List parts with dots
+        const items = ListUtils.unwrapList(node.object as any);
+        const parts = items
+          .map((item: any) => item.String?.sval)
+          .filter((s: any) => typeof s === 'string')
+          .map((s: string) => this.quoteIfNeeded(s));
+        output.push(parts.join('.'));
       } else if (node.renameType === 'OBJECT_SCHEMA' && (node.object as any).List) {
         // Handle schema names - extract from List structure
         const items = ListUtils.unwrapList(node.object as any);
@@ -8561,6 +8569,8 @@ export class Deparser implements DeparserVisitor {
           output.push('SCHEMA');
         } else if (node.objtype === 'OBJECT_LANGUAGE') {
           output.push('LANGUAGE');
+        } else if (node.objtype === 'OBJECT_SEQUENCE') {
+          output.push('SEQUENCE');
         } else if (node.objtype === 'OBJECT_FUNCTION') {
           output.push('FUNCTION');
         } else if (node.objtype === 'OBJECT_PROCEDURE') {

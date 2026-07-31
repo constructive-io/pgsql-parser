@@ -152,10 +152,10 @@ export const SUPPORTED_STATEMENTS: readonly SupportedStatement[] = [
     verify: 'pg_user_mappings existence check'
   },
   {
-    statement: 'CREATE COLLATION / AGGREGATE / OPERATOR (binary)',
+    statement: 'CREATE COLLATION / AGGREGATE / OPERATOR (binary) / TEXT SEARCH objects',
     nodeTags: ['DefineStmt'],
-    revert: 'DROP COLLATION / DROP AGGREGATE (with signature) / DROP OPERATOR (left, right)',
-    verify: 'pg_collation / to_regprocedure / to_regoperator'
+    revert: 'DROP COLLATION / DROP AGGREGATE (with signature) / DROP OPERATOR (left, right) / DROP TEXT SEARCH ...',
+    verify: 'pg_collation / to_regprocedure / to_regoperator / pg_ts_*'
   },
   {
     statement: 'CREATE CAST',
@@ -216,6 +216,60 @@ export const SUPPORTED_STATEMENTS: readonly SupportedStatement[] = [
     nodeTags: ['SecLabelStmt'],
     revert: 'SECURITY LABEL ... IS NULL',
     verify: null
+  },
+  {
+    statement: 'CREATE FOREIGN DATA WRAPPER',
+    nodeTags: ['CreateFdwStmt'],
+    revert: 'DROP FOREIGN DATA WRAPPER',
+    verify: 'pg_foreign_data_wrapper existence check'
+  },
+  {
+    statement: 'CREATE CONVERSION',
+    nodeTags: ['CreateConversionStmt'],
+    revert: 'DROP CONVERSION',
+    verify: 'pg_conversion existence check'
+  },
+  {
+    statement: 'CREATE ACCESS METHOD',
+    nodeTags: ['CreateAmStmt'],
+    revert: 'DROP ACCESS METHOD',
+    verify: 'pg_am existence check'
+  },
+  {
+    statement: 'CREATE TRANSFORM',
+    nodeTags: ['CreateTransformStmt'],
+    revert: 'DROP TRANSFORM FOR type LANGUAGE lang',
+    verify: 'pg_transform existence check'
+  },
+  {
+    statement: 'CREATE OPERATOR CLASS',
+    nodeTags: ['CreateOpClassStmt'],
+    revert: 'DROP OPERATOR CLASS ... USING am',
+    verify: 'pg_opclass existence check'
+  },
+  {
+    statement: 'CREATE OPERATOR FAMILY',
+    nodeTags: ['CreateOpFamilyStmt'],
+    revert: 'DROP OPERATOR FAMILY ... USING am',
+    verify: 'pg_opfamily existence check'
+  },
+  {
+    statement: 'CREATE TABLESPACE',
+    nodeTags: ['CreateTableSpaceStmt'],
+    revert: 'DROP TABLESPACE',
+    verify: 'pg_tablespace existence check'
+  },
+  {
+    statement: 'ALTER ... RENAME TO (tables, columns, indexes, sequences, views, types, functions, schemas)',
+    nodeTags: ['RenameStmt'],
+    revert: 'ALTER ... RENAME back (the statement carries both names)',
+    verify: 'object exists under the new name'
+  },
+  {
+    statement: 'ALTER ... SET SCHEMA (schema-qualified source)',
+    nodeTags: ['AlterObjectSchemaStmt'],
+    revert: 'ALTER ... SET SCHEMA back (the statement carries both schemas)',
+    verify: 'object exists in the new schema'
   }
 ];
 

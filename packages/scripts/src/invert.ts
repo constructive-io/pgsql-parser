@@ -23,7 +23,7 @@
  */
 import { QuoteUtils } from '@pgsql/quotes';
 import { buildStatementGraph, StatementFacts } from '@pgsql/transform';
-import { Deparser } from 'plpgsql-parser';
+import { Deparser, parseSql } from 'plpgsql-parser';
 
 /** A generated script plus non-fatal notes about what could not be derived. */
 export interface GeneratedScript {
@@ -123,7 +123,7 @@ const defElem = (definition: AnyNode[] | undefined, name: string): AnyNode | und
  * not-derivable reason. Returns `null` for statements that need no revert
  * of their own (currently none — everything either inverts or warns).
  */
-function invertStatement(facts: StatementFacts, warnings: string[]): Emitted[] {
+function emitInverse(facts: StatementFacts, warnings: string[]): Emitted[] {
   const node = facts.stmt?.[facts.nodeTag];
   const notDerivable = (reason: string): Emitted[] => {
     warnings.push(`revert not derivable: ${reason}`);
@@ -244,6 +244,38 @@ function invertStatement(facts: StatementFacts, warnings: string[]): Emitted[] {
       delete nulled.label;
       return [{ stmt: { SecLabelStmt: nulled } }];
     }
+    case 'CreateFdwStmt':
+      return [{ stmt: dropStmt('OBJECT_FDW', [strNode(node.fdwname)]) }];
+    case 'CreateConversionStmt':
+      return [{
+        stmt: dropStmt('OBJECT_CONVERSION', [{ List: { items: clone(node.conversion_name) } }])
+      }];
+    case 'CreateAmStmt':
+      return [{ stmt: dropStmt('OBJECT_ACCESS_METHOD', [strNode(node.amname)]) }];
+    case 'CreateTransformStmt':
+      return [{
+        stmt: dropStmt('OBJECT_TRANSFORM', [
+          { List: { items: [{ TypeName: clone(node.type_name) }, strNode(node.lang)] } }
+        ])
+      }];
+    case 'CreateOpClassStmt':
+      return [{
+        stmt: dropStmt('OBJECT_OPCLASS', [
+          { List: { items: [strNode(node.amname), ...clone(node.opclassname)] } }
+        ])
+      }];
+    case 'CreateOpFamilyStmt':
+      return [{
+        stmt: dropStmt('OBJECT_OPFAMILY', [
+          { List: { items: [strNode(node.amname), ...clone(node.opfamilyname)] } }
+        ])
+      }];
+    case 'CreateTableSpaceStmt':
+      return [{ stmt: { DropTableSpaceStmt: { tablespacename: node.tablespacename } } }];
+    case 'RenameStmt':
+      return invertRename(node, notDerivable);
+    case 'AlterObjectSchemaStmt':
+      return invertSetSchema(node, notDerivable);
     case 'CreateRoleStmt':
       return [{
         stmt: {
@@ -318,9 +350,84 @@ function invertDefine(node: AnyNode, notDerivable: (reason: string) => Emitted[]
         }])
       }];
     }
+    case 'OBJECT_TSCONFIGURATION':
+    case 'OBJECT_TSDICTIONARY':
+    case 'OBJECT_TSPARSER':
+    case 'OBJECT_TSTEMPLATE':
+      return [{
+        stmt: dropStmt(node.kind, [{ List: { items: clone(node.defnames) } }])
+      }];
     default:
       return notDerivable(`no inverse known for CREATE (DefineStmt) with kind ${node.kind}`);
   }
+}
+
+/**
+ * Invert a RENAME by swapping the two names the statement already carries:
+ * `ALTER ... RENAME old TO new` becomes `ALTER ... RENAME new TO old`.
+ */
+function invertRename(node: AnyNode, notDerivable: (reason: string) => Emitted[]): Emitted[] {
+  const inverted = clone(node);
+  switch (node.renameType) {
+    case 'OBJECT_TABLE':
+    case 'OBJECT_INDEX':
+    case 'OBJECT_SEQUENCE':
+    case 'OBJECT_VIEW':
+    case 'OBJECT_MATVIEW':
+    case 'OBJECT_FOREIGN_TABLE':
+      inverted.relation.relname = node.newname;
+      inverted.newname = node.relation.relname;
+      break;
+    case 'OBJECT_COLUMN':
+    case 'OBJECT_SCHEMA':
+      inverted.subname = node.newname;
+      inverted.newname = node.subname;
+      break;
+    case 'OBJECT_TYPE':
+    case 'OBJECT_DOMAIN': {
+      const items = inverted.object?.List?.items;
+      if (!items?.length) return notDerivable(`RENAME ${node.renameType} without a qualified name`);
+      inverted.newname = items[items.length - 1].String.sval;
+      items[items.length - 1] = strNode(node.newname);
+      break;
+    }
+    case 'OBJECT_FUNCTION':
+    case 'OBJECT_PROCEDURE':
+    case 'OBJECT_AGGREGATE': {
+      const objname = inverted.object?.ObjectWithArgs?.objname;
+      if (!objname?.length) return notDerivable(`RENAME ${node.renameType} without a function name`);
+      inverted.newname = objname[objname.length - 1].String.sval;
+      objname[objname.length - 1] = strNode(node.newname);
+      break;
+    }
+    default:
+      return notDerivable(`no inverse known for RENAME ${node.renameType}`);
+  }
+  return [{ stmt: { RenameStmt: inverted } }];
+}
+
+/**
+ * Invert a SET SCHEMA by moving the object back: the statement carries both
+ * the old (qualified name) and new schema, so the swap is mechanical. An
+ * unqualified source name would leave the original schema unknown — warned.
+ */
+function invertSetSchema(node: AnyNode, notDerivable: (reason: string) => Emitted[]): Emitted[] {
+  const inverted = clone(node);
+  if (node.relation) {
+    if (!node.relation.schemaname) {
+      return notDerivable('SET SCHEMA on an unqualified name (original schema unknown)');
+    }
+    inverted.relation.schemaname = node.newschema;
+    inverted.newschema = node.relation.schemaname;
+    return [{ stmt: { AlterObjectSchemaStmt: inverted } }];
+  }
+  const objname = inverted.object?.ObjectWithArgs?.objname ?? inverted.object?.List?.items;
+  if (!objname || objname.length < 2) {
+    return notDerivable('SET SCHEMA on an unqualified name (original schema unknown)');
+  }
+  inverted.newschema = objname[objname.length - 2].String.sval;
+  objname[objname.length - 2] = strNode(node.newschema);
+  return [{ stmt: { AlterObjectSchemaStmt: inverted } }];
 }
 
 /**
@@ -413,7 +520,7 @@ export function revertFor(facts: StatementFacts[]): GeneratedScript {
 
   const pieces: string[] = [];
   for (const i of reverseOrder) {
-    for (const emitted of invertStatement(facts[i], warnings)) {
+    for (const emitted of emitInverse(facts[i], warnings)) {
       if ('stmt' in emitted) {
         pieces.push(`${Deparser.deparse(emitted.stmt)};`);
       } else {
@@ -429,7 +536,7 @@ const check = (condition: string): string =>
   `SELECT 1/(CASE WHEN ${condition} THEN 1 ELSE 0 END);`;
 
 /** The verify checks for one classified statement. */
-function verifyStatement(facts: StatementFacts, warnings: string[]): string[] {
+function emitChecks(facts: StatementFacts, warnings: string[]): string[] {
   const node = facts.stmt?.[facts.nodeTag];
   const notDerivable = (reason: string): string[] => {
     warnings.push(`verify not derivable: ${reason}`);
@@ -538,6 +645,42 @@ function verifyStatement(facts: StatementFacts, warnings: string[]): string[] {
     }
     case 'AlterDefaultPrivilegesStmt':
       return verifyDefaultPrivileges(node, warnings);
+    case 'CreateFdwStmt':
+      return [check(`EXISTS (SELECT 1 FROM pg_foreign_data_wrapper WHERE fdwname = ${lit(node.fdwname)})`)];
+    case 'CreateConversionStmt':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_conversion c JOIN pg_namespace n ON n.oid = c.connamespace ` +
+        `WHERE c.conname = ${lit(defNameOnly(node.conversion_name))}${defNamespaceCond(node.conversion_name)})`
+      )];
+    case 'CreateAmStmt':
+      return [check(`EXISTS (SELECT 1 FROM pg_am WHERE amname = ${lit(node.amname)})`)];
+    case 'CreateTransformStmt': {
+      const type = Deparser.deparse({ TypeName: node.type_name });
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_transform t JOIN pg_language l ON l.oid = t.trflang ` +
+        `WHERE t.trftype = ${lit(type)}::regtype AND l.lanname = ${lit(node.lang)})`
+      )];
+    }
+    case 'CreateOpClassStmt':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_opclass c JOIN pg_am am ON am.oid = c.opcmethod ` +
+        `JOIN pg_namespace n ON n.oid = c.opcnamespace ` +
+        `WHERE c.opcname = ${lit(defNameOnly(node.opclassname))} AND am.amname = ${lit(node.amname)}` +
+        `${defNamespaceCond(node.opclassname)})`
+      )];
+    case 'CreateOpFamilyStmt':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_opfamily f JOIN pg_am am ON am.oid = f.opfmethod ` +
+        `JOIN pg_namespace n ON n.oid = f.opfnamespace ` +
+        `WHERE f.opfname = ${lit(defNameOnly(node.opfamilyname))} AND am.amname = ${lit(node.amname)}` +
+        `${defNamespaceCond(node.opfamilyname)})`
+      )];
+    case 'CreateTableSpaceStmt':
+      return [check(`EXISTS (SELECT 1 FROM pg_tablespace WHERE spcname = ${lit(node.tablespacename)})`)];
+    case 'RenameStmt':
+      return verifyRename(node, notDerivable);
+    case 'AlterObjectSchemaStmt':
+      return verifySetSchema(node, notDerivable);
     case 'SecLabelStmt':
       // Like comments: metadata only, nothing comes into existence.
       return [];
@@ -620,10 +763,127 @@ function verifyDefine(node: AnyNode, notDerivable: (reason: string) => string[])
       const qualified = parts.length > 1 ? `${qname(null, parts[parts.length - 2])}.${op}` : op;
       return [check(`to_regoperator(${lit(`${qualified}(${args.join(', ')})`)}) IS NOT NULL`)];
     }
+    case 'OBJECT_TSCONFIGURATION':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_ts_config c JOIN pg_namespace n ON n.oid = c.cfgnamespace ` +
+        `WHERE c.cfgname = ${lit(defNameOnly(node.defnames))}${defNamespaceCond(node.defnames)})`
+      )];
+    case 'OBJECT_TSDICTIONARY':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_ts_dict d JOIN pg_namespace n ON n.oid = d.dictnamespace ` +
+        `WHERE d.dictname = ${lit(defNameOnly(node.defnames))}${defNamespaceCond(node.defnames)})`
+      )];
+    case 'OBJECT_TSPARSER':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_ts_parser p JOIN pg_namespace n ON n.oid = p.prsnamespace ` +
+        `WHERE p.prsname = ${lit(defNameOnly(node.defnames))}${defNamespaceCond(node.defnames)})`
+      )];
+    case 'OBJECT_TSTEMPLATE':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_ts_template t JOIN pg_namespace n ON n.oid = t.tmplnamespace ` +
+        `WHERE t.tmplname = ${lit(defNameOnly(node.defnames))}${defNamespaceCond(node.defnames)})`
+      )];
     default:
       return notDerivable(`no existence check known for CREATE (DefineStmt) with kind ${node.kind}`);
   }
 }
+
+/** Existence checks for RENAME: the object exists under its new name. */
+function verifyRename(node: AnyNode, notDerivable: (reason: string) => string[]): string[] {
+  switch (node.renameType) {
+    case 'OBJECT_TABLE':
+    case 'OBJECT_INDEX':
+    case 'OBJECT_SEQUENCE':
+    case 'OBJECT_VIEW':
+    case 'OBJECT_MATVIEW':
+    case 'OBJECT_FOREIGN_TABLE':
+      return [check(`to_regclass(${lit(qname(node.relation.schemaname, node.newname))}) IS NOT NULL`)];
+    case 'OBJECT_COLUMN': {
+      const conds = [`table_name = ${lit(node.relation.relname)}`, `column_name = ${lit(node.newname)}`];
+      if (node.relation.schemaname) conds.push(`table_schema = ${lit(node.relation.schemaname)}`);
+      return [check(`EXISTS (SELECT 1 FROM information_schema.columns WHERE ${conds.join(' AND ')})`)];
+    }
+    case 'OBJECT_SCHEMA':
+      return [check(
+        `EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = ${lit(node.newname)})`
+      )];
+    case 'OBJECT_TYPE':
+    case 'OBJECT_DOMAIN': {
+      const items = node.object?.List?.items;
+      if (!items?.length) return notDerivable(`RENAME ${node.renameType} without a qualified name`);
+      const parts = items
+        .map((n: AnyNode) => n?.String?.sval)
+        .filter((s: any) => typeof s === 'string');
+      const schema = parts.length > 1 ? parts[parts.length - 2] : null;
+      return [check(`to_regtype(${lit(qname(schema, node.newname))}) IS NOT NULL`)];
+    }
+    case 'OBJECT_FUNCTION':
+    case 'OBJECT_PROCEDURE':
+    case 'OBJECT_AGGREGATE': {
+      const owa = node.object?.ObjectWithArgs;
+      if (!owa?.objname?.length) return notDerivable(`RENAME ${node.renameType} without a function name`);
+      const parts = owa.objname
+        .map((n: AnyNode) => n?.String?.sval)
+        .filter((s: any) => typeof s === 'string');
+      const schema = parts.length > 1 ? parts[parts.length - 2] : null;
+      const args = (owa.objargs ?? []).map((t: AnyNode) => Deparser.deparse(t));
+      return [check(
+        `to_regprocedure(${lit(`${qname(schema, node.newname)}(${args.join(', ')})`)}) IS NOT NULL`
+      )];
+    }
+    default:
+      return notDerivable(`no existence check known for RENAME ${node.renameType}`);
+  }
+}
+
+/** Existence checks for SET SCHEMA: the object exists in the new schema. */
+function verifySetSchema(node: AnyNode, notDerivable: (reason: string) => string[]): string[] {
+  switch (node.objectType) {
+    case 'OBJECT_TABLE':
+    case 'OBJECT_SEQUENCE':
+    case 'OBJECT_VIEW':
+    case 'OBJECT_MATVIEW':
+    case 'OBJECT_FOREIGN_TABLE':
+      return [check(`to_regclass(${lit(qname(node.newschema, node.relation.relname))}) IS NOT NULL`)];
+    case 'OBJECT_TYPE':
+    case 'OBJECT_DOMAIN': {
+      const items = node.object?.List?.items;
+      if (!items?.length) return notDerivable(`SET SCHEMA ${node.objectType} without a name`);
+      const parts = items
+        .map((n: AnyNode) => n?.String?.sval)
+        .filter((s: any) => typeof s === 'string');
+      return [check(`to_regtype(${lit(qname(node.newschema, parts[parts.length - 1]))}) IS NOT NULL`)];
+    }
+    case 'OBJECT_FUNCTION':
+    case 'OBJECT_PROCEDURE':
+    case 'OBJECT_AGGREGATE': {
+      const owa = node.object?.ObjectWithArgs;
+      if (!owa?.objname?.length) return notDerivable(`SET SCHEMA ${node.objectType} without a function name`);
+      const parts = owa.objname
+        .map((n: AnyNode) => n?.String?.sval)
+        .filter((s: any) => typeof s === 'string');
+      const args = (owa.objargs ?? []).map((t: AnyNode) => Deparser.deparse(t));
+      return [check(
+        `to_regprocedure(${lit(`${qname(node.newschema, parts[parts.length - 1])}(${args.join(', ')})`)}) IS NOT NULL`
+      )];
+    }
+    default:
+      return notDerivable(`no existence check known for SET SCHEMA on ${node.objectType}`);
+  }
+}
+
+/**
+ * The concrete privileges GRANT ALL expands to, per object type. Fixed
+ * PostgreSQL knowledge, not database state.
+ */
+const ALL_PRIVILEGES: Record<string, string[]> = {
+  OBJECT_TABLE: ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'],
+  OBJECT_SEQUENCE: ['USAGE', 'SELECT', 'UPDATE'],
+  OBJECT_FUNCTION: ['EXECUTE'],
+  OBJECT_PROCEDURE: ['EXECUTE'],
+  OBJECT_SCHEMA: ['CREATE', 'USAGE'],
+  OBJECT_TYPE: ['USAGE']
+};
 
 /** ACL objtype codes used by pg_default_acl.defaclobjtype. */
 const DEFAULT_ACL_OBJTYPE: Record<string, string> = {
@@ -645,12 +905,16 @@ function verifyDefaultPrivileges(node: AnyNode, warnings: string[]): string[] {
     return [];
   }
 
-  const privNames: string[] = (action.privileges ?? [])
+  let privNames: string[] = (action.privileges ?? [])
     .map((p: AnyNode) => p?.AccessPriv?.priv_name)
     .filter((s: any) => typeof s === 'string');
   if (privNames.length === 0) {
-    warnings.push('verify not derivable: ALTER DEFAULT PRIVILEGES GRANT ALL expands per object type');
-    return [];
+    // GRANT ALL: expand to the object type's full privilege list.
+    privNames = ALL_PRIVILEGES[action.objtype] ?? [];
+    if (privNames.length === 0) {
+      warnings.push(`verify not derivable: ALTER DEFAULT PRIVILEGES GRANT ALL on ${action.objtype}`);
+      return [];
+    }
   }
 
   const grantees: string[] = (action.grantees ?? [])
@@ -691,12 +955,16 @@ function verifyDefaultPrivileges(node: AnyNode, warnings: string[]): string[] {
 function verifyGrant(node: AnyNode, warnings: string[]): string[] {
   if (node.is_grant !== true) return [];
 
-  const privNames: string[] = (node.privileges ?? [])
+  let privNames: string[] = (node.privileges ?? [])
     .map((p: AnyNode) => p?.AccessPriv?.priv_name)
     .filter((s: any) => typeof s === 'string');
   if (privNames.length === 0) {
-    warnings.push('verify not derivable: GRANT ALL expands per object type; grant privileges explicitly to verify them');
-    return [];
+    // GRANT ALL: expand to the object type's full privilege list.
+    privNames = ALL_PRIVILEGES[node.objtype] ?? [];
+    if (privNames.length === 0) {
+      warnings.push(`verify not derivable: GRANT ALL on ${node.objtype ?? 'unknown object type'}`);
+      return [];
+    }
   }
 
   const grantees: string[] = (node.grantees ?? [])
@@ -713,15 +981,17 @@ function verifyGrant(node: AnyNode, warnings: string[]): string[] {
       const privilege = priv.toUpperCase();
       switch (node.objtype) {
         case 'OBJECT_TABLE':
-        case 'OBJECT_SEQUENCE':
+        case 'OBJECT_SEQUENCE': {
+          const fn = node.objtype === 'OBJECT_SEQUENCE' ? 'has_sequence_privilege' : 'has_table_privilege';
           for (const obj of node.objects ?? []) {
             const rel = obj?.RangeVar;
             if (!rel) continue;
             out.push(check(
-              `has_table_privilege(${lit(grantee)}, ${lit(qname(rel.schemaname, rel.relname))}, ${lit(privilege)})`
+              `${fn}(${lit(grantee)}, ${lit(qname(rel.schemaname, rel.relname))}, ${lit(privilege)})`
             ));
           }
           break;
+        }
         case 'OBJECT_FUNCTION':
         case 'OBJECT_PROCEDURE':
           for (const obj of node.objects ?? []) {
@@ -826,7 +1096,49 @@ export function verifyFor(facts: StatementFacts[]): GeneratedScript {
   const warnings: string[] = [];
   const pieces: string[] = [];
   for (const fact of facts) {
-    pieces.push(...verifyStatement(fact, warnings));
+    pieces.push(...emitChecks(fact, warnings));
   }
   return { sql: pieces.join('\n\n'), warnings };
+}
+
+/**
+ * The inverse of one classified statement as raw AST nodes (each one a
+ * wrapped statement node, e.g. `{ DropStmt: {...} }`), or `null` when no
+ * inverse is mechanically derivable. An empty array means the statement
+ * needs no revert of its own.
+ *
+ * This is the node-level layer under {@link revertFor}: consumers that
+ * compose inverses at the AST level (semantic diffing, migration
+ * generation) use this instead of round-tripping through deparsed text.
+ * A statement whose inverse is only partially derivable (e.g. an ALTER
+ * TABLE where one command cannot be inverted) returns `null` — partial
+ * inverses are never silently produced.
+ */
+export function invertStatement(facts: StatementFacts): AnyNode[] | null {
+  const warnings: string[] = [];
+  const emitted = emitInverse(facts, warnings);
+  if (warnings.length > 0) return null;
+  return emitted
+    .filter((e): e is { stmt: AnyNode } => 'stmt' in e)
+    .map(e => e.stmt);
+}
+
+/**
+ * The existence checks for one classified statement as raw AST nodes
+ * (each one a wrapped `SelectStmt` using the raise-on-failure division
+ * idiom), or `null` when no check is mechanically derivable. An empty
+ * array means nothing comes into existence (comments, DML, security
+ * labels).
+ *
+ * Node-level layer under {@link verifyFor}. Requires the parser WASM
+ * module to be loaded (`loadModule()` from `plpgsql-parser`).
+ */
+export function existenceCheck(facts: StatementFacts): AnyNode[] | null {
+  const warnings: string[] = [];
+  const checks = emitChecks(facts, warnings);
+  if (warnings.length > 0) return null;
+  return checks.map(sql => {
+    const parsed = parseSql(sql);
+    return clone(parsed.stmts[0].stmt) as AnyNode;
+  });
 }
