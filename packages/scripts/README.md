@@ -52,5 +52,22 @@ Nothing outside the supported vocabulary is ever guessed at: `revertFor` emits a
 | `GRANT` privileges (tables, sequences, functions, schemas) | `REVOKE` same privileges | `has_table_privilege` / `has_function_privilege` / `has_schema_privilege` |
 | `GRANT role TO role` | `REVOKE role FROM role` | `pg_auth_members` |
 | `COMMENT ON` | `COMMENT ON ... IS NULL` | — |
+| `CREATE MATERIALIZED VIEW` / `CREATE TABLE AS` | `DROP MATERIALIZED VIEW` / `DROP TABLE` | `to_regclass` |
+| `CREATE SERVER` | `DROP SERVER` | `pg_foreign_server` |
+| `CREATE FOREIGN TABLE` | `DROP FOREIGN TABLE` | `to_regclass` |
+| `CREATE USER MAPPING` | `DROP USER MAPPING` | `pg_user_mappings` |
+| `CREATE COLLATION` | `DROP COLLATION` | `pg_collation` |
+| `CREATE AGGREGATE` | `DROP AGGREGATE` with input signature | `to_regprocedure` |
+| `CREATE OPERATOR` (binary) | `DROP OPERATOR (left, right)` | `to_regoperator` |
+| `CREATE CAST` | `DROP CAST (source AS target)` | `pg_cast` |
+| `CREATE PUBLICATION` | `DROP PUBLICATION` | `pg_publication` |
+| `CREATE SUBSCRIPTION` | `DROP SUBSCRIPTION` | `pg_subscription` |
+| `CREATE STATISTICS` | `DROP STATISTICS` | `pg_statistic_ext` |
+| `CREATE EVENT TRIGGER` | `DROP EVENT TRIGGER` | `pg_event_trigger` |
+| `CREATE RULE` | `DROP RULE ... ON table` | `pg_rules` |
+| `ALTER TYPE ... ADD VALUE` | — (Postgres has no `DROP VALUE`; warns) | `pg_enum` |
+| `ALTER TABLE ... ATTACH PARTITION` | `DETACH PARTITION` | `pg_inherits` |
+| `ALTER DEFAULT PRIVILEGES ... GRANT` | `ALTER DEFAULT PRIVILEGES ... REVOKE` | `pg_default_acl` + `aclexplode` |
+| `SECURITY LABEL` | `SECURITY LABEL ... IS NULL` | — |
 
-Not derivable (warned, never guessed): `REVOKE`, unnamed constraints, `ALTER ... SET` with unknown prior value, arbitrary DML, dynamic SQL.
+Not derivable (warned, never guessed): `REVOKE`, unnamed constraints, `ALTER ... SET` with unknown prior value, arbitrary DML, dynamic SQL, prefix operators.

@@ -321,3 +321,141 @@ describe('verifyFor', () => {
     expect(result.warnings).toEqual([]);
   });
 });
+
+describe('revertFor — extended vocabulary', () => {
+  it('drops materialized views and CREATE TABLE AS tables', () => {
+    expect(revert('CREATE MATERIALIZED VIEW app.mv AS SELECT 1 AS x;'))
+      .toEqual({ sql: 'DROP MATERIALIZED VIEW app.mv;', warnings: [] });
+    expect(revert('CREATE TABLE app.t2 AS SELECT 1 AS x;'))
+      .toEqual({ sql: 'DROP TABLE app.t2;', warnings: [] });
+  });
+
+  it('drops foreign servers, foreign tables and user mappings', () => {
+    expect(revert("CREATE SERVER films_server FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'h');"))
+      .toEqual({ sql: 'DROP SERVER films_server;', warnings: [] });
+    expect(revert('CREATE FOREIGN TABLE app.ft (id int) SERVER films_server;'))
+      .toEqual({ sql: 'DROP FOREIGN TABLE app.ft;', warnings: [] });
+    expect(revert("CREATE USER MAPPING FOR bob SERVER films_server OPTIONS (user 'bob');"))
+      .toEqual({ sql: 'DROP USER MAPPING FOR bob SERVER films_server;', warnings: [] });
+  });
+
+  it('drops collations, aggregates (with signature) and binary operators', () => {
+    expect(revert("CREATE COLLATION app.mycoll (locale = 'en_US.utf8');"))
+      .toEqual({ sql: 'DROP COLLATION app.mycoll;', warnings: [] });
+    expect(revert('CREATE AGGREGATE app.myagg (int) (sfunc = int4pl, stype = int);'))
+      .toEqual({ sql: 'DROP AGGREGATE app.myagg(int);', warnings: [] });
+    expect(revert('CREATE OPERATOR app.=== (LEFTARG = int, RIGHTARG = int, FUNCTION = int4eq);'))
+      .toEqual({ sql: 'DROP OPERATOR app.===(int, int);', warnings: [] });
+  });
+
+  it('drops casts by source and target type', () => {
+    expect(revert('CREATE CAST (int AS text) WITH INOUT AS IMPLICIT;'))
+      .toEqual({ sql: 'DROP CAST (int AS text);', warnings: [] });
+  });
+
+  it('drops publications, subscriptions, statistics, event triggers and rules', () => {
+    expect(revert('CREATE PUBLICATION mypub FOR TABLE app.users;'))
+      .toEqual({ sql: 'DROP PUBLICATION mypub;', warnings: [] });
+    expect(revert("CREATE SUBSCRIPTION mysub CONNECTION 'dbname=x' PUBLICATION mypub;"))
+      .toEqual({ sql: 'DROP SUBSCRIPTION mysub RESTRICT;', warnings: [] });
+    expect(revert('CREATE STATISTICS app.mystats (dependencies) ON a, b FROM app.users;'))
+      .toEqual({ sql: 'DROP STATISTICS app.mystats;', warnings: [] });
+    expect(revert('CREATE EVENT TRIGGER etrig ON ddl_command_end EXECUTE FUNCTION f();'))
+      .toEqual({ sql: 'DROP EVENT TRIGGER etrig;', warnings: [] });
+    expect(revert('CREATE RULE myrule AS ON DELETE TO app.users DO INSTEAD NOTHING;'))
+      .toEqual({ sql: 'DROP RULE myrule ON app.users;', warnings: [] });
+  });
+
+  it('detaches attached partitions', () => {
+    const result = revert('ALTER TABLE app.parted ATTACH PARTITION app.p1 FOR VALUES FROM (1) TO (10);');
+    expect(result.sql).toEqual('ALTER TABLE app.parted \n  DETACH PARTITION app.p1;');
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('inverts ALTER DEFAULT PRIVILEGES GRANT to REVOKE', () => {
+    const result = revert('ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT ON TABLES TO bob;');
+    expect(result.sql).toEqual('ALTER DEFAULT PRIVILEGES IN SCHEMA app\n  REVOKE SELECT ON TABLES FROM bob RESTRICT;');
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('nulls security labels', () => {
+    expect(revert("SECURITY LABEL FOR selinux ON TABLE app.users IS 'system_u';"))
+      .toEqual({ sql: 'SECURITY LABEL FOR selinux ON TABLE app.users IS NULL;', warnings: [] });
+  });
+
+  it('warns for enum ADD VALUE (Postgres has no DROP VALUE)', () => {
+    const result = revert("ALTER TYPE app.mood ADD VALUE 'sad';");
+    expect(result.sql).toContain('-- revert not derivable:');
+    expect(result.warnings).toHaveLength(1);
+  });
+
+  it('warns for prefix operators and non-grant default privileges', () => {
+    const prefix = revert('CREATE OPERATOR app.!! (RIGHTARG = int, FUNCTION = int4um);');
+    expect(prefix.warnings).toEqual(['revert not derivable: prefix operators are not supported (binary LEFTARG/RIGHTARG required)']);
+    const revoke = revert('ALTER DEFAULT PRIVILEGES IN SCHEMA app REVOKE SELECT ON TABLES FROM bob;');
+    expect(revoke.warnings).toHaveLength(1);
+  });
+});
+
+describe('verifyFor — extended vocabulary', () => {
+  it('checks matviews, CTAS tables and foreign tables via to_regclass', () => {
+    expect(verify('CREATE MATERIALIZED VIEW app.mv AS SELECT 1 AS x;').sql)
+      .toEqual("SELECT 1/(CASE WHEN to_regclass('app.mv') IS NOT NULL THEN 1 ELSE 0 END);");
+    expect(verify('CREATE FOREIGN TABLE app.ft (id int) SERVER films_server;').sql)
+      .toEqual("SELECT 1/(CASE WHEN to_regclass('app.ft') IS NOT NULL THEN 1 ELSE 0 END);");
+  });
+
+  it('checks foreign servers and user mappings via catalogs', () => {
+    expect(verify("CREATE SERVER films_server FOREIGN DATA WRAPPER postgres_fdw;").sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_foreign_server WHERE srvname = 'films_server') THEN 1 ELSE 0 END);");
+    expect(verify("CREATE USER MAPPING FOR bob SERVER films_server;").sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_user_mappings WHERE srvname = 'films_server' AND usename = 'bob') THEN 1 ELSE 0 END);");
+  });
+
+  it('checks collations, aggregates and operators', () => {
+    expect(verify("CREATE COLLATION app.mycoll (locale = 'en_US.utf8');").sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_collation c JOIN pg_namespace n ON n.oid = c.collnamespace WHERE c.collname = 'mycoll' AND n.nspname = 'app') THEN 1 ELSE 0 END);");
+    expect(verify('CREATE AGGREGATE app.myagg (int) (sfunc = int4pl, stype = int);').sql)
+      .toEqual("SELECT 1/(CASE WHEN to_regprocedure('app.myagg(int)') IS NOT NULL THEN 1 ELSE 0 END);");
+    expect(verify('CREATE OPERATOR app.=== (LEFTARG = int, RIGHTARG = int, FUNCTION = int4eq);').sql)
+      .toEqual("SELECT 1/(CASE WHEN to_regoperator('app.===(int, int)') IS NOT NULL THEN 1 ELSE 0 END);");
+  });
+
+  it('checks casts via pg_cast', () => {
+    expect(verify('CREATE CAST (int AS text) WITH INOUT AS IMPLICIT;').sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_cast WHERE castsource = 'int'::regtype AND casttarget = 'text'::regtype) THEN 1 ELSE 0 END);");
+  });
+
+  it('checks publications, subscriptions, statistics, event triggers and rules', () => {
+    expect(verify('CREATE PUBLICATION mypub FOR TABLE app.users;').sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'mypub') THEN 1 ELSE 0 END);");
+    expect(verify("CREATE SUBSCRIPTION mysub CONNECTION 'dbname=x' PUBLICATION mypub;").sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_subscription WHERE subname = 'mysub') THEN 1 ELSE 0 END);");
+    expect(verify('CREATE STATISTICS app.mystats (dependencies) ON a, b FROM app.users;').sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_statistic_ext s JOIN pg_namespace n ON n.oid = s.stxnamespace WHERE s.stxname = 'mystats' AND n.nspname = 'app') THEN 1 ELSE 0 END);");
+    expect(verify('CREATE EVENT TRIGGER etrig ON ddl_command_end EXECUTE FUNCTION f();').sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_event_trigger WHERE evtname = 'etrig') THEN 1 ELSE 0 END);");
+    expect(verify('CREATE RULE myrule AS ON DELETE TO app.users DO INSTEAD NOTHING;').sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_rules WHERE rulename = 'myrule' AND tablename = 'users' AND schemaname = 'app') THEN 1 ELSE 0 END);");
+  });
+
+  it('checks enum ADD VALUE labels via pg_enum', () => {
+    expect(verify("ALTER TYPE app.mood ADD VALUE 'sad';").sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = 'app.mood'::regtype AND enumlabel = 'sad') THEN 1 ELSE 0 END);");
+  });
+
+  it('checks attached partitions via pg_inherits', () => {
+    expect(verify('ALTER TABLE app.parted ATTACH PARTITION app.p1 FOR VALUES FROM (1) TO (10);').sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_inherits WHERE inhrelid = 'app.p1'::regclass AND inhparent = 'app.parted'::regclass) THEN 1 ELSE 0 END);");
+  });
+
+  it('checks default privileges via pg_default_acl + aclexplode', () => {
+    expect(verify('ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT ON TABLES TO bob;').sql)
+      .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_default_acl d, aclexplode(d.defaclacl) a JOIN pg_roles r ON r.oid = a.grantee WHERE d.defaclobjtype = 'r' AND r.rolname = 'bob' AND a.privilege_type = 'SELECT' AND d.defaclnamespace IN (to_regnamespace('app'))) THEN 1 ELSE 0 END);");
+  });
+
+  it('emits nothing for security labels (metadata only)', () => {
+    expect(verify("SECURITY LABEL FOR selinux ON TABLE app.users IS 'system_u';"))
+      .toEqual({ sql: '', warnings: [] });
+  });
+});

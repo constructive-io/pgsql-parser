@@ -126,6 +126,96 @@ export const SUPPORTED_STATEMENTS: readonly SupportedStatement[] = [
     nodeTags: ['CommentStmt'],
     revert: 'COMMENT ON ... IS NULL',
     verify: null
+  },
+  {
+    statement: 'CREATE MATERIALIZED VIEW / CREATE TABLE AS',
+    nodeTags: ['CreateTableAsStmt'],
+    revert: 'DROP MATERIALIZED VIEW / DROP TABLE',
+    verify: 'to_regclass IS NOT NULL'
+  },
+  {
+    statement: 'CREATE SERVER',
+    nodeTags: ['CreateForeignServerStmt'],
+    revert: 'DROP SERVER',
+    verify: 'pg_foreign_server existence check'
+  },
+  {
+    statement: 'CREATE FOREIGN TABLE',
+    nodeTags: ['CreateForeignTableStmt'],
+    revert: 'DROP FOREIGN TABLE',
+    verify: 'to_regclass IS NOT NULL'
+  },
+  {
+    statement: 'CREATE USER MAPPING',
+    nodeTags: ['CreateUserMappingStmt'],
+    revert: 'DROP USER MAPPING',
+    verify: 'pg_user_mappings existence check'
+  },
+  {
+    statement: 'CREATE COLLATION / AGGREGATE / OPERATOR (binary)',
+    nodeTags: ['DefineStmt'],
+    revert: 'DROP COLLATION / DROP AGGREGATE (with signature) / DROP OPERATOR (left, right)',
+    verify: 'pg_collation / to_regprocedure / to_regoperator'
+  },
+  {
+    statement: 'CREATE CAST',
+    nodeTags: ['CreateCastStmt'],
+    revert: 'DROP CAST (source AS target)',
+    verify: 'pg_cast existence check'
+  },
+  {
+    statement: 'CREATE PUBLICATION',
+    nodeTags: ['CreatePublicationStmt'],
+    revert: 'DROP PUBLICATION',
+    verify: 'pg_publication existence check'
+  },
+  {
+    statement: 'CREATE SUBSCRIPTION',
+    nodeTags: ['CreateSubscriptionStmt'],
+    revert: 'DROP SUBSCRIPTION',
+    verify: 'pg_subscription existence check'
+  },
+  {
+    statement: 'CREATE STATISTICS',
+    nodeTags: ['CreateStatsStmt'],
+    revert: 'DROP STATISTICS',
+    verify: 'pg_statistic_ext existence check'
+  },
+  {
+    statement: 'CREATE EVENT TRIGGER',
+    nodeTags: ['CreateEventTrigStmt'],
+    revert: 'DROP EVENT TRIGGER',
+    verify: 'pg_event_trigger existence check'
+  },
+  {
+    statement: 'CREATE RULE',
+    nodeTags: ['RuleStmt'],
+    revert: 'DROP RULE ... ON table',
+    verify: 'pg_rules existence check'
+  },
+  {
+    statement: 'ALTER TYPE ... ADD VALUE',
+    nodeTags: ['AlterEnumStmt'],
+    revert: null,
+    verify: 'pg_enum label existence check'
+  },
+  {
+    statement: 'ALTER TABLE ... ATTACH PARTITION',
+    nodeTags: ['AlterTableStmt'],
+    revert: 'ALTER TABLE ... DETACH PARTITION',
+    verify: 'pg_inherits existence check'
+  },
+  {
+    statement: 'ALTER DEFAULT PRIVILEGES ... GRANT',
+    nodeTags: ['AlterDefaultPrivilegesStmt'],
+    revert: 'ALTER DEFAULT PRIVILEGES ... REVOKE',
+    verify: 'pg_default_acl + aclexplode privilege check'
+  },
+  {
+    statement: 'SECURITY LABEL',
+    nodeTags: ['SecLabelStmt'],
+    revert: 'SECURITY LABEL ... IS NULL',
+    verify: null
   }
 ];
 

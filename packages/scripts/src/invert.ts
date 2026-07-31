@@ -98,6 +98,26 @@ function functionSignatureText(node: AnyNode): string {
 /** Deep-clone an AST node so generation never mutates the input facts. */
 const clone = <T>(node: T): T => JSON.parse(JSON.stringify(node));
 
+/** Render a name list (`[{ String: { sval } }, ...]`) as quoted SQL text. */
+function nameListText(names: AnyNode[] | undefined): string {
+  const parts = (names ?? [])
+    .map((n: AnyNode) => n?.String?.sval)
+    .filter((s: any) => typeof s === 'string');
+  return parts.length > 1
+    ? qname(parts[parts.length - 2], parts[parts.length - 1])
+    : qname(null, parts[0] ?? '');
+}
+
+/** The `FunctionParameter` args of a `DefineStmt` (aggregates). */
+const defineArgs = (node: AnyNode): AnyNode[] =>
+  (node.args?.[0]?.List?.items ?? [])
+    .map((p: AnyNode) => p?.FunctionParameter)
+    .filter(Boolean);
+
+/** DefElem lookup by name within a definition list. */
+const defElem = (definition: AnyNode[] | undefined, name: string): AnyNode | undefined =>
+  (definition ?? []).map((d: AnyNode) => d?.DefElem).find((d: AnyNode) => d?.defname === name);
+
 /**
  * Invert one classified statement into its revert statements, or a
  * not-derivable reason. Returns `null` for statements that need no revert
@@ -118,6 +138,14 @@ function invertStatement(facts: StatementFacts, warnings: string[]): Emitted[] {
       return [{ stmt: dropStmt('OBJECT_SCHEMA', [strNode(node.schemaname)]) }];
     case 'CreateStmt':
       return [{ stmt: dropStmt('OBJECT_TABLE', [{ List: { items: nameItems(node.relation) } }]) }];
+    case 'CreateTableAsStmt': {
+      if (node.objtype !== 'OBJECT_MATVIEW' && node.objtype !== 'OBJECT_TABLE') {
+        return notDerivable(`no inverse known for CREATE ... AS with objtype ${node.objtype}`);
+      }
+      return [{
+        stmt: dropStmt(node.objtype, [{ List: { items: nameItems(node.into.rel) } }])
+      }];
+    }
     case 'ViewStmt':
       return [{ stmt: dropStmt('OBJECT_VIEW', [{ List: { items: nameItems(node.view) } }]) }];
     case 'IndexStmt': {
@@ -158,6 +186,64 @@ function invertStatement(facts: StatementFacts, warnings: string[]): Emitted[] {
     }
     case 'CreateExtensionStmt':
       return [{ stmt: dropStmt('OBJECT_EXTENSION', [strNode(node.extname)]) }];
+    case 'CreateForeignServerStmt':
+      return [{ stmt: dropStmt('OBJECT_FOREIGN_SERVER', [strNode(node.servername)]) }];
+    case 'CreateForeignTableStmt':
+      return [{
+        stmt: dropStmt('OBJECT_FOREIGN_TABLE', [{ List: { items: nameItems(node.base.relation) } }])
+      }];
+    case 'CreateUserMappingStmt':
+      return [{
+        stmt: {
+          DropUserMappingStmt: {
+            user: clone(node.user),
+            servername: node.servername
+          }
+        }
+      }];
+    case 'DefineStmt':
+      return invertDefine(node, notDerivable);
+    case 'CreateCastStmt':
+      return [{
+        stmt: dropStmt('OBJECT_CAST', [
+          { List: { items: [{ TypeName: clone(node.sourcetype) }, { TypeName: clone(node.targettype) }] } }
+        ])
+      }];
+    case 'CreatePublicationStmt':
+      return [{ stmt: dropStmt('OBJECT_PUBLICATION', [strNode(node.pubname)]) }];
+    case 'CreateSubscriptionStmt':
+      return [{
+        stmt: { DropSubscriptionStmt: { subname: node.subname, behavior: 'DROP_RESTRICT' } }
+      }];
+    case 'CreateStatsStmt':
+      return [{
+        stmt: dropStmt('OBJECT_STATISTIC_EXT', [{ List: { items: clone(node.defnames) } }])
+      }];
+    case 'CreateEventTrigStmt':
+      return [{ stmt: dropStmt('OBJECT_EVENT_TRIGGER', [strNode(node.trigname)]) }];
+    case 'RuleStmt': {
+      const items = [...nameItems(node.relation), strNode(node.rulename)];
+      return [{ stmt: dropStmt('OBJECT_RULE', [{ List: { items } }]) }];
+    }
+    case 'AlterEnumStmt':
+      return notDerivable(
+        `enum value ${JSON.stringify(node.newVal)} cannot be dropped (Postgres has no DROP VALUE)`
+      );
+    case 'AlterDefaultPrivilegesStmt': {
+      if (node.action?.is_grant !== true) {
+        return notDerivable('ALTER DEFAULT PRIVILEGES REVOKE has no mechanical inverse (prior grants unknown)');
+      }
+      const inverted = clone(node);
+      delete inverted.action.is_grant;
+      delete inverted.action.grant_option;
+      delete inverted.action.grantor;
+      return [{ stmt: { AlterDefaultPrivilegesStmt: inverted } }];
+    }
+    case 'SecLabelStmt': {
+      const nulled = clone(node);
+      delete nulled.label;
+      return [{ stmt: { SecLabelStmt: nulled } }];
+    }
     case 'CreateRoleStmt':
       return [{
         stmt: {
@@ -199,6 +285,41 @@ function invertStatement(facts: StatementFacts, warnings: string[]): Emitted[] {
       return notDerivable('DML is not mechanically invertible');
     default:
       return notDerivable(`no inverse known for ${facts.nodeTag}`);
+  }
+}
+
+/** Inverses for `DefineStmt` objects: collations, aggregates, operators. */
+function invertDefine(node: AnyNode, notDerivable: (reason: string) => Emitted[]): Emitted[] {
+  switch (node.kind) {
+    case 'OBJECT_COLLATION':
+      return [{
+        stmt: dropStmt('OBJECT_COLLATION', [{ List: { items: clone(node.defnames) } }])
+      }];
+    case 'OBJECT_AGGREGATE': {
+      const objargs = defineArgs(node).map((p: AnyNode) => ({ TypeName: clone(p.argType) }));
+      return [{
+        stmt: dropStmt('OBJECT_AGGREGATE', [{
+          ObjectWithArgs: { objname: clone(node.defnames), objargs, args_unspecified: false }
+        }])
+      }];
+    }
+    case 'OBJECT_OPERATOR': {
+      const left = defElem(node.definition, 'leftarg');
+      const right = defElem(node.definition, 'rightarg');
+      if (!left?.arg?.TypeName || !right?.arg?.TypeName) {
+        return notDerivable('prefix operators are not supported (binary LEFTARG/RIGHTARG required)');
+      }
+      return [{
+        stmt: dropStmt('OBJECT_OPERATOR', [{
+          ObjectWithArgs: {
+            objname: clone(node.defnames),
+            objargs: [{ TypeName: clone(left.arg.TypeName) }, { TypeName: clone(right.arg.TypeName) }]
+          }
+        }])
+      }];
+    }
+    default:
+      return notDerivable(`no inverse known for CREATE (DefineStmt) with kind ${node.kind}`);
   }
 }
 
@@ -257,6 +378,19 @@ function invertAlterTable(node: AnyNode, warnings: string[]): Emitted[] {
       case 'AT_ForceRowSecurity':
         out.push(alterWith({ subtype: 'AT_NoForceRowSecurity' }));
         break;
+      case 'AT_AttachPartition': {
+        const partition = cmd.def?.PartitionCmd?.name;
+        if (!partition) {
+          out.push(notDerivable(`ATTACH PARTITION on ${table} without a partition name`));
+          break;
+        }
+        out.push(alterWith({
+          subtype: 'AT_DetachPartition',
+          def: { PartitionCmd: { name: { RangeVar: clone(partition) } } },
+          behavior: 'DROP_RESTRICT'
+        }));
+        break;
+      }
       default:
         out.push(notDerivable(`ALTER TABLE ${table} ${cmd.subtype} (prior state unknown)`));
     }
@@ -349,6 +483,64 @@ function verifyStatement(facts: StatementFacts, warnings: string[]): string[] {
       return [check(`EXISTS (SELECT 1 FROM pg_extension WHERE extname = ${lit(node.extname)})`)];
     case 'CreateRoleStmt':
       return [check(`EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${lit(node.role)})`)];
+    case 'CreateTableAsStmt': {
+      if (node.objtype !== 'OBJECT_MATVIEW' && node.objtype !== 'OBJECT_TABLE') {
+        return notDerivable(`no existence check known for CREATE ... AS with objtype ${node.objtype}`);
+      }
+      return [check(`to_regclass(${lit(qname(node.into.rel.schemaname, node.into.rel.relname))}) IS NOT NULL`)];
+    }
+    case 'CreateForeignServerStmt':
+      return [check(`EXISTS (SELECT 1 FROM pg_foreign_server WHERE srvname = ${lit(node.servername)})`)];
+    case 'CreateForeignTableStmt':
+      return [check(
+        `to_regclass(${lit(qname(node.base.relation.schemaname, node.base.relation.relname))}) IS NOT NULL`
+      )];
+    case 'CreateUserMappingStmt': {
+      const user = node.user?.roletype === 'ROLESPEC_PUBLIC' ? 'public' : node.user?.rolename;
+      if (!user) return notDerivable('CREATE USER MAPPING without a resolvable user');
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_user_mappings WHERE srvname = ${lit(node.servername)} ` +
+        `AND usename = ${lit(user)})`
+      )];
+    }
+    case 'DefineStmt':
+      return verifyDefine(node, notDerivable);
+    case 'CreateCastStmt': {
+      const source = Deparser.deparse({ TypeName: node.sourcetype });
+      const target = Deparser.deparse({ TypeName: node.targettype });
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_cast WHERE castsource = ${lit(source)}::regtype ` +
+        `AND casttarget = ${lit(target)}::regtype)`
+      )];
+    }
+    case 'CreatePublicationStmt':
+      return [check(`EXISTS (SELECT 1 FROM pg_publication WHERE pubname = ${lit(node.pubname)})`)];
+    case 'CreateSubscriptionStmt':
+      return [check(`EXISTS (SELECT 1 FROM pg_subscription WHERE subname = ${lit(node.subname)})`)];
+    case 'CreateStatsStmt':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_statistic_ext s JOIN pg_namespace n ON n.oid = s.stxnamespace ` +
+        `WHERE s.stxname = ${lit(defNameOnly(node.defnames))}${defNamespaceCond(node.defnames)})`
+      )];
+    case 'CreateEventTrigStmt':
+      return [check(`EXISTS (SELECT 1 FROM pg_event_trigger WHERE evtname = ${lit(node.trigname)})`)];
+    case 'RuleStmt': {
+      const conds = [`rulename = ${lit(node.rulename)}`, `tablename = ${lit(node.relation.relname)}`];
+      if (node.relation.schemaname) conds.push(`schemaname = ${lit(node.relation.schemaname)}`);
+      return [check(`EXISTS (SELECT 1 FROM pg_rules WHERE ${conds.join(' AND ')})`)];
+    }
+    case 'AlterEnumStmt': {
+      if (!node.newVal) return notDerivable('ALTER TYPE without ADD VALUE has nothing to verify');
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_enum WHERE enumtypid = ${lit(nameListText(node.typeName))}::regtype ` +
+        `AND enumlabel = ${lit(node.newVal)})`
+      )];
+    }
+    case 'AlterDefaultPrivilegesStmt':
+      return verifyDefaultPrivileges(node, warnings);
+    case 'SecLabelStmt':
+      // Like comments: metadata only, nothing comes into existence.
+      return [];
     case 'GrantStmt':
       return verifyGrant(node, warnings);
     case 'GrantRoleStmt': {
@@ -381,6 +573,118 @@ function verifyStatement(facts: StatementFacts, warnings: string[]): string[] {
     default:
       return notDerivable(`no existence check known for ${facts.nodeTag}`);
   }
+}
+
+/** Last element of a DefineStmt name list. */
+const defNameOnly = (defnames: AnyNode[] | undefined): string => {
+  const parts = (defnames ?? [])
+    .map((n: AnyNode) => n?.String?.sval)
+    .filter((s: any) => typeof s === 'string');
+  return parts[parts.length - 1] ?? '';
+};
+
+/** Optional namespace condition for a qualified DefineStmt name list. */
+const defNamespaceCond = (defnames: AnyNode[] | undefined): string => {
+  const parts = (defnames ?? [])
+    .map((n: AnyNode) => n?.String?.sval)
+    .filter((s: any) => typeof s === 'string');
+  return parts.length > 1 ? ` AND n.nspname = ${lit(parts[parts.length - 2])}` : '';
+};
+
+/** Existence checks for DefineStmt objects: collations, aggregates, operators. */
+function verifyDefine(node: AnyNode, notDerivable: (reason: string) => string[]): string[] {
+  switch (node.kind) {
+    case 'OBJECT_COLLATION':
+      return [check(
+        `EXISTS (SELECT 1 FROM pg_collation c JOIN pg_namespace n ON n.oid = c.collnamespace ` +
+        `WHERE c.collname = ${lit(defNameOnly(node.defnames))}${defNamespaceCond(node.defnames)})`
+      )];
+    case 'OBJECT_AGGREGATE': {
+      const args = defineArgs(node).map((p: AnyNode) => Deparser.deparse({ TypeName: p.argType }));
+      const signature = `${nameListText(node.defnames)}(${args.join(', ')})`;
+      return [check(`to_regprocedure(${lit(signature)}) IS NOT NULL`)];
+    }
+    case 'OBJECT_OPERATOR': {
+      const left = defElem(node.definition, 'leftarg');
+      const right = defElem(node.definition, 'rightarg');
+      if (!left?.arg?.TypeName || !right?.arg?.TypeName) {
+        return notDerivable('prefix operators are not supported (binary LEFTARG/RIGHTARG required)');
+      }
+      const args = [left.arg.TypeName, right.arg.TypeName]
+        .map((t: AnyNode) => Deparser.deparse({ TypeName: t }));
+      // Operator names are not identifiers: never quote them.
+      const parts = (node.defnames ?? [])
+        .map((n: AnyNode) => n?.String?.sval)
+        .filter((s: any) => typeof s === 'string');
+      const op = parts[parts.length - 1] ?? '';
+      const qualified = parts.length > 1 ? `${qname(null, parts[parts.length - 2])}.${op}` : op;
+      return [check(`to_regoperator(${lit(`${qualified}(${args.join(', ')})`)}) IS NOT NULL`)];
+    }
+    default:
+      return notDerivable(`no existence check known for CREATE (DefineStmt) with kind ${node.kind}`);
+  }
+}
+
+/** ACL objtype codes used by pg_default_acl.defaclobjtype. */
+const DEFAULT_ACL_OBJTYPE: Record<string, string> = {
+  OBJECT_TABLE: 'r',
+  OBJECT_SEQUENCE: 'S',
+  OBJECT_FUNCTION: 'f',
+  OBJECT_TYPE: 'T',
+  OBJECT_SCHEMA: 'n'
+};
+
+/** Checks for ALTER DEFAULT PRIVILEGES ... GRANT via pg_default_acl. */
+function verifyDefaultPrivileges(node: AnyNode, warnings: string[]): string[] {
+  const action = node.action;
+  if (action?.is_grant !== true) return [];
+
+  const objtype = DEFAULT_ACL_OBJTYPE[action.objtype];
+  if (!objtype) {
+    warnings.push(`verify not derivable: ALTER DEFAULT PRIVILEGES on ${action.objtype}`);
+    return [];
+  }
+
+  const privNames: string[] = (action.privileges ?? [])
+    .map((p: AnyNode) => p?.AccessPriv?.priv_name)
+    .filter((s: any) => typeof s === 'string');
+  if (privNames.length === 0) {
+    warnings.push('verify not derivable: ALTER DEFAULT PRIVILEGES GRANT ALL expands per object type');
+    return [];
+  }
+
+  const grantees: string[] = (action.grantees ?? [])
+    .map((g: AnyNode) => {
+      const spec = g?.RoleSpec;
+      if (spec?.roletype === 'ROLESPEC_PUBLIC') return 'public';
+      return spec?.rolename;
+    })
+    .filter((s: any) => typeof s === 'string');
+
+  const schemas: string[] = (node.options ?? [])
+    .filter((o: AnyNode) => o?.DefElem?.defname === 'schemas')
+    .flatMap((o: AnyNode) => o.DefElem.arg?.List?.items ?? [])
+    .map((s: AnyNode) => s?.String?.sval)
+    .filter((s: any) => typeof s === 'string');
+
+  const out: string[] = [];
+  for (const grantee of grantees) {
+    for (const privilege of privNames) {
+      const conds = [
+        `d.defaclobjtype = ${lit(objtype)}`,
+        `r.rolname = ${lit(grantee)}`,
+        `a.privilege_type = ${lit(privilege.toUpperCase())}`
+      ];
+      if (schemas.length > 0) {
+        conds.push(`d.defaclnamespace IN (${schemas.map(s => `to_regnamespace(${lit(qname(null, s))})`).join(', ')})`);
+      }
+      out.push(check(
+        `EXISTS (SELECT 1 FROM pg_default_acl d, aclexplode(d.defaclacl) a ` +
+        `JOIN pg_roles r ON r.oid = a.grantee WHERE ${conds.join(' AND ')})`
+      ));
+    }
+  }
+  return out;
 }
 
 /** Privilege checks for a GRANT: one per (grantee, privilege, object). */
@@ -493,6 +797,16 @@ function verifyAlterTable(node: AnyNode, warnings: string[]): string[] {
       case 'AT_ForceRowSecurity':
         out.push(check(relCondition('c.relforcerowsecurity')));
         break;
+      case 'AT_AttachPartition': {
+        const partition = cmd.def?.PartitionCmd?.name;
+        if (!partition) break;
+        out.push(check(
+          `EXISTS (SELECT 1 FROM pg_inherits WHERE ` +
+          `inhrelid = ${lit(qname(partition.schemaname, partition.relname))}::regclass ` +
+          `AND inhparent = ${lit(table)}::regclass)`
+        ));
+        break;
+      }
       default:
         // Nothing verifiable comes into existence.
         break;
