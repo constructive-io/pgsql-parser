@@ -1,0 +1,98 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`restructureSql — atomize explodes CREATE TABLE into bare create + per-column/per-constraint alters 1`] = `
+"CREATE TABLE app.users (
+
+);
+
+ALTER TABLE app.users 
+  ADD COLUMN id uuid
+    DEFAULT gen_random_uuid();
+
+ALTER TABLE app.users 
+  ADD COLUMN email text
+    NOT NULL;
+
+ALTER TABLE app.users 
+  ADD CONSTRAINT users_email_uniq 
+    UNIQUE (email);
+
+ALTER TABLE app.users 
+  ADD PRIMARY KEY (id);
+
+CREATE TABLE app.orders (
+
+);
+
+ALTER TABLE app.orders 
+  ADD COLUMN id uuid;
+
+ALTER TABLE app.orders 
+  ADD COLUMN user_id uuid;
+
+ALTER TABLE app.orders 
+  ADD PRIMARY KEY (id);
+
+ALTER TABLE app.orders 
+  ADD 
+    FOREIGN KEY(user_id)
+    REFERENCES app.users (id);"
+`;
+
+exports[`restructureSql — fold (consolidated granularity) additionally inlines safe FKs into the table definition 1`] = `
+"CREATE TABLE app.users (
+  id uuid DEFAULT gen_random_uuid(),
+  email text NOT NULL,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE app.orders (
+  id uuid,
+  user_id uuid,
+  CONSTRAINT orders_pkey PRIMARY KEY (id),
+  CONSTRAINT orders_user_fk
+    FOREIGN KEY(user_id)
+    REFERENCES app.users (id)
+);"
+`;
+
+exports[`restructureSql — fold (consolidated granularity) keeps mutually-referencing FKs atomic instead of breaking the cycle 1`] = `
+"CREATE TABLE app.b (
+  id uuid,
+  a_id uuid,
+  CONSTRAINT b_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE app.a (
+  id uuid,
+  b_id uuid,
+  CONSTRAINT a_pkey PRIMARY KEY (id),
+  CONSTRAINT a_b_fk
+    FOREIGN KEY(b_id)
+    REFERENCES app.b (id)
+);
+
+ALTER TABLE app.b 
+  ADD CONSTRAINT b_a_fk
+    FOREIGN KEY(a_id)
+    REFERENCES app.a (id);"
+`;
+
+exports[`restructureSql — fold (object granularity) folds columns and same-table constraints into CREATE TABLE, keeps FKs separate 1`] = `
+"CREATE TABLE app.users (
+  id uuid DEFAULT gen_random_uuid(),
+  email text NOT NULL,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE app.orders (
+  id uuid,
+  user_id uuid,
+  CONSTRAINT orders_pkey PRIMARY KEY (id)
+);
+
+ALTER TABLE app.orders 
+  ADD CONSTRAINT orders_user_fk
+    FOREIGN KEY(user_id)
+    REFERENCES app.users (id);"
+`;

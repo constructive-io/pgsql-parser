@@ -7,6 +7,19 @@ export type {
 } from './facts';
 export { classifyStatements } from './facts';
 export type {
+  EdgeKind,
+  StatementEdge,
+  StatementGraph,
+  StatementNode,
+} from './graph';
+export { buildStatementGraph } from './graph';
+export type {
+  Granularity,
+  RestructureOptions,
+  RestructureResult,
+} from './restructure';
+export { orderStatements, restructureSql } from './restructure';
+export type {
   ExtensionDefinition,
   ExtensionRoute,
   ExtensionRouteSpec,
