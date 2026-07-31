@@ -12,7 +12,9 @@
  * because they see one node at a time and never the statement it belongs to:
  *
  *   1. a {@link WalkContext} on every callback (`stmtTag`, `isWrite`, `isRead`,
- *      `insideFunction`, `functionName`)
+ *      `insideFunction`, `functionName`), refined by the nearest enclosing
+ *      statement — so an `INSERT` nested in a CTE or in a PL/pgSQL body reports
+ *      `isWrite`, not the context of whatever statement contains it
  *   2. visitor composition — N visitors in a single pass, each free to mix SQL
  *      and `PLpgSQL_*` tags in the same object
  *   3. `ctx.abort()`, which ends the whole walk (returning `false` from a
@@ -52,7 +54,7 @@ export const READ_STATEMENTS: ReadonlySet<string> = new Set([
  * inside a function body.
  */
 export interface WalkContext {
-  /** Tag of the enclosing top-level statement, or `null` when walking a bare node. */
+  /** Tag of the nearest enclosing statement, or `null` when walking a bare node. */
   readonly stmtTag: string | null;
   /** Index of the enclosing statement within the script, or `-1` if unknown. */
   readonly stmtIndex: number;
@@ -151,6 +153,46 @@ export function walk(
   const makeContext = (fields: Omit<WalkContext, 'abort'>): WalkContext =>
     Object.assign({}, fields, ctxBase);
 
+  /**
+   * Statement context per node, derived from the path chain and memoized.
+   *
+   * A node's context is its parent's, except when the node is itself a
+   * statement: then it becomes the enclosing statement for its whole subtree.
+   * Nesting is what makes this necessary — the write target of an `INSERT`
+   * inside a CTE, a rule action, or a PL/pgSQL body is a write, even though
+   * the statement the script starts with may only read.
+   */
+  const contexts = new WeakMap<object, WalkContext>();
+
+  const contextFor = (
+    path: NodePath | PlpgsqlNodePath,
+    base: WalkContext,
+  ): WalkContext => {
+    const cached = contexts.get(path);
+    if (cached) return cached;
+
+    const parent = (path as { parent?: NodePath | PlpgsqlNodePath | null }).parent;
+    const inherited = parent ? contextFor(parent, base) : base;
+    const tag = path.tag;
+    const isWrite = WRITE_STATEMENTS.has(tag);
+    const isRead = READ_STATEMENTS.has(tag);
+
+    const ctx =
+      isWrite || isRead
+        ? makeContext({
+            stmtTag: tag,
+            stmtIndex: inherited.stmtIndex,
+            isWrite,
+            isRead,
+            insideFunction: inherited.insideFunction,
+            functionName: inherited.functionName,
+          })
+        : inherited;
+
+    contexts.set(path, ctx);
+    return ctx;
+  };
+
   /** Fire every visitor for one node. Returns false if any asks to skip children. */
   const fire = (path: NodePath | PlpgsqlNodePath, ctx: WalkContext): boolean => {
     let descend = true;
@@ -177,11 +219,11 @@ export function walk(
     return descend;
   };
 
-  const sqlCallback = (ctx: WalkContext): SqlWalker => (path: NodePath) =>
-    fire(path, ctx) ? undefined : false;
+  const sqlCallback = (base: WalkContext): SqlWalker => (path: NodePath) =>
+    fire(path, contextFor(path, base)) ? undefined : false;
 
-  const plpgsqlCallback = (ctx: WalkContext): PlpgsqlWalker => (path: PlpgsqlNodePath) =>
-    fire(path, ctx) ? undefined : false;
+  const plpgsqlCallback = (base: WalkContext): PlpgsqlWalker => (path: PlpgsqlNodePath) =>
+    fire(path, contextFor(path, base)) ? undefined : false;
 
   const bareContext = (): WalkContext =>
     makeContext({
@@ -201,17 +243,17 @@ export function walk(
    * every node after a `RawStmt` belongs to that statement.
    */
   const walkParseResult = (parseResult: any): void => {
-    let ctx = bareContext();
+    const base = bareContext();
 
     const callback: SqlWalker = (path: NodePath) => {
       if (path.tag !== 'RawStmt') {
-        return fire(path, ctx) ? undefined : false;
+        return fire(path, contextFor(path, base)) ? undefined : false;
       }
 
       const stmt = path.node?.stmt;
       const stmtTag = stmt ? Object.keys(stmt)[0] : null;
       const last = path.keyPath[path.keyPath.length - 1];
-      ctx = makeContext({
+      const ctx = makeContext({
         stmtTag,
         stmtIndex: typeof last === 'number' ? last : -1,
         isWrite: stmtTag != null && WRITE_STATEMENTS.has(stmtTag),
@@ -219,6 +261,7 @@ export function walk(
         insideFunction: false,
         functionName: null,
       });
+      contexts.set(path, ctx);
 
       let descend = fire(path, ctx);
       if (stmt && stmtTag) {

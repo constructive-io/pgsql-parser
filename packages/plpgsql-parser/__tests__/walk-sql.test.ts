@@ -98,6 +98,45 @@ describe('walkSql', () => {
       ]);
     });
 
+    it('refines the context to the nearest enclosing statement', () => {
+      const seen: Array<{ table: string; stmtTag: string | null; isWrite: boolean }> = [];
+      walkSql(
+        'WITH w AS (INSERT INTO a.written VALUES (1) RETURNING *) SELECT * FROM b.read',
+        {
+          RangeVar: (path, ctx) => {
+            seen.push({ table: path.node.relname, stmtTag: ctx.stmtTag, isWrite: ctx.isWrite });
+          },
+        },
+      );
+      expect(seen).toEqual(
+        expect.arrayContaining([
+          { table: 'written', stmtTag: 'InsertStmt', isWrite: true },
+          { table: 'read', stmtTag: 'SelectStmt', isWrite: false },
+        ]),
+      );
+    });
+
+    it('marks a write inside a function body as a write', () => {
+      const seen: Array<{ table: string; isWrite: boolean; functionName: string | null }> = [];
+      walkSql(
+        `CREATE FUNCTION w() RETURNS void LANGUAGE plpgsql AS $$
+         BEGIN
+           INSERT INTO infra.servers (name) VALUES ('x');
+         END;
+         $$;`,
+        {
+          RangeVar: (path, ctx) => {
+            seen.push({
+              table: path.node.relname,
+              isWrite: ctx.isWrite,
+              functionName: ctx.functionName,
+            });
+          },
+        },
+      );
+      expect(seen).toEqual([{ table: 'servers', isWrite: true, functionName: 'w' }]);
+    });
+
     it('numbers statements', () => {
       const indexes: number[] = [];
       walkSql('SELECT 1; SELECT 2; SELECT 3', {
