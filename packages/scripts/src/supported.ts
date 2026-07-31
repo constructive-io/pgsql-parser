@@ -126,6 +126,150 @@ export const SUPPORTED_STATEMENTS: readonly SupportedStatement[] = [
     nodeTags: ['CommentStmt'],
     revert: 'COMMENT ON ... IS NULL',
     verify: null
+  },
+  {
+    statement: 'CREATE MATERIALIZED VIEW / CREATE TABLE AS',
+    nodeTags: ['CreateTableAsStmt'],
+    revert: 'DROP MATERIALIZED VIEW / DROP TABLE',
+    verify: 'to_regclass IS NOT NULL'
+  },
+  {
+    statement: 'CREATE SERVER',
+    nodeTags: ['CreateForeignServerStmt'],
+    revert: 'DROP SERVER',
+    verify: 'pg_foreign_server existence check'
+  },
+  {
+    statement: 'CREATE FOREIGN TABLE',
+    nodeTags: ['CreateForeignTableStmt'],
+    revert: 'DROP FOREIGN TABLE',
+    verify: 'to_regclass IS NOT NULL'
+  },
+  {
+    statement: 'CREATE USER MAPPING',
+    nodeTags: ['CreateUserMappingStmt'],
+    revert: 'DROP USER MAPPING',
+    verify: 'pg_user_mappings existence check'
+  },
+  {
+    statement: 'CREATE COLLATION / AGGREGATE / OPERATOR (binary) / TEXT SEARCH objects',
+    nodeTags: ['DefineStmt'],
+    revert: 'DROP COLLATION / DROP AGGREGATE (with signature) / DROP OPERATOR (left, right) / DROP TEXT SEARCH ...',
+    verify: 'pg_collation / to_regprocedure / to_regoperator / pg_ts_*'
+  },
+  {
+    statement: 'CREATE CAST',
+    nodeTags: ['CreateCastStmt'],
+    revert: 'DROP CAST (source AS target)',
+    verify: 'pg_cast existence check'
+  },
+  {
+    statement: 'CREATE PUBLICATION',
+    nodeTags: ['CreatePublicationStmt'],
+    revert: 'DROP PUBLICATION',
+    verify: 'pg_publication existence check'
+  },
+  {
+    statement: 'CREATE SUBSCRIPTION',
+    nodeTags: ['CreateSubscriptionStmt'],
+    revert: 'DROP SUBSCRIPTION',
+    verify: 'pg_subscription existence check'
+  },
+  {
+    statement: 'CREATE STATISTICS',
+    nodeTags: ['CreateStatsStmt'],
+    revert: 'DROP STATISTICS',
+    verify: 'pg_statistic_ext existence check'
+  },
+  {
+    statement: 'CREATE EVENT TRIGGER',
+    nodeTags: ['CreateEventTrigStmt'],
+    revert: 'DROP EVENT TRIGGER',
+    verify: 'pg_event_trigger existence check'
+  },
+  {
+    statement: 'CREATE RULE',
+    nodeTags: ['RuleStmt'],
+    revert: 'DROP RULE ... ON table',
+    verify: 'pg_rules existence check'
+  },
+  {
+    statement: 'ALTER TYPE ... ADD VALUE',
+    nodeTags: ['AlterEnumStmt'],
+    revert: null,
+    verify: 'pg_enum label existence check'
+  },
+  {
+    statement: 'ALTER TABLE ... ATTACH PARTITION',
+    nodeTags: ['AlterTableStmt'],
+    revert: 'ALTER TABLE ... DETACH PARTITION',
+    verify: 'pg_inherits existence check'
+  },
+  {
+    statement: 'ALTER DEFAULT PRIVILEGES ... GRANT',
+    nodeTags: ['AlterDefaultPrivilegesStmt'],
+    revert: 'ALTER DEFAULT PRIVILEGES ... REVOKE',
+    verify: 'pg_default_acl + aclexplode privilege check'
+  },
+  {
+    statement: 'SECURITY LABEL',
+    nodeTags: ['SecLabelStmt'],
+    revert: 'SECURITY LABEL ... IS NULL',
+    verify: null
+  },
+  {
+    statement: 'CREATE FOREIGN DATA WRAPPER',
+    nodeTags: ['CreateFdwStmt'],
+    revert: 'DROP FOREIGN DATA WRAPPER',
+    verify: 'pg_foreign_data_wrapper existence check'
+  },
+  {
+    statement: 'CREATE CONVERSION',
+    nodeTags: ['CreateConversionStmt'],
+    revert: 'DROP CONVERSION',
+    verify: 'pg_conversion existence check'
+  },
+  {
+    statement: 'CREATE ACCESS METHOD',
+    nodeTags: ['CreateAmStmt'],
+    revert: 'DROP ACCESS METHOD',
+    verify: 'pg_am existence check'
+  },
+  {
+    statement: 'CREATE TRANSFORM',
+    nodeTags: ['CreateTransformStmt'],
+    revert: 'DROP TRANSFORM FOR type LANGUAGE lang',
+    verify: 'pg_transform existence check'
+  },
+  {
+    statement: 'CREATE OPERATOR CLASS',
+    nodeTags: ['CreateOpClassStmt'],
+    revert: 'DROP OPERATOR CLASS ... USING am',
+    verify: 'pg_opclass existence check'
+  },
+  {
+    statement: 'CREATE OPERATOR FAMILY',
+    nodeTags: ['CreateOpFamilyStmt'],
+    revert: 'DROP OPERATOR FAMILY ... USING am',
+    verify: 'pg_opfamily existence check'
+  },
+  {
+    statement: 'CREATE TABLESPACE',
+    nodeTags: ['CreateTableSpaceStmt'],
+    revert: 'DROP TABLESPACE',
+    verify: 'pg_tablespace existence check'
+  },
+  {
+    statement: 'ALTER ... RENAME TO (tables, columns, indexes, sequences, views, types, functions, schemas)',
+    nodeTags: ['RenameStmt'],
+    revert: 'ALTER ... RENAME back (the statement carries both names)',
+    verify: 'object exists under the new name'
+  },
+  {
+    statement: 'ALTER ... SET SCHEMA (schema-qualified source)',
+    nodeTags: ['AlterObjectSchemaStmt'],
+    revert: 'ALTER ... SET SCHEMA back (the statement carries both schemas)',
+    verify: 'object exists in the new schema'
   }
 ];
 

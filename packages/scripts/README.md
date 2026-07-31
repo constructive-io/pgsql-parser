@@ -30,6 +30,19 @@ const { sql: verifySql } = verifyFor(facts);
 
 Nothing outside the supported vocabulary is ever guessed at: `revertFor` emits a `-- revert not derivable: <reason>` comment plus a warning; `verifyFor` emits nothing plus a warning. The list is exported as `SUPPORTED_STATEMENTS` (and `SUPPORTED_NODE_TAGS`).
 
+## Node-level API
+
+For consumers that compose inverses at the AST level (semantic diffing, migration generation) without round-tripping through deparsed text:
+
+```ts
+import { invertStatement, existenceCheck } from '@pgsql/scripts';
+
+const inverse = invertStatement(facts[0]);  // AST statement nodes, [] = nothing to revert, null = not derivable
+const checks = existenceCheck(facts[0]);    // SelectStmt check nodes, [] = nothing to check, null = not derivable
+```
+
+`invertStatement` returns the per-statement inverse as wrapped AST nodes (e.g. `{ DropStmt: {...} }`); `existenceCheck` returns the raise-on-failure checks as `SelectStmt` nodes. Both return `null` instead of guessing when derivation is not possible — including partially underivable multi-command statements.
+
 ## Supported statements
 
 | Statement | Revert | Verify |
@@ -52,5 +65,32 @@ Nothing outside the supported vocabulary is ever guessed at: `revertFor` emits a
 | `GRANT` privileges (tables, sequences, functions, schemas) | `REVOKE` same privileges | `has_table_privilege` / `has_function_privilege` / `has_schema_privilege` |
 | `GRANT role TO role` | `REVOKE role FROM role` | `pg_auth_members` |
 | `COMMENT ON` | `COMMENT ON ... IS NULL` | — |
+| `CREATE MATERIALIZED VIEW` / `CREATE TABLE AS` | `DROP MATERIALIZED VIEW` / `DROP TABLE` | `to_regclass` |
+| `CREATE SERVER` | `DROP SERVER` | `pg_foreign_server` |
+| `CREATE FOREIGN TABLE` | `DROP FOREIGN TABLE` | `to_regclass` |
+| `CREATE USER MAPPING` | `DROP USER MAPPING` | `pg_user_mappings` |
+| `CREATE COLLATION` | `DROP COLLATION` | `pg_collation` |
+| `CREATE AGGREGATE` | `DROP AGGREGATE` with input signature | `to_regprocedure` |
+| `CREATE OPERATOR` (binary) | `DROP OPERATOR (left, right)` | `to_regoperator` |
+| `CREATE CAST` | `DROP CAST (source AS target)` | `pg_cast` |
+| `CREATE PUBLICATION` | `DROP PUBLICATION` | `pg_publication` |
+| `CREATE SUBSCRIPTION` | `DROP SUBSCRIPTION` | `pg_subscription` |
+| `CREATE STATISTICS` | `DROP STATISTICS` | `pg_statistic_ext` |
+| `CREATE EVENT TRIGGER` | `DROP EVENT TRIGGER` | `pg_event_trigger` |
+| `CREATE RULE` | `DROP RULE ... ON table` | `pg_rules` |
+| `ALTER TYPE ... ADD VALUE` | — (Postgres has no `DROP VALUE`; warns) | `pg_enum` |
+| `ALTER TABLE ... ATTACH PARTITION` | `DETACH PARTITION` | `pg_inherits` |
+| `ALTER DEFAULT PRIVILEGES ... GRANT` | `ALTER DEFAULT PRIVILEGES ... REVOKE` | `pg_default_acl` + `aclexplode` |
+| `SECURITY LABEL` | `SECURITY LABEL ... IS NULL` | — |
+| `CREATE FOREIGN DATA WRAPPER` | `DROP FOREIGN DATA WRAPPER` | `pg_foreign_data_wrapper` |
+| `CREATE CONVERSION` | `DROP CONVERSION` | `pg_conversion` |
+| `CREATE ACCESS METHOD` | `DROP ACCESS METHOD` | `pg_am` |
+| `CREATE TRANSFORM` | `DROP TRANSFORM FOR type LANGUAGE lang` | `pg_transform` |
+| `CREATE OPERATOR CLASS` / `FAMILY` | `DROP ... USING am` | `pg_opclass` / `pg_opfamily` |
+| `CREATE TEXT SEARCH CONFIGURATION` / `DICTIONARY` / `PARSER` / `TEMPLATE` | matching `DROP` | `pg_ts_config` / `pg_ts_dict` / `pg_ts_parser` / `pg_ts_template` |
+| `CREATE TABLESPACE` | `DROP TABLESPACE` | `pg_tablespace` |
+| `ALTER ... RENAME TO` | rename back (both names are in the statement) | object exists under new name |
+| `ALTER ... SET SCHEMA` (qualified source) | move back (both schemas are in the statement) | object exists in new schema |
+| `GRANT ALL` | `REVOKE ALL` | expands to the object type's concrete privilege list |
 
-Not derivable (warned, never guessed): `REVOKE`, unnamed constraints, `ALTER ... SET` with unknown prior value, arbitrary DML, dynamic SQL.
+Not derivable (warned, never guessed): `REVOKE`, unnamed constraints, `ALTER ... SET` with unknown prior value, `ALTER ... OWNER TO` (prior owner unknown), `SET SCHEMA` on unqualified names, arbitrary DML, dynamic SQL, prefix operators.
