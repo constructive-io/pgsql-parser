@@ -24,6 +24,7 @@ jobs:
           - '@pgsql/quotes'
           - '@pgsql/transform-ast'
           - '@pgsql/transform'
+          - '@pgsql/scripts'
     steps:
       - name: checkout
         uses: actions/checkout@v3
