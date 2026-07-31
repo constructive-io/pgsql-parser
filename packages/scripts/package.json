@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/scripts",
-  "version": "18.0.1",
+  "version": "18.1.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "Migration script generation for PostgreSQL — derive revert and verify scripts from classified statement facts",
   "main": "index.js",

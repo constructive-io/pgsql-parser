@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/transform-ast",
-  "version": "18.3.0",
+  "version": "18.3.1",
   "author": "Constructive <developers@constructive.io>",
   "description": "Transform PostgreSQL AST types for pgsql-parser",
   "main": "index.js",

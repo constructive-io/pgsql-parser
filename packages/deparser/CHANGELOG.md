@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.2.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@18.1.1...pgsql-deparser@18.2.0) (2026-07-31)
+
+### Features
+
+- **scripts:** stateless renames/schema moves, GRANT ALL expansion, long-tail creates, node-level API ([4275fb3](https://github.com/constructive-io/pgsql-parser/commit/4275fb3fe258b517167693d4f76bc42ef8a72ee6))
+
 ## [18.1.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@18.1.0...pgsql-deparser@18.1.1) (2026-07-21)
 
 **Note:** Version bump only for package pgsql-deparser
