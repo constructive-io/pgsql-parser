@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.9.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.8.0...@pgsql/transform@18.9.0) (2026-07-31)
+
+### Features
+
+- **transform:** statement dependency graph + granularity restructuring (atomic/object/consolidated) ([d8dafd2](https://github.com/constructive-io/pgsql-parser/commit/d8dafd2c24b1051deb46178880c0e0b25bd23ca9))
+
 # [18.8.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.7.0...@pgsql/transform@18.8.0) (2026-07-30)
 
 ### Features
