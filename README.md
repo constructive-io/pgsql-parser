@@ -149,19 +149,30 @@ const walker: Walker = (path: NodePath) => {
 
 walk(ast, walker);
 
-// Using a visitor object (recommended for multiple node types)
-const visitor: Visitor = {
+// Using a visitor object (recommended for multiple node types).
+// SQL and PL/pgSQL node tags may be mixed; the second argument to each
+// callback describes the statement the node belongs to.
+walk(ast, {
   SelectStmt: (path) => {
     console.log('SELECT statement:', path.node);
   },
-  RangeVar: (path) => {
+  RangeVar: (path, ctx) => {
     console.log('Table:', path.node.relname);
-    console.log('Path to table:', path.path);
-    console.log('Parent node:', path.parent?.tag);
-  }
-};
+    console.log('Is a write target:', ctx.isWrite);
+    console.log('Inside function:', ctx.functionName);
+  },
+  PLpgSQL_stmt_dynexecute: (_path, ctx) => ctx.abort('dynamic EXECUTE')
+});
+```
 
-walk(ast, visitor);
+Starting from SQL **text** instead of an AST? Use `walkSql` from
+`plpgsql-parser`, which parses, hydrates PL/pgSQL bodies, and then walks:
+
+```typescript
+import { loadModule, walkSql } from 'plpgsql-parser';
+
+await loadModule();
+walkSql('SELECT * FROM users', { RangeVar: (path) => console.log(path.node.relname) });
 ```
 
 ## 📦 Packages 
@@ -175,7 +186,7 @@ walk(ast, visitor);
 | [**pg-proto-parser**](./packages/proto-parser) | PostgreSQL protobuf parser and code generator | • Generate TypeScript interfaces from protobuf<br>• Create enum mappings and utilities<br>• AST helper generation |
 | [**@pgsql/transform-ast**](./packages/transform-ast) | Multi-version PostgreSQL AST transformer | • Transform ASTs between PostgreSQL versions (13→17)<br>• Single source of truth deparser pipeline<br>• Backward compatibility for legacy SQL |
 | [**@pgsql/transform**](./packages/transform) | SQL transformation & classification | • Schema-name rewriting (incl. PL/pgSQL bodies)<br>• Per-statement AST facts (`classifyStatements`)<br>• Qualification & round-trip validation |
-| [**@pgsql/traverse**](./packages/traverse) | PostgreSQL AST traversal utilities | • Visitor pattern for traversing PostgreSQL AST nodes<br>• NodePath context with parent/path information<br>• Runtime schema-based precise traversal |
+| [**@pgsql/traverse**](./packages/traverse) | SQL + PL/pgSQL AST traversal | • One `walk()` for SQL ASTs, PL/pgSQL ASTs, and parsed scripts<br>• `NodePath` structure plus statement context (`isWrite`, `insideFunction`, ...)<br>• Visitor composition, skip-children, and whole-walk abort |
 
 ## 🛠️ Development
 

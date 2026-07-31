@@ -1,5 +1,5 @@
-import { parse, walk, walkParsedScript, PLpgSQLNodePath, loadModule } from '../src';
-import type { PLpgSQLVisitor } from '../src';
+import { loadModule,parse, PlpgsqlNodePath, walk } from '../src';
+import type { PlpgsqlVisitor } from '../src';
 
 describe('plpgsql-parser traverse', () => {
   beforeAll(async () => {
@@ -26,7 +26,7 @@ describe('plpgsql-parser traverse', () => {
       expect(parsed.functions.length).toBe(1);
       
       const visitedTags: string[] = [];
-      const visitor: PLpgSQLVisitor = {
+      const visitor: PlpgsqlVisitor = {
         PLpgSQL_function: (path) => {
           visitedTags.push(path.tag);
         },
@@ -57,7 +57,7 @@ describe('plpgsql-parser traverse', () => {
       const parsed = parse(simpleFunctionSql);
       
       const visitedTags: string[] = [];
-      walk(parsed.functions[0].plpgsql.hydrated, (path: PLpgSQLNodePath) => {
+      walk(parsed.functions[0].plpgsql.hydrated, (path: PlpgsqlNodePath) => {
         visitedTags.push(path.tag);
       });
       
@@ -69,7 +69,7 @@ describe('plpgsql-parser traverse', () => {
       const parsed = parse(simpleFunctionSql);
       
       let blockPath: (string | number)[] = [];
-      const visitor: PLpgSQLVisitor = {
+      const visitor: PlpgsqlVisitor = {
         PLpgSQL_stmt_block: (path) => {
           blockPath = path.path;
         },
@@ -84,7 +84,7 @@ describe('plpgsql-parser traverse', () => {
       const parsed = parse(simpleFunctionSql);
       
       const visitedTags: string[] = [];
-      const visitor: PLpgSQLVisitor = {
+      const visitor: PlpgsqlVisitor = {
         PLpgSQL_function: (path) => {
           visitedTags.push(path.tag);
           return false; // Skip children
@@ -101,30 +101,25 @@ describe('plpgsql-parser traverse', () => {
     });
   });
 
-  describe('walkParsedScript', () => {
-    it('should walk both SQL and PL/pgSQL nodes', () => {
+  describe('walking a parsed script', () => {
+    it('should walk both SQL and PL/pgSQL nodes from one visitor', () => {
       const parsed = parse(simpleFunctionSql);
-      
+
       const plpgsqlTags: string[] = [];
       const sqlTags: string[] = [];
-      
-      walkParsedScript(
-        parsed,
-        {
-          PLpgSQL_function: (path) => {
-            plpgsqlTags.push(path.tag);
-          },
-          PLpgSQL_stmt_block: (path) => {
-            plpgsqlTags.push(path.tag);
-          },
+
+      walk(parsed, {
+        PLpgSQL_function: (path) => {
+          plpgsqlTags.push(path.tag);
         },
-        {
-          CreateFunctionStmt: (path) => {
-            sqlTags.push(path.tag);
-          },
-        }
-      );
-      
+        PLpgSQL_stmt_block: (path) => {
+          plpgsqlTags.push(path.tag);
+        },
+        CreateFunctionStmt: (path) => {
+          sqlTags.push(path.tag);
+        },
+      });
+
       expect(plpgsqlTags).toContain('PLpgSQL_function');
       expect(sqlTags).toContain('CreateFunctionStmt');
     });
@@ -135,7 +130,7 @@ describe('plpgsql-parser traverse', () => {
       const parsed = parse(simpleFunctionSql);
       
       const sqlTags: string[] = [];
-      const visitor: PLpgSQLVisitor = {
+      const visitor: PlpgsqlVisitor = {
         PLpgSQL_expr: () => {
           // Just visit the expression node
         },
@@ -181,7 +176,7 @@ describe('plpgsql-parser traverse', () => {
       const parsed = parse(ifFunctionSql);
       const visitedTags: string[] = [];
       
-      walk(parsed.functions[0].plpgsql.hydrated, (path: PLpgSQLNodePath) => {
+      walk(parsed.functions[0].plpgsql.hydrated, (path: PlpgsqlNodePath) => {
         visitedTags.push(path.tag);
       });
       
@@ -209,7 +204,7 @@ describe('plpgsql-parser traverse', () => {
       const parsed = parse(loopFunctionSql);
       const visitedTags: string[] = [];
       
-      walk(parsed.functions[0].plpgsql.hydrated, (path: PLpgSQLNodePath) => {
+      walk(parsed.functions[0].plpgsql.hydrated, (path: PlpgsqlNodePath) => {
         visitedTags.push(path.tag);
       });
       
@@ -236,7 +231,7 @@ describe('plpgsql-parser traverse', () => {
       const parsed = parse(forFunctionSql);
       const visitedTags: string[] = [];
       
-      walk(parsed.functions[0].plpgsql.hydrated, (path: PLpgSQLNodePath) => {
+      walk(parsed.functions[0].plpgsql.hydrated, (path: PlpgsqlNodePath) => {
         visitedTags.push(path.tag);
       });
       

@@ -58,6 +58,29 @@ Qualify unqualified object references against an inventory of known objects, wit
 
 `normalizeTree` / `cleanTree` / `validateRoundTrip` — dependency-free AST normalization and mutation-aware parse→deparse→re-parse validation.
 
+## Relationship to `@pgsql/traverse`
+
+This package owns **policy**, not traversal. Every entry point above parses once,
+then drives `walk` from `@pgsql/traverse` over the parsed script — statements and
+hydrated PL/pgSQL bodies alike — with a visitor built here:
+
+| Concern | Lives here |
+|---|---|
+| Which schema/role/extension a name maps to | `SchemaRouter`, `RoleRouter`, extension routes |
+| What counts as a reference, a creation, a security-relevant statement | `classifyStatements` |
+| When an unqualified name should be qualified | `qualifyUnqualified` |
+| Whether the rewritten SQL still parses to the same tree | `validateRoundTrip` |
+| How to reach every node of a SQL or PL/pgSQL AST | **`@pgsql/traverse`** |
+
+So mapping logic never moves into the walker, and traversal logic never moves in
+here. Some passes keep per-statement state (CTE names in `qualifyUnqualified`,
+per-statement facts in `classifyStatements`) and drive the `walkSqlAst` /
+`walkPlpgsqlAst` primitives directly with a visitor per statement.
+
+Consequence for contributors: `__fixtures__/output/` is the regression gate for
+traversal changes made *anywhere* in the ecosystem. A walker change that alters
+these golden files is a behavior change, not a refactor.
+
 ## Scripts
 
 - `npm run fixtures` — regenerate `__fixtures__/output/` golden files from `__fixtures__/input/`

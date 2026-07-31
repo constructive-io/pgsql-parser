@@ -25,8 +25,8 @@
  */
 
 import { QuoteUtils } from '@pgsql/quotes';
-import { walk as walkSql } from '@pgsql/traverse';
-import { Deparser,parseSql, transformSync, walk as walkPlpgsql } from 'plpgsql-parser';
+import { walk, walkSqlAst } from '@pgsql/traverse';
+import { Deparser,parseSql, transformSync, walkPlpgsqlAst } from 'plpgsql-parser';
 
 import type { QualifyUnqualifiedOptions } from './qualify';
 import { qualifyUnqualified } from './qualify';
@@ -880,7 +880,7 @@ export function transformPlpgsqlTypeAst(
       }
     };
     
-    walkSql(parseResult.stmts[0].stmt, sqlVisitor);
+    walkSqlAst(parseResult.stmts[0].stmt, sqlVisitor);
     
     const deparsed = Deparser.deparse(parseResult.stmts[0].stmt);
     
@@ -958,7 +958,7 @@ export function walkPlpgsqlForSchemas(
       if (Array.isArray(expr.query.parseResult?.stmts)) {
         for (const stmt of expr.query.parseResult.stmts) {
           if (stmt?.stmt) {
-            walkSql(stmt.stmt, sqlVisitor);
+            walkSqlAst(stmt.stmt, sqlVisitor);
           }
         }
       }
@@ -981,7 +981,7 @@ export function walkPlpgsqlForSchemas(
     if (plType.typname) {
       if (typeof plType.typname === 'object' && plType.typname.kind === 'type-name') {
         // Transform schema names directly in the typeNameNode.names array.
-        // We cannot use walkSql here because the raw typeNameNode is not
+        // We cannot use walkSqlAst here because the raw typeNameNode is not
         // wrapped in the expected AST envelope that the traverse walker needs.
         if (plType.typname.typeNameNode?.names) {
           transformNameList(plType.typname.typeNameNode.names, schemaMapping, result, 'type');
@@ -1035,12 +1035,33 @@ function transformSqlBodyString(
     const pieces: string[] = [];
     for (const stmt of stmts) {
       if (!stmt?.stmt) continue;
-      walkSql(stmt.stmt, visitor);
+      walkSqlAst(stmt.stmt, visitor);
       pieces.push(Deparser.deparse(stmt.stmt));
     }
     return pieces.join(';\n');
   } catch {
     return body.includes('.') ? transformSchemaRefsInString(body, router, result) : body;
+  }
+}
+
+/**
+ * Apply schema renaming to a hydrated parse context: every top-level statement
+ * and every hydrated PL/pgSQL body in one walk. `walkPlpgsqlForSchemas` handles
+ * what the SQL visitor cannot see — PL/pgSQL-only nodes such as declared
+ * variable types, which carry schema-qualified names as plain strings.
+ */
+function transformSchemasInContext(
+  ctx: any,
+  schemaMapping: SchemaMappingInput,
+  result: SchemaTransformResult,
+  visitorOptions?: { assumeSchemasExist?: Set<string> }
+): void {
+  walk(ctx, createSqlVisitor(schemaMapping, result, visitorOptions));
+
+  for (const fn of ctx.functions ?? []) {
+    if (fn.plpgsql?.hydrated) {
+      walkPlpgsqlForSchemas(fn.plpgsql.hydrated, schemaMapping, result);
+    }
   }
 }
 
@@ -1290,26 +1311,7 @@ export function transformSqlStatement(
 
   try {
     const transformed = transformSync(sql, (ctx) => {
-      const sqlVisitor = createSqlVisitor(schemaMapping, r);
-      
-      if (ctx.sql?.stmts) {
-        for (const stmt of ctx.sql.stmts) {
-          if (stmt?.stmt) {
-            walkSql(stmt.stmt, sqlVisitor);
-          }
-        }
-      }
-      
-      for (const fn of ctx.functions) {
-        if (fn.plpgsql?.hydrated) {
-          walkPlpgsql(fn.plpgsql.hydrated, {}, {
-            walkSqlExpressions: true,
-            sqlVisitor: sqlVisitor
-          });
-          
-          walkPlpgsqlForSchemas(fn.plpgsql.hydrated, schemaMapping, r);
-        }
-      }
+      transformSchemasInContext(ctx, schemaMapping, r);
     }, { hydrate: true, pretty: true });
 
     return { sql: transformed, result: r };
@@ -1362,26 +1364,7 @@ function transformSqlContentAst(
     let before: CapturedAsts | undefined;
     try {
       transformedBody = transformSync(transformedBody, (ctx) => {
-        const sqlVisitor = createSqlVisitor(schemaMapping, result, { assumeSchemasExist });
-        
-        if (ctx.sql?.stmts) {
-          for (const stmt of ctx.sql.stmts) {
-            if (stmt?.stmt) {
-              walkSql(stmt.stmt, sqlVisitor);
-            }
-          }
-        }
-        
-        for (const fn of ctx.functions) {
-          if (fn.plpgsql?.hydrated) {
-            walkPlpgsql(fn.plpgsql.hydrated, {}, {
-              walkSqlExpressions: true,
-              sqlVisitor: sqlVisitor
-            });
-            
-            walkPlpgsqlForSchemas(fn.plpgsql.hydrated, schemaMapping, result);
-          }
-        }
+        transformSchemasInContext(ctx, schemaMapping, result, { assumeSchemasExist });
 
         if (roundTrip) {
           before = captureTransformAsts(ctx);

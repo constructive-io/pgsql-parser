@@ -453,6 +453,9 @@ importers:
       pg-proto-parser:
         specifier: workspace:*
         version: link:../proto-parser/dist
+      plpgsql-deparser:
+        specifier: workspace:*
+        version: link:../plpgsql-deparser/dist
     devDependencies:
       makage:
         specifier: ^0.1.8

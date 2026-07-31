@@ -10,12 +10,12 @@ A pnpm monorepo for PostgreSQL AST parsing, deparsing, and code generation. All 
 |---------|-----------|---------|
 | `pgsql-parser` | `packages/parser` | Parse SQL to AST (wraps `libpg-query` WASM) |
 | `pgsql-deparser` | `packages/deparser` | Convert AST back to SQL (pure TypeScript) |
-| `plpgsql-parser` | `packages/plpgsql-parser` | Parse PL/pgSQL to AST |
+| `plpgsql-parser` | `packages/plpgsql-parser` | Parse PL/pgSQL to AST; `walkSql(text, ...)` for text-in traversal |
 | `plpgsql-deparser` | `packages/plpgsql-deparser` | Convert PL/pgSQL AST back to SQL |
 | `pgsql-types` | `packages/pgsql-types` | Narrowed TypeScript types inferred from SQL fixtures |
 | `@pgsql/types` | (published from proto-parser codegen) | Core TypeScript type definitions for PostgreSQL AST nodes |
 | `@pgsql/utils` | `packages/utils` | Type-safe AST node creation utilities |
-| `@pgsql/traverse` | `packages/traverse` | Visitor-pattern AST traversal |
+| `@pgsql/traverse` | `packages/traverse` | Visitor-pattern traversal of SQL and PL/pgSQL ASTs: `walk`, `walkSqlAst`, `walkPlpgsqlAst`, `traverse` |
 | `@pgsql/transform-ast` | `packages/transform-ast` | Multi-version AST transformer (PG 13-17) |
 | `@pgsql/transform` | `packages/transform` | SQL schema transformation, statement classification (AST facts), qualification, round-trip validation |
 | `@pgsql/quotes` | `packages/quotes` | SQL identifier/string quoting and keyword classification |
@@ -37,6 +37,7 @@ Detailed workflow documentation lives in `.agents/skills/`:
 
 | Skill | Path | Covers |
 |-------|------|--------|
+| **AST Traversal** | `.agents/skills/ast-traversal/SKILL.md` | Walking SQL and PL/pgSQL ASTs: choosing `walk` / `walkSql` / `walkSqlAst` / `walkPlpgsqlAst` / `traverse`, statement context, visitor composition, abort, mutation |
 | **Testing & Fixtures** | `.agents/skills/testing-fixtures/SKILL.md` | Fixture-based testing pipeline, adding new test fixtures, kitchen-sink workflow, PL/pgSQL fixtures, transform tests |
 | **Code Generation** | `.agents/skills/code-generation/SKILL.md` | Protobuf codegen (`build:proto`), type inference/generation (`pgsql-types`), keyword generation (`@pgsql/quotes`), version-specific deparsers |
 
@@ -115,6 +116,12 @@ Version configuration lives in `config/versions.json` — maps PG versions (13-1
 
 - TypeScript throughout, compiled to both CJS and ESM
 - `@pgsql/types` provides all AST node types — use them for type safety
+- Traversal: reach for `walk` from `@pgsql/traverse` (any AST: SQL, PL/pgSQL, or a
+  parsed script) or `walkSql` from `plpgsql-parser` (SQL text). Use the
+  `walkSqlAst` / `walkPlpgsqlAst` primitives only when you deliberately want a
+  single node universe with no statement context, and `traverse` when you need to
+  mutate. Never hand-roll a `transformSync(..., { hydrate: true })` +
+  per-statement loop harness — that is what `walk` is for
 - `@pgsql/quotes` handles SQL identifier quoting — use `QuoteUtils` methods
 - Test files go in `__tests__/` within each package
 - Fixture SQL files go in `__fixtures__/kitchen-sink/` (see testing-fixtures skill)

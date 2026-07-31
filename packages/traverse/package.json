@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/traverse",
-  "version": "18.4.0",
+  "version": "18.5.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "PostgreSQL AST traversal utilities for pgsql-parser",
   "main": "index.js",
@@ -32,7 +32,8 @@
   },
   "dependencies": {
     "@pgsql/types": "^18.0.0",
-    "pg-proto-parser": "workspace:*"
+    "pg-proto-parser": "workspace:*",
+    "plpgsql-deparser": "workspace:*"
   },
   "devDependencies": {
     "makage": "^0.1.8"

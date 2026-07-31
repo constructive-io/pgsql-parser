@@ -1,5 +1,5 @@
 import type { Visitor } from '../src';
-import { NodePath, visit, walk } from '../src';
+import { NodePath, walk } from '../src';
 
 // AST literals below are real libpg_query (PG18) parse output. Concrete
 // typed embedded fields (e.g. CreatePolicyStmt.table: RangeVar) are bare
@@ -269,60 +269,5 @@ describe('walk — typed embedded fields (untagged)', () => {
       'CreatePolicyStmt:p',
       'RoleSpec:ROLESPEC_PUBLIC'
     ]);
-  });
-});
-
-describe('visit — typed embedded fields (untagged)', () => {
-  it('visits RangeVar for CreatePolicyStmt.table', () => {
-    const visited: any[] = [];
-    visit(createPolicyAst, {
-      RangeVar: (node, ctx) => { visited.push({ node, ctx }); }
-    });
-
-    expect(visited).toHaveLength(1);
-    expect(visited[0].node.relname).toBe('posts');
-    expect(visited[0].ctx.path).toEqual(['table']);
-  });
-
-  it('visits RawStmt for the array-typed ParseResult.stmts field', () => {
-    const parseResult = {
-      ParseResult: {
-        version: 180004,
-        stmts: [{ stmt: indexStmtAst, stmt_len: 34 }]
-      }
-    };
-    const rawStmts: any[] = [];
-    const rangeVars: any[] = [];
-    visit(parseResult, {
-      RawStmt: (node) => { rawStmts.push(node); },
-      RangeVar: (node) => { rangeVars.push(node); }
-    });
-
-    expect(rawStmts).toHaveLength(1);
-    expect(rangeVars).toHaveLength(1);
-    expect(rangeVars[0].relname).toBe('posts');
-  });
-
-  it('detects a bare libpg-query parse result at the root', () => {
-    const parseResult = {
-      version: 180004,
-      stmts: [{ stmt: createPolicyAst, stmt_len: 52 }]
-    };
-    const visited: string[] = [];
-    visit(parseResult, {
-      ParseResult: () => { visited.push('ParseResult'); },
-      RawStmt: () => { visited.push('RawStmt'); },
-      RangeVar: (node) => { visited.push(`RangeVar:${node.relname}`); }
-    });
-    expect(visited).toEqual(['ParseResult', 'RawStmt', 'RangeVar:posts']);
-  });
-
-  it('keeps existing behavior for tagged nodes', () => {
-    const visited: string[] = [];
-    visit(createPolicyAst, {
-      CreatePolicyStmt: (node) => { visited.push(`CreatePolicyStmt:${node.policy_name}`); },
-      RoleSpec: (node) => { visited.push(`RoleSpec:${node.roletype}`); }
-    });
-    expect(visited).toEqual(['CreatePolicyStmt:p', 'RoleSpec:ROLESPEC_PUBLIC']);
   });
 });

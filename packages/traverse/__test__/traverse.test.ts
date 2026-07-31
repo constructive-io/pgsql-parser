@@ -1,5 +1,5 @@
 import type { Visitor, Walker } from '../src';
-import { NodePath,visit, walk } from '../src';
+import { NodePath, walk } from '../src';
 
 describe('traverse', () => {
   it('should visit SelectStmt nodes with new walk API', () => {
@@ -157,16 +157,16 @@ describe('traverse', () => {
     expect(visitedNodes).toContain('A_Const');
   });
 
-  it('should maintain backward compatibility with visit function', () => {
+  it('should dispatch a visitor object per node tag', () => {
     const selectStmtVisited: any[] = [];
     const rangeVarVisited: any[] = [];
-    
-    const visitor = {
-      SelectStmt: (node: any, ctx: any) => {
-        selectStmtVisited.push({ node, ctx });
+
+    const visitor: Visitor = {
+      SelectStmt: (path: NodePath) => {
+        selectStmtVisited.push(path);
       },
-      RangeVar: (node: any, ctx: any) => {
-        rangeVarVisited.push({ node, ctx });
+      RangeVar: (path: NodePath) => {
+        rangeVarVisited.push(path);
       }
     };
 
@@ -184,7 +184,7 @@ describe('traverse', () => {
       }
     };
 
-    visit(ast, visitor);
+    walk(ast, visitor);
 
     expect(selectStmtVisited).toHaveLength(1);
     expect(rangeVarVisited).toHaveLength(1);
@@ -196,15 +196,15 @@ describe('traverse', () => {
     const rawStmtVisited: any[] = [];
     const selectStmtVisited: any[] = [];
     
-    const visitor = {
-      ParseResult: (node: any, ctx: any) => {
-        parseResultVisited.push({ node, ctx });
+    const visitor: Visitor = {
+      ParseResult: (path: NodePath) => {
+        parseResultVisited.push(path);
       },
-      RawStmt: (node: any, ctx: any) => {
-        rawStmtVisited.push({ node, ctx });
+      RawStmt: (path: NodePath) => {
+        rawStmtVisited.push(path);
       },
-      SelectStmt: (node: any, ctx: any) => {
-        selectStmtVisited.push({ node, ctx });
+      SelectStmt: (path: NodePath) => {
+        selectStmtVisited.push(path);
       }
     };
 
@@ -227,7 +227,7 @@ describe('traverse', () => {
       }
     };
 
-    visit(parseResult, visitor);
+    walk(parseResult, visitor);
 
     expect(parseResultVisited).toHaveLength(1);
     expect(rawStmtVisited).toHaveLength(1);
@@ -237,12 +237,12 @@ describe('traverse', () => {
     expect(selectStmtVisited[0].node.limitOption).toBe('LIMIT_OPTION_DEFAULT');
   });
 
-  it('should provide correct visitor context', () => {
-    const contexts: any[] = [];
-    
-    const visitor = {
-      RangeVar: (node: any, ctx: any) => {
-        contexts.push(ctx);
+  it('should provide the key path of each node', () => {
+    const paths: NodePath[] = [];
+
+    const visitor: Visitor = {
+      RangeVar: (path: NodePath) => {
+        paths.push(path);
       }
     };
 
@@ -260,11 +260,11 @@ describe('traverse', () => {
       }
     };
 
-    visit(ast, visitor);
+    walk(ast, visitor);
 
-    expect(contexts).toHaveLength(1);
-    expect(contexts[0].path).toEqual(['fromClause', 0]);
-    expect(contexts[0].key).toBe(0);
+    expect(paths).toHaveLength(1);
+    expect(paths[0].path).toEqual(['fromClause', 0]);
+    expect(paths[0].key).toBe(0);
   });
 
   it('should handle null and undefined nodes gracefully', () => {
@@ -274,22 +274,22 @@ describe('traverse', () => {
       }
     };
 
-    expect(() => visit(null as any, visitor)).not.toThrow();
-    expect(() => visit(undefined as any, visitor)).not.toThrow();
-    expect(() => visit('string' as any, visitor)).not.toThrow();
+    expect(() => walk(null as any, visitor)).not.toThrow();
+    expect(() => walk(undefined as any, visitor)).not.toThrow();
+    expect(() => walk('string' as any, visitor)).not.toThrow();
   });
 
   it('should handle nested complex AST structures', () => {
     const visitedNodes: string[] = [];
     
-    const visitor = {
-      SelectStmt: () => visitedNodes.push('SelectStmt'),
-      ResTarget: () => visitedNodes.push('ResTarget'),
-      ColumnRef: () => visitedNodes.push('ColumnRef'),
-      A_Star: () => visitedNodes.push('A_Star'),
-      RangeVar: () => visitedNodes.push('RangeVar'),
-      A_Expr: () => visitedNodes.push('A_Expr'),
-      A_Const: () => visitedNodes.push('A_Const')
+    const visitor: Visitor = {
+      SelectStmt: () => { visitedNodes.push('SelectStmt'); },
+      ResTarget: () => { visitedNodes.push('ResTarget'); },
+      ColumnRef: () => { visitedNodes.push('ColumnRef'); },
+      A_Star: () => { visitedNodes.push('A_Star'); },
+      RangeVar: () => { visitedNodes.push('RangeVar'); },
+      A_Expr: () => { visitedNodes.push('A_Expr'); },
+      A_Const: () => { visitedNodes.push('A_Const'); }
     };
 
     const complexAst = {
@@ -335,7 +335,7 @@ describe('traverse', () => {
       }
     };
 
-    visit(complexAst, visitor);
+    walk(complexAst, visitor);
 
     expect(visitedNodes).toContain('SelectStmt');
     expect(visitedNodes).toContain('ResTarget');
@@ -349,9 +349,9 @@ describe('traverse', () => {
   it('should handle arrays of nodes correctly', () => {
     const targetListVisited: any[] = [];
     
-    const visitor = {
-      ResTarget: (node: any, ctx: any) => {
-        targetListVisited.push({ node, ctx });
+    const visitor: Visitor = {
+      ResTarget: (path: NodePath) => {
+        targetListVisited.push(path);
       }
     };
 
@@ -382,13 +382,13 @@ describe('traverse', () => {
       }
     };
 
-    visit(ast, visitor);
+    walk(ast, visitor);
 
     expect(targetListVisited).toHaveLength(2);
-    expect(targetListVisited[0].ctx.key).toBe(0);
-    expect(targetListVisited[1].ctx.key).toBe(1);
-    expect(targetListVisited[0].ctx.path).toEqual(['targetList', 0]);
-    expect(targetListVisited[1].ctx.path).toEqual(['targetList', 1]);
+    expect(targetListVisited[0].key).toBe(0);
+    expect(targetListVisited[1].key).toBe(1);
+    expect(targetListVisited[0].path).toEqual(['targetList', 0]);
+    expect(targetListVisited[1].path).toEqual(['targetList', 1]);
   });
 
   it('should traverse WithClause nodes', () => {
