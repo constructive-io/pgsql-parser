@@ -17,12 +17,7 @@ export type {
   ObjectIdentity,
   ObjectIdentityKind,
 } from './naming';
-export {
-  changePathFor,
-  identityOf,
-  pathFor,
-  PGPM_NAMING_SPEC_VERSION,
-} from './naming';
+export { identityOf } from './naming';
 export type {
   Granularity,
   RestructureOptions,

@@ -1,40 +1,23 @@
 /**
- * PGPM naming spec v1 — canonical, derived change paths.
+ * Object identity — the canonical, Postgres-native answer to "what object is
+ * this statement about?".
  *
- * A change path is never authored and never identity: it is a pure projection
- * of an object's identity through this spec. Objects (content-addressed ASTs
- * + dependency edges) are the source of truth; paths are re-derivable at any
- * time, so regrouping, renaming schemes, or repartitioning packages can never
- * break identity-keyed consumers (diff, dependency resolution).
+ * Identity is the key used by dependency graphs, semantic diffing, and any
+ * downstream naming scheme. It is a pure function of classifier facts —
+ * grounded in the parser's node taxonomy (`CreateStmt`, `CreateTrigStmt`,
+ * `IndexStmt`, ...), never in surface syntax like RangeVars. Rendering an
+ * identity to a change path (e.g. a pgpm module layout) is deliberately NOT
+ * defined here: paths are derived projections that belong to whichever
+ * packaging layer consumes the identity, so nothing is ever attached to them.
  *
  * Identity tuple: `(kind, schema, name, table?)` — `table` scopes objects
  * that are only unique per table (triggers, policies, indexes, constraints,
- * seed data). Function overloads share a path in v1 (disambiguation via a
- * signature suffix is reserved for a future spec version).
- *
- * Canonical templates (matching the conventions used across constructive-db
- * deploy trees):
- *
- *   schema     schemas/{schema}/schema
- *   table      schemas/{schema}/tables/{table}/table
- *   trigger    schemas/{schema}/tables/{table}/triggers/{name}
- *   policy     schemas/{schema}/tables/{table}/policies/{name}
- *   index      schemas/{schema}/tables/{table}/indexes/{name}
- *   constraint schemas/{schema}/tables/{table}/constraints/{name}
- *   seed_dml   schemas/{schema}/tables/{table}/fixtures/{name}
- *   function   schemas/{schema}/procedures/{name}
- *   view       schemas/{schema}/views/{name}
- *   type       schemas/{schema}/types/{name}
- *   sequence   schemas/{schema}/sequences/{name}
- *   extension  extensions/{name}
- *   role       roles/{name}
+ * seed data). Function overloads share an identity for now (signature
+ * disambiguation is a planned refinement).
  */
 import { StatementFacts } from './facts';
 
-/** Spec version, so bundles/modules can declare which scheme derived their paths. */
-export const PGPM_NAMING_SPEC_VERSION = 1;
-
-/** The kinds of objects the naming spec assigns paths to. */
+/** The kinds of objects an identity can describe. */
 export type ObjectIdentityKind =
   | 'schema'
   | 'extension'
@@ -52,8 +35,8 @@ export type ObjectIdentityKind =
   | 'other';
 
 /**
- * The identity of a database object — what a change path is derived from.
- * Identity is the diff/dependency key; the path is only its rendering.
+ * The identity of a database object. Identity is the diff/dependency key;
+ * any path or name is only a downstream rendering of it.
  */
 export interface ObjectIdentity {
   kind: ObjectIdentityKind;
@@ -64,32 +47,6 @@ export interface ObjectIdentity {
   /** Owning table, for objects only unique per table (trigger/policy/index/constraint/seed). */
   table?: string;
 }
-
-/** Kinds whose objects are scoped to (and only unique within) a table. */
-const TABLE_SCOPED = new Set<ObjectIdentityKind>([
-  'trigger',
-  'policy',
-  'index',
-  'constraint',
-  'seed_dml'
-]);
-
-/** Directory names for schema-scoped object kinds. */
-const SCHEMA_DIRS: Partial<Record<ObjectIdentityKind, string>> = {
-  view: 'views',
-  sequence: 'sequences',
-  type: 'types',
-  function: 'procedures'
-};
-
-/** Directory names for table-scoped object kinds. */
-const TABLE_DIRS: Partial<Record<ObjectIdentityKind, string>> = {
-  trigger: 'triggers',
-  policy: 'policies',
-  index: 'indexes',
-  constraint: 'constraints',
-  seed_dml: 'fixtures'
-};
 
 /**
  * Derive the identity of the object a statement primarily creates or
@@ -156,41 +113,4 @@ export function identityOf(facts: StatementFacts): ObjectIdentity | null {
       }
       return { kind: 'other', schema: created.schema, name: created.name };
   }
-}
-
-/**
- * Render an identity to its canonical pgpm change path (naming spec v1).
- * Total: every identity gets a deterministic path.
- */
-export function pathFor(identity: ObjectIdentity): string {
-  const { kind, name } = identity;
-  const schema = identity.schema ?? 'public';
-
-  if (kind === 'schema') return `schemas/${name}/schema`;
-  if (kind === 'extension') return `extensions/${name}`;
-  if (kind === 'role') return `roles/${name}`;
-  if (kind === 'table') return `schemas/${schema}/tables/${name}/table`;
-
-  if (TABLE_SCOPED.has(kind)) {
-    const dir = TABLE_DIRS[kind]!;
-    if (identity.table && identity.table !== name) {
-      return `schemas/${schema}/tables/${identity.table}/${dir}/${name}`;
-    }
-    // Table-scoped object whose table equals the target (ALTER TABLE
-    // constraints, seed data keyed by table).
-    return `schemas/${schema}/tables/${identity.table ?? name}/${dir}/${name}`;
-  }
-
-  const dir = SCHEMA_DIRS[kind];
-  if (dir) return `schemas/${schema}/${dir}/${name}`;
-  return `schemas/${schema}/objects/${name}`;
-}
-
-/**
- * Convenience: canonical change path for a statement, or `null` when the
- * statement has no identity of its own.
- */
-export function changePathFor(facts: StatementFacts): string | null {
-  const identity = identityOf(facts);
-  return identity ? pathFor(identity) : null;
 }
