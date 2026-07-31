@@ -1,0 +1,51 @@
+{
+  "name": "@pgsql/scripts",
+  "version": "18.0.0",
+  "author": "Constructive <developers@constructive.io>",
+  "description": "Migration script generation for PostgreSQL — derive revert and verify scripts from classified statement facts",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
+  "homepage": "https://github.com/constructive-io/pgsql-parser",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/constructive-io/pgsql-parser"
+  },
+  "bugs": {
+    "url": "https://github.com/constructive-io/pgsql-parser/issues"
+  },
+  "scripts": {
+    "copy": "makage assets",
+    "clean": "makage clean dist",
+    "prepublishOnly": "npm run build",
+    "build": "npm run clean && tsc && tsc -p tsconfig.esm.json && npm run copy",
+    "build:dev": "npm run clean && tsc --declarationMap && tsc -p tsconfig.esm.json && npm run copy",
+    "lint": "eslint . --fix",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@pgsql/quotes": "workspace:*",
+    "@pgsql/transform": "workspace:*",
+    "plpgsql-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "makage": "^0.1.8"
+  },
+  "keywords": [
+    "sql",
+    "postgres",
+    "postgresql",
+    "pg",
+    "ast",
+    "migration",
+    "revert",
+    "verify",
+    "scripts"
+  ]
+}

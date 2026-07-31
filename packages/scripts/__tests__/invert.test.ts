@@ -1,6 +1,6 @@
+import { classifyStatements } from '@pgsql/transform';
 import { loadModule } from 'plpgsql-parser';
 
-import { classifyStatements } from '../src/facts';
 import { revertFor, verifyFor } from '../src/invert';
 
 beforeAll(async () => {

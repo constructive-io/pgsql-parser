@@ -22,10 +22,8 @@
  *   `has_schema_privilege` for grants.
  */
 import { QuoteUtils } from '@pgsql/quotes';
+import { buildStatementGraph, StatementFacts } from '@pgsql/transform';
 import { Deparser } from 'plpgsql-parser';
-
-import { StatementFacts } from './facts';
-import { buildStatementGraph } from './graph';
 
 /** A generated script plus non-fatal notes about what could not be derived. */
 export interface GeneratedScript {

@@ -13,8 +13,6 @@ export type {
   StatementNode,
 } from './graph';
 export { buildStatementGraph } from './graph';
-export type { GeneratedScript } from './invert';
-export { revertFor, verifyFor } from './invert';
 export type {
   ObjectIdentity,
   ObjectIdentityKind,
