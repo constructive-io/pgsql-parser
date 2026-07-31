@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.10.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.9.0...@pgsql/transform@18.10.0) (2026-07-31)
+
+### Features
+
+- **transform:** PGPM naming spec v1 — identityOf + pathFor (canonical derived change paths) ([cc6da09](https://github.com/constructive-io/pgsql-parser/commit/cc6da09dfd76b69f0fba3553c08eeb09b7d1d16c))
+
 # [18.9.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.8.0...@pgsql/transform@18.9.0) (2026-07-31)
 
 ### Features
