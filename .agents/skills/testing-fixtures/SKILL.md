@@ -168,6 +168,30 @@ npm run kitchen-sink   # generate transform-specific kitchen-sink tests
 npm run test:ast       # run AST round-trip validation
 ```
 
+## Changing a Walker
+
+`@pgsql/transform` drives its whole pipeline (schema mapping, routing, qualify,
+role and extension transforms, round-trip validation) through the walkers in
+`@pgsql/traverse` — see the `ast-traversal` skill. Its fixtures are therefore the
+regression gate for any traversal change, including ones made in another package:
+
+```bash
+pnpm --filter @pgsql/traverse test
+pnpm --filter plpgsql-parser test
+pnpm --filter @pgsql/transform test   # fixtures + snapshots must be unchanged
+```
+
+A traversal change that alters fixture output is a behavior change, not a
+refactor. Two failure modes to look for specifically:
+
+- **Nodes no longer reached** — untagged typed fields (e.g. `CreatePolicyStmt.table`)
+  are only found via the runtime schema, so a hand-rolled recursion silently drops
+  them and a fixture loses a rename.
+- **Nodes reached twice** — a visitor fired both by an outer walk and by a nested
+  one double-applies edits.
+
+Never edit a fixture or snapshot to make a walker change pass.
+
 ## Package Scripts Reference
 
 ### `packages/deparser` (primary fixture pipeline)

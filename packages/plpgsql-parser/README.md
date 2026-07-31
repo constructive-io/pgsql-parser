@@ -103,99 +103,82 @@ Options:
 
 ## Traverse API
 
-The package provides a visitor pattern for traversing PL/pgSQL ASTs, similar to `@pgsql/traverse` but designed for PL/pgSQL node types.
+The walkers themselves live in [`@pgsql/traverse`](../traverse) and are
+re-exported here, so one import covers parsing and traversal. This package owns
+the one entry point that genuinely needs a parser: **SQL text in**.
 
-### `walk(root, callback, options?)`
+### `walkSql(sql, visitors, options?)`
 
-Walks the tree of PL/pgSQL AST nodes using a visitor pattern.
+Parses a SQL string, hydrates its PL/pgSQL function bodies, and walks both with
+the given visitors — SQL statements and PL/pgSQL bodies in a single pass.
 
 ```typescript
-import { parse, walk, loadModule } from 'plpgsql-parser';
-import type { PLpgSQLVisitor } from 'plpgsql-parser';
+import { loadModule, walkSql } from 'plpgsql-parser';
 
 await loadModule();
 
-const parsed = parse(`
-  CREATE FUNCTION get_user(p_id int)
-  RETURNS text
-  LANGUAGE plpgsql
-  AS $$
-  BEGIN
-    RETURN (SELECT name FROM users WHERE id = p_id);
-  END;
-  $$;
-`);
-
-// Visit PL/pgSQL nodes
-const visitor: PLpgSQLVisitor = {
-  PLpgSQL_stmt_block: (path) => {
-    console.log('Found block at path:', path.path);
+const result = walkSql(sql, {
+  // SQL nodes, at the top level and inside function bodies
+  RangeVar: (path, ctx) => {
+    if (ctx.isWrite && path.node.schemaname === 'audit') {
+      ctx.abort('the audit schema is read-only');
+    }
+    if (ctx.insideFunction) {
+      console.log(`${path.node.relname} referenced by ${ctx.functionName}`);
+    }
   },
-  PLpgSQL_stmt_return: (path) => {
-    console.log('Found return statement');
-  },
-};
+  // PL/pgSQL-only nodes, in the same visitor
+  PLpgSQL_stmt_dynexecute: (_path, ctx) => ctx.abort('dynamic EXECUTE is not allowed')
+});
 
-walk(parsed.functions[0].plpgsql.hydrated, visitor);
+result.aborted; // true when a visitor called ctx.abort()
+result.reason;  // 'the audit schema is read-only'
 ```
 
+Pass an array of visitors to compose independent policies in one parse. Every
+callback receives a `WalkContext` (`stmtTag`, `stmtIndex`, `isWrite`, `isRead`,
+`insideFunction`, `functionName`, `abort`) — see the
+[`@pgsql/traverse` README](../traverse) for the full traversal reference.
+
 Options:
-- `walkSqlExpressions` (default: `true`) - Whether to recurse into hydrated SQL expressions
-- `sqlVisitor` - SQL visitor to use when walking hydrated SQL expressions (from `@pgsql/traverse`)
+- `walkFunctionBodies` (default: `true`) - Hydrate and walk PL/pgSQL function bodies. `false` skips the PL/pgSQL parse entirely
+- `walkSqlExpressions` (default: `true`) - Recurse into hydrated SQL expressions inside bodies
+- `sqlVisitor` - Override the visitor used for those SQL expressions
 
-### `walkParsedScript(parsed, plpgsqlVisitor, sqlVisitor?)`
+Unparseable input is reported as `{ aborted: true, reason }` rather than
+throwing, so a validator can treat "rejected" and "could not be understood"
+uniformly.
 
-Convenience function that walks both SQL statements and PL/pgSQL function bodies.
+### `walk(ast, visitors, options?)`
+
+Re-exported from `@pgsql/traverse`. Same behavior as `walkSql`, but takes an AST
+you already have — a `ParsedScript` from `parse()`, a `ParseResult`, a SQL node,
+or a PL/pgSQL node:
 
 ```typescript
-import { parse, walkParsedScript, loadModule } from 'plpgsql-parser';
+import { loadModule, parse, walk } from 'plpgsql-parser';
 
 await loadModule();
 
 const parsed = parse(`
   CREATE TABLE users (id int);
-  CREATE FUNCTION get_user(p_id int) RETURNS text LANGUAGE plpgsql AS $$
+  CREATE FUNCTION get_user(id int) RETURNS text LANGUAGE plpgsql AS $$
   BEGIN
-    RETURN (SELECT name FROM users WHERE id = p_id);
+    RETURN (SELECT name FROM users WHERE users.id = id);
   END;
   $$;
 `);
 
-walkParsedScript(
-  parsed,
-  // PL/pgSQL visitor
-  {
-    PLpgSQL_stmt_return: (path) => {
-      console.log('PL/pgSQL return statement');
-    },
-  },
-  // SQL visitor (optional) - visits both top-level SQL and embedded SQL in functions
-  {
-    CreateStmt: (path) => {
-      console.log('CREATE TABLE statement');
-    },
-    RangeVar: (path) => {
-      console.log('Table reference:', path.node.relname);
-    },
-  }
-);
+walk(parsed, {
+  CreateStmt: () => console.log('CREATE TABLE statement'),
+  RangeVar: (path) => console.log('Table reference:', path.node.relname),
+  PLpgSQL_stmt_return: () => console.log('PL/pgSQL return statement')
+});
 ```
 
-### `PLpgSQLNodePath`
-
-The path object passed to visitor functions:
-
-```typescript
-class PLpgSQLNodePath<TTag extends string = string> {
-  tag: TTag;           // Node type (e.g., 'PLpgSQL_stmt_block')
-  node: any;           // The actual node data
-  parent: PLpgSQLNodePath | null;  // Parent path
-  keyPath: readonly (string | number)[];  // Full path array
-  
-  get path(): (string | number)[];  // Copy of keyPath
-  get key(): string | number;       // Last element of path
-}
-```
+Also re-exported: `walkSqlAst` (SQL-only primitive), `walkPlpgsqlAst`
+(PL/pgSQL-only primitive), `PlpgsqlNodePath`, and the `WalkContext` /
+`UnifiedVisitor` / `WalkResult` types.
 
 ## Re-exports
 
@@ -207,6 +190,7 @@ For power users, the package re-exports underlying primitives:
 - `deparsePlpgsqlBody` - PL/pgSQL deparser from `plpgsql-deparser`
 - `hydratePlpgsqlAst` - Hydration utility from `plpgsql-deparser`
 - `dehydratePlpgsqlAst` - Dehydration utility from `plpgsql-deparser`
+- `walk`, `walkSqlAst`, `walkPlpgsqlAst` - Walkers from `@pgsql/traverse`
 
 ## License
 

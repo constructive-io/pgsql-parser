@@ -13,7 +13,7 @@ Three packages generate TypeScript from the PostgreSQL protobuf definition at `_
 | Package | Script | What it generates |
 |---------|--------|-------------------|
 | `@pgsql/utils` | `npm run build:proto` | AST helper functions (`src/`), wrapped helpers (`wrapped.ts`), runtime schema (`runtime-schema.ts`) |
-| `@pgsql/traverse` | `npm run build:proto` | Visitor-pattern traversal utilities |
+| `@pgsql/traverse` | `npm run build:proto` | Runtime schema driving the SQL walker (`walk` / `walkSqlAst`); see the `ast-traversal` skill |
 | `@pgsql/transform-ast` | `npm run build:proto` | Multi-version AST transformer utilities |
 
 Each package has a `scripts/pg-proto-parser.ts` that configures `PgProtoParser` with package-specific options (which features to enable, output paths, type sources).

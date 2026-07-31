@@ -23,6 +23,7 @@ jobs:
           - pg-proto-parser
           - '@pgsql/quotes'
           - '@pgsql/transform-ast'
+          - '@pgsql/traverse'
           - '@pgsql/transform'
           - '@pgsql/scripts'
     steps:

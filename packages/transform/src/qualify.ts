@@ -15,8 +15,8 @@
  * with a routed relation.
  */
 
-import { walk as walkSql } from '@pgsql/traverse';
-import { Deparser, parseSql, transformSync, walk as walkPlpgsql } from 'plpgsql-parser';
+import { walkSqlAst } from '@pgsql/traverse';
+import { Deparser, parseSql, transformSync, walkPlpgsqlAst } from 'plpgsql-parser';
 
 import { classifyStatements } from './facts';
 
@@ -189,7 +189,7 @@ function resolveRoutes(sql: string, options: QualifyUnqualifiedOptions): Qualify
 
 function collectCteNames(stmt: any): Set<string> {
   const names = new Set<string>();
-  walkSql(stmt, {
+  walkSqlAst(stmt, {
     CommonTableExpr: (path: any) => {
       if (path.node?.ctename) names.add(path.node.ctename);
     }
@@ -217,7 +217,7 @@ function qualifySqlBodyString(
       { routes, cteNames: collectCteNames(stmt.stmt) },
       result
     );
-    walkSql(stmt.stmt, visitor);
+    walkSqlAst(stmt.stmt, visitor);
     pieces.push(Deparser.deparse(stmt.stmt));
   }
   return pieces.join(';\n');
@@ -365,14 +365,14 @@ export function qualifyUnqualified(
           { routes, cteNames: collectCteNames(stmt.stmt) },
           result
         );
-        walkSql(stmt.stmt, visitor);
+        walkSqlAst(stmt.stmt, visitor);
       }
     }
 
     const bodyVisitor = createQualifyVisitor({ routes }, result);
     for (const fn of ctx.functions) {
       if (fn.plpgsql?.hydrated) {
-        walkPlpgsql(fn.plpgsql.hydrated, {}, {
+        walkPlpgsqlAst(fn.plpgsql.hydrated, {}, {
           walkSqlExpressions: true,
           sqlVisitor: bodyVisitor
         });

@@ -21,7 +21,7 @@
  * rewritten.
  */
 
-import { walk as walkSql } from '@pgsql/traverse';
+import { walkSqlAst } from '@pgsql/traverse';
 import { transformSync } from 'plpgsql-parser';
 
 import type { RoleRouteSpec } from './role-router';
@@ -130,7 +130,7 @@ export function transformRoles(
     const stmts: any[] = ctx.sql?.stmts ?? [];
     const visitor = createRoleVisitor(resolved, result);
     for (const stmt of stmts) {
-      if (stmt?.stmt) walkSql(stmt.stmt, visitor);
+      if (stmt?.stmt) walkSqlAst(stmt.stmt, visitor);
     }
   }, { hydrate: true, pretty: true });
 

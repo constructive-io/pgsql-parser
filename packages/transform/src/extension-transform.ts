@@ -15,8 +15,8 @@
  * (and symbols that have graduated into core) are left untouched.
  */
 
-import { walk as walkSql } from '@pgsql/traverse';
-import { Deparser, parseSql, transformSync, walk as walkPlpgsql } from 'plpgsql-parser';
+import { walk, walkSqlAst } from '@pgsql/traverse';
+import { Deparser, parseSql, transformSync } from 'plpgsql-parser';
 
 import type { ExtensionRouteSpec, ExtensionRouterOptions, ExtensionSymbolNamespace } from './extension-router';
 import { ExtensionRouter } from './extension-router';
@@ -191,7 +191,7 @@ function rewriteSqlBodyString(
   const pieces: string[] = [];
   for (const stmt of stmts) {
     if (!stmt?.stmt) continue;
-    walkSql(stmt.stmt, visitor);
+    walkSqlAst(stmt.stmt, visitor);
     pieces.push(Deparser.deparse(stmt.stmt));
   }
   return pieces.join(';\n');
@@ -211,21 +211,11 @@ export function transformExtensions(
   const result = createExtensionResult();
 
   const out = transformSync(sql, (ctx: any) => {
-    const stmts: any[] = ctx.sql?.stmts ?? [];
-    const visitor = createExtensionVisitor(resolved, result);
-    for (const stmt of stmts) {
-      if (stmt?.stmt) walkSql(stmt.stmt, visitor);
-    }
-    if (resolved.hasSymbolRoutes()) {
-      for (const fn of ctx.functions ?? []) {
-        if (fn.plpgsql?.hydrated) {
-          walkPlpgsql(fn.plpgsql.hydrated, {}, {
-            walkSqlExpressions: true,
-            sqlVisitor: visitor
-          });
-        }
-      }
-    }
+    walk(ctx, createExtensionVisitor(resolved, result), {
+      // Bodies only matter when a symbol (function/operator/type) is routed;
+      // a bare extension rename never appears inside one.
+      walkFunctionBodies: resolved.hasSymbolRoutes()
+    });
   }, { hydrate: true, pretty: true });
 
   return { sql: out, result };

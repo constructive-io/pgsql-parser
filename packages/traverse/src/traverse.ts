@@ -35,11 +35,15 @@ export type Visitor = {
 
 /**
  * Walks the tree of PostgreSQL AST nodes using runtime schema for precise traversal.
- * 
+ *
+ * This is the SQL-only primitive: it knows nothing about PL/pgSQL bodies or
+ * statement context. Prefer `walk`, which dispatches over any AST shape and
+ * threads a {@link WalkContext} through the visitors.
+ *
  * If a callback returns `false`, the walk will continue to the next sibling
  * node, rather than recurse into the children of the current node.
  */
-export function walk(
+export function walkSqlAst(
   root: any,
   callback: Walker | Visitor,
   parent: NodePath | null = null,
@@ -55,7 +59,7 @@ export function walk(
 
   if (Array.isArray(root)) {
     root.forEach((node, index) => {
-      walk(node, actualCallback, parent, [...keyPath, index]);
+      walkSqlAst(node, actualCallback, parent, [...keyPath, index]);
     });
   } else if (typeof root === 'object' && root !== null) {
     const keys = Object.keys(root);
@@ -71,7 +75,7 @@ export function walk(
       }
     }
     for (const key of keys) {
-      walk(root[key], actualCallback, parent, [...keyPath, key]);
+      walkSqlAst(root[key], actualCallback, parent, [...keyPath, key]);
     }
   }
 }
@@ -138,11 +142,11 @@ function walkNode(
       if (Array.isArray(value)) {
         value.forEach((item, index) => {
           if (typeof item === 'object' && item !== null) {
-            walk(item, actualCallback, path, [...path.keyPath, key, index]);
+            walkSqlAst(item, actualCallback, path, [...path.keyPath, key, index]);
           }
         });
       } else if (typeof value === 'object' && value !== null) {
-        walk(value, actualCallback, path, [...path.keyPath, key]);
+        walkSqlAst(value, actualCallback, path, [...path.keyPath, key]);
       }
     }
   }
@@ -168,81 +172,6 @@ function walkFieldValue(
   ) {
     walkNode(declaredType, value, actualCallback, parent, keyPath);
   } else {
-    walk(value, actualCallback, parent, keyPath);
-  }
-}
-
-export type VisitorContext = {
-  path: (string | number)[];
-  parent: any;
-  key: string | number;
-};
-
-export function visit(
-  node: any,
-  visitor: { [key: string]: (node: any, ctx: VisitorContext) => void },
-  ctx: VisitorContext = { path: [], parent: null, key: '' }
-): void {
-  if (node == null || typeof node !== 'object') return;
-
-  const rootTag = detectUntaggedRootTag(node);
-  if (rootTag) {
-    visitNode(rootTag, node, visitor, ctx);
-    return;
-  }
-
-  const nodeType = Object.keys(node)[0] as string;
-  const nodeData = node[nodeType];
-
-  visitNode(nodeType, nodeData, visitor, ctx);
-}
-
-function visitNode(
-  nodeType: string,
-  nodeData: any,
-  visitor: { [key: string]: (node: any, ctx: VisitorContext) => void },
-  ctx: VisitorContext
-): void {
-  const visitFn = visitor[nodeType];
-  if (visitFn) {
-    visitFn(nodeData, ctx);
-  }
-
-  const nodeSpec = schemaMap.get(nodeType);
-
-  for (const key in nodeData) {
-    const value = (nodeData as any)[key];
-    const field = nodeSpec?.fields.find((f) => f.name === key);
-    const concreteType =
-      field && field.type !== 'Node' && schemaMap.has(field.type)
-        ? field.type
-        : null;
-    if (Array.isArray(value)) {
-      value.forEach((item, index) => {
-        if (typeof item === 'object' && item !== null) {
-          const itemCtx: VisitorContext = {
-            parent: value,
-            key: index,
-            path: [...ctx.path, key, index],
-          };
-          if (concreteType && !isTaggedNode(item)) {
-            visitNode(concreteType, item, visitor, itemCtx);
-          } else if (Object.keys(item).length === 1) {
-            visit(item, visitor, itemCtx);
-          }
-        }
-      });
-    } else if (typeof value === 'object' && value !== null) {
-      const valueCtx: VisitorContext = {
-        parent: nodeData,
-        key,
-        path: [...ctx.path, key],
-      };
-      if (concreteType && !isTaggedNode(value)) {
-        visitNode(concreteType, value, visitor, valueCtx);
-      } else if (Object.keys(value).length === 1) {
-        visit(value, visitor, valueCtx);
-      }
-    }
+    walkSqlAst(value, actualCallback, parent, keyPath);
   }
 }

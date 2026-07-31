@@ -1,5 +1,5 @@
-import { walk as walkSql } from '@pgsql/traverse';
-import { parseSql, transformSync, walk as walkPlpgsql } from 'plpgsql-parser';
+import { walkSqlAst } from '@pgsql/traverse';
+import { parseSql, transformSync, walkPlpgsqlAst } from 'plpgsql-parser';
 
 /**
  * A (possibly schema-qualified) object name extracted from a statement.
@@ -473,7 +473,7 @@ function collectSqlBodyReferences(node: any, facts: StatementFacts): void {
     const stmts: any[] = parseSql(body)?.stmts ?? [];
     const visitor = createFactsVisitor(facts, facts.bodyReferences);
     for (const stmt of stmts) {
-      if (stmt?.stmt) walkSql(stmt.stmt, visitor);
+      if (stmt?.stmt) walkSqlAst(stmt.stmt, visitor);
     }
   } catch {
     // A non-parseable body (C symbol name, etc.) contributes no references.
@@ -502,7 +502,7 @@ export function classifyStatements(sql: string): StatementFacts[] {
 
       if (stmtNode) {
         facts.stmt = stmtNode;
-        walkSql(stmtNode, createFactsVisitor(facts));
+        walkSqlAst(stmtNode, createFactsVisitor(facts));
       }
       if (nodeTag === 'CreateFunctionStmt') {
         collectSqlBodyReferences(node, facts);
@@ -518,7 +518,7 @@ export function classifyStatements(sql: string): StatementFacts[] {
       const outer = new Set(
         facts.references.map(r => `${r.schema ?? '?'}.${r.name}`)
       );
-      walkPlpgsql(fn.plpgsql.hydrated, {
+      walkPlpgsqlAst(fn.plpgsql.hydrated, {
         PLpgSQL_stmt_dynexecute: () => { facts.dynamicSql = true; },
         PLpgSQL_stmt_dynfors: () => { facts.dynamicSql = true; }
       }, {
