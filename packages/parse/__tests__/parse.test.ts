@@ -1,4 +1,4 @@
-import { parse, parseSync, deparseEnhanced, isRawComment, isRawWhitespace, isRawStmt, loadModule } from '../src';
+import { deparseEnhanced, isRawComment, isRawStmt, isRawWhitespace, loadModule,parse, parseSync } from '../src';
 
 beforeAll(async () => {
   await loadModule();

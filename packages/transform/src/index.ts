@@ -1,4 +1,20 @@
 export type {
+  ExtensionDefinition,
+  ExtensionRoute,
+  ExtensionRouterOptions,
+  ExtensionRouteSpec,
+  ExtensionSymbol,
+  ExtensionSymbolNamespace,
+  SymbolRewrite,
+} from './extension-router';
+export { COMMON_EXTENSIONS, ExtensionRouter } from './extension-router';
+export type { ExtensionTransformResult } from './extension-transform';
+export {
+  createExtensionResult,
+  createExtensionVisitor,
+  transformExtensions,
+} from './extension-transform';
+export type {
   ExtensionAction,
   ExtensionFact,
   QualifiedName,
@@ -19,36 +35,6 @@ export type {
 } from './naming';
 export { identityOf } from './naming';
 export type {
-  Granularity,
-  RestructureOptions,
-  RestructureResult,
-} from './restructure';
-export { orderStatements, restructureSql } from './restructure';
-export type {
-  ExtensionDefinition,
-  ExtensionRoute,
-  ExtensionRouteSpec,
-  ExtensionRouterOptions,
-  ExtensionSymbol,
-  ExtensionSymbolNamespace,
-  SymbolRewrite,
-} from './extension-router';
-export { COMMON_EXTENSIONS, ExtensionRouter } from './extension-router';
-export type { ExtensionTransformResult } from './extension-transform';
-export {
-  createExtensionResult,
-  createExtensionVisitor,
-  transformExtensions,
-} from './extension-transform';
-export type { RoleRouteSpec } from './role-router';
-export { RoleRouter } from './role-router';
-export type { RoleTransformResult } from './role-transform';
-export {
-  createRoleResult,
-  createRoleVisitor,
-  transformRoles,
-} from './role-transform';
-export type {
   ObjectInventory,
   QualifyResult,
   QualifyRoutes,
@@ -62,14 +48,19 @@ export {
   qualifyUnqualified,
 } from './qualify';
 export type {
-  ObjectNamespace,
-  ObjectRoute,
-  ObjectRouteTarget,
-  RouteNamespace,
-  RouteSpec,
-  SchemaRoute,
-} from './router';
-export { SchemaRouter } from './router';
+  Granularity,
+  RestructureOptions,
+  RestructureResult,
+} from './restructure';
+export { orderStatements, restructureSql } from './restructure';
+export type { RoleRouteSpec } from './role-router';
+export { RoleRouter } from './role-router';
+export type { RoleTransformResult } from './role-transform';
+export {
+  createRoleResult,
+  createRoleVisitor,
+  transformRoles,
+} from './role-transform';
 export type { CapturedAsts } from './round-trip';
 export {
   captureAstsFromSql,
@@ -85,6 +76,15 @@ export {
   normalizeTree,
   trimDefElemBody,
 } from './round-trip-core';
+export type {
+  ObjectNamespace,
+  ObjectRoute,
+  ObjectRouteTarget,
+  RouteNamespace,
+  RouteSpec,
+  SchemaRoute,
+} from './router';
+export { SchemaRouter } from './router';
 export type {
   SchemaMappingInput,
   SchemaTransformPass,

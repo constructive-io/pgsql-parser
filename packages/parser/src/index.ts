@@ -1,9 +1,7 @@
 export {
+  loadModule as loadModule,
   parse as parse,
-  parseSync as parseSync,
-  loadModule as loadModule
-} from 'libpg-query';
-
+  parseSync as parseSync} from 'libpg-query';
 export {
   deparse,
   deparseSync

@@ -1,4 +1,5 @@
 import { loadModule, parsePlPgSQLSync } from 'libpg-query';
+
 import { deparseSync, PLpgSQLParseResult } from '../src';
 import { PLpgSQLTestUtils } from '../test-utils';
 

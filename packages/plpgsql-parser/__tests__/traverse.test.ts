@@ -1,5 +1,5 @@
-import { loadModule,parse, PlpgsqlNodePath, walk } from '../src';
 import type { PlpgsqlVisitor } from '../src';
+import { loadModule,parse, PlpgsqlNodePath, walk } from '../src';
 
 describe('plpgsql-parser traverse', () => {
   beforeAll(async () => {

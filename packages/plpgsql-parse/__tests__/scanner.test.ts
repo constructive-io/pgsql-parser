@@ -1,4 +1,4 @@
-import { scanBodyComments, groupCommentsByAnchor } from '../src/body-scanner';
+import { groupCommentsByAnchor,scanBodyComments } from '../src/body-scanner';
 
 describe('scanBodyComments', () => {
   it('should extract standalone comment lines', () => {

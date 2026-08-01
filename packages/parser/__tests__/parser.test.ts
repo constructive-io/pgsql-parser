@@ -1,4 +1,4 @@
-import { parse, parseSync, deparse, deparseSync, loadModule } from '../src';
+import { deparse, deparseSync, loadModule,parse, parseSync } from '../src';
 
 describe('pgsql-parser', () => {
   describe('Async API', () => {

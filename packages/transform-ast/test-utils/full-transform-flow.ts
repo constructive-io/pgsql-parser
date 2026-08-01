@@ -1,10 +1,11 @@
 import { Parser } from '@pgsql/parser';
-import { parse as parse18 } from 'libpg-query';
-import { deparse } from 'pgsql-deparser';
-import { cleanTree } from './clean-tree';
-import { PG13ToPG18Transformer } from '../src/transformers-direct/v13-to-v18';
 import { readFileSync } from 'fs';
+import { parse as parse18 } from 'libpg-query';
 import * as path from 'path';
+import { deparse } from 'pgsql-deparser';
+
+import { PG13ToPG18Transformer } from '../src/transformers-direct/v13-to-v18';
+import { cleanTree } from './clean-tree';
 
 /**
  * Result of the full transformation flow

@@ -1,4 +1,4 @@
-import { ParseResult, RawStmt } from '@pgsql/types';
+import { RawStmt } from '@pgsql/types';
 
 /**
  * Synthetic AST node representing a SQL comment.

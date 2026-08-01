@@ -1,7 +1,7 @@
-import { parse, deparseSync, loadModule } from '../src';
-import { parseSync } from 'libpg-query';
-import { readFileSync, existsSync } from 'fs';
+import { existsSync,readFileSync } from 'fs';
 import * as path from 'path';
+
+import { deparseSync, loadModule,parse } from '../src';
 
 const FIXTURES_DIR = path.join(__dirname, '../../../__fixtures__/plpgsql');
 const GENERATED_JSON = path.join(__dirname, '../../../__fixtures__/plpgsql-generated/generated.json');
@@ -31,12 +31,12 @@ const transform = (obj: any, props: any): any => {
   if (obj instanceof Object || typeof obj === 'object') {
     copy = {};
     for (const attr in obj) {
-      if (obj.hasOwnProperty(attr)) {
+      if (Object.prototype.hasOwnProperty.call(obj, attr)) {
         let value: any;
-        if (props.hasOwnProperty(attr)) {
+        if (Object.prototype.hasOwnProperty.call(props, attr)) {
           if (typeof props[attr] === 'function') {
             value = props[attr](obj[attr]);
-          } else if (props[attr].hasOwnProperty(obj[attr])) {
+          } else if (Object.prototype.hasOwnProperty.call(props[attr], obj[attr])) {
             value = props[attr][obj[attr]];
           } else {
             value = transform(obj[attr], props);

@@ -32,7 +32,7 @@ export const help = (): void => {
   --originalPackageName      Original package name to be replaced in the JS file.
   --newPackageName           New package name to replace in the JS file.
   `);
-}
+};
 
 export default async (argv: CommandOptions): Promise<CommandOptions> => {
 

@@ -31,23 +31,23 @@ export class ASTTransformer {
       
       // Use explicit switch to avoid complex union types
       switch (transformerKey) {
-        case '13-14':
-          currentAst = this.transformers['13-14'].transform(currentAst, { parentNodeTypes: [] });
-          break;
-        case '14-15':
-          currentAst = this.transformers['14-15'].transform(currentAst, { parentNodeTypes: [] });
-          break;
-        case '15-16':
-          currentAst = this.transformers['15-16'].transform(currentAst, { parentNodeTypes: [] });
-          break;
-        case '16-17':
-          currentAst = this.transformers['16-17'].transform(currentAst, { parentNodeTypes: [] });
-          break;
-        case '17-18':
-          currentAst = this.transformers['17-18'].transform(currentAst, { parentNodeTypes: [] });
-          break;
-        default:
-          throw new Error(`No transformer available for v${currentVersion} to v${nextVersion}`);
+      case '13-14':
+        currentAst = this.transformers['13-14'].transform(currentAst, { parentNodeTypes: [] });
+        break;
+      case '14-15':
+        currentAst = this.transformers['14-15'].transform(currentAst, { parentNodeTypes: [] });
+        break;
+      case '15-16':
+        currentAst = this.transformers['15-16'].transform(currentAst, { parentNodeTypes: [] });
+        break;
+      case '16-17':
+        currentAst = this.transformers['16-17'].transform(currentAst, { parentNodeTypes: [] });
+        break;
+      case '17-18':
+        currentAst = this.transformers['17-18'].transform(currentAst, { parentNodeTypes: [] });
+        break;
+      default:
+        throw new Error(`No transformer available for v${currentVersion} to v${nextVersion}`);
       }
       
       currentVersion = nextVersion;

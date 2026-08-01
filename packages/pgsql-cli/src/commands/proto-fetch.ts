@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+
 import { showHelp } from '../utils/help';
 import { downloadProtoFile, generateProtoJS, replaceTextInProtoJS } from './proto-fetch/helpers';
 

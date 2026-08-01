@@ -1,8 +1,9 @@
-import { Type, Field } from '@launchql/protobufjs';
 import * as t from '@babel/types';
-import { createNamedImport, createNamedImportAsSuffix, getFieldName, toSpecialCamelCase } from '../../utils';
-import { PgProtoParserOptions } from '../../options';
+import { Field,Type } from '@launchql/protobufjs';
+
 import { NODE_TYPE } from '../../constants';
+import { PgProtoParserOptions } from '../../options';
+import { createNamedImport, createNamedImportAsSuffix, getFieldName, toSpecialCamelCase } from '../../utils';
 import { resolveTypeName } from './utils';
 
 /**
@@ -85,7 +86,7 @@ export const generateAstHelperMethods = (types: Type[]): t.ExportDefaultDeclarat
   });
 
   return t.exportDefaultDeclaration(t.objectExpression(creators));
-}
+};
 
 /**
  * Generates helper factory methods that return AST nodes wrapped in a type-specific object.
@@ -173,7 +174,7 @@ export const generateWrappedAstHelperMethods = (types: Type[]): t.ExportDefaultD
   });
 
   return t.exportDefaultDeclaration(t.objectExpression(creators));
-}
+};
 
 /**
  * Generates a TypeScript union type named 'Node' that includes all AST node types.
@@ -257,7 +258,7 @@ const extractTypeFieldsAsTsProperties = (
       });
 
   return properties;
-}
+};
 
 /**
  * Converts a protobuf Type definition into a TypeScript interface declaration.
@@ -280,7 +281,7 @@ export const convertTypeToTsInterface = (
 
   // Wrap the interface declaration in an export statement
   return t.exportNamedDeclaration(interfaceDecl, []);
-}
+};
 
 
 /**
@@ -295,4 +296,4 @@ export const generateTypeImportSpecifiers = (types: Type[], options: PgProtoPars
 
   const importDeclaration = t.importDeclaration(importSpecifiers, t.stringLiteral(options.utils.astHelpers.typesSource));
   return importDeclaration;
-}
+};

@@ -1,16 +1,14 @@
 import { deparse as deparseSql } from 'pgsql-deparser';
 import {
   dehydratePlpgsqlAst,
-  deparseSync as deparsePlpgsql,
-  deparseFunctionSync as deparsePlpgsqlFunction
-} from 'plpgsql-deparser';
-import type {
-  ParsedScript,
-  TransformContext,
-  DeparseOptions,
-  ParsedFunction
-} from './types';
+  deparseFunctionSync as deparsePlpgsqlFunction} from 'plpgsql-deparser';
+
 import { getReturnInfoFromParsedFunction } from './return-info';
+import type {
+  DeparseOptions,
+  ParsedFunction,
+  ParsedScript,
+  TransformContext} from './types';
 
 function stitchBodyIntoSqlAst(
   sqlAst: any,

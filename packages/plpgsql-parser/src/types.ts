@@ -1,9 +1,8 @@
 import type { ParseResult } from 'libpg-query';
 import type {
-  PLpgSQLParseResult,
+  HydrationError,
   HydrationStats,
-  HydrationError
-} from 'plpgsql-deparser';
+  PLpgSQLParseResult} from 'plpgsql-deparser';
 
 export interface PlpgsqlFunctionBody {
   raw: string;

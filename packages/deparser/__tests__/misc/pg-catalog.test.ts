@@ -1,7 +1,7 @@
 import { expectParseDeparse } from '../../test-utils';
 
 it('should format pg_catalog.char with pretty option enabled', async () => {
-    const sql = `
+  const sql = `
 CREATE TABLE dashboard_jobs.jobs (
   id bigserial PRIMARY KEY,
   queue_name text DEFAULT CAST(public.gen_random_uuid() AS text),
@@ -23,6 +23,6 @@ CREATE TABLE dashboard_jobs.jobs (
   UNIQUE (key)
 );
     `;
-    const result = await expectParseDeparse(sql, { pretty: true });
-    expect(result).toMatchSnapshot();
+  const result = await expectParseDeparse(sql, { pretty: true });
+  expect(result).toMatchSnapshot();
 });

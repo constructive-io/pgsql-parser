@@ -1,7 +1,8 @@
-import { Type } from "@launchql/protobufjs";
-import { ProtoStore } from "../src/store";
-import { getDependents, getDependencies, getUndefinedKey } from "../src/utils";
-import { getStore } from "../test-utils";
+import { Type } from '@launchql/protobufjs';
+
+import { ProtoStore } from '../src/store';
+import { getDependencies, getDependents, getUndefinedKey } from '../src/utils';
+import { getStore } from '../test-utils';
 
 
 describe('Dependency and Dependent Resolution', () => {
@@ -38,9 +39,9 @@ describe('Dependency and Dependent Resolution', () => {
           typesToSearch,
           store.enums
         );
-        expect(list).toEqual([
-          'RangeTblRef'
-        ]);
+      expect(list).toEqual([
+        'RangeTblRef'
+      ]);
     });
     it('TargetEntry', () => {
       const list =
@@ -49,9 +50,9 @@ describe('Dependency and Dependent Resolution', () => {
           typesToSearch,
           store.enums
         );
-        expect(list).toEqual([
-          'TargetEntry'
-        ]);
+      expect(list).toEqual([
+        'TargetEntry'
+      ]);
     });
   });
 
@@ -74,8 +75,8 @@ describe('Dependency and Dependent Resolution', () => {
           typesToSearch,
           store.enums
         );
-        expect(list).toEqual([
-        ]);
+      expect(list).toEqual([
+      ]);
     });
   });
 });

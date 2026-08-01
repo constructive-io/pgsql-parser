@@ -18,7 +18,8 @@
 
 import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query';
 import { Deparser } from 'pgsql-deparser';
-import { hydratePlpgsqlAst, dehydratePlpgsqlAst, PLpgSQLParseResult, deparseSync } from '../src';
+
+import { dehydratePlpgsqlAst, deparseSync,hydratePlpgsqlAst, PLpgSQLParseResult } from '../src';
 
 describe('schema transform demo', () => {
   beforeAll(async () => {
@@ -327,7 +328,7 @@ describe('schema transform demo', () => {
     expect(output).toContain('myapp_public.get_active_users');
     expect(output).toContain('myapp_public.users');
     // Use regex with word boundary to avoid matching 'app_public' inside 'myapp_public'
-    expect(output).not.toMatch(/\bapp_public\./)
+    expect(output).not.toMatch(/\bapp_public\./);
 
     // Verify valid SQL
     const reparsed = parseSync(output);

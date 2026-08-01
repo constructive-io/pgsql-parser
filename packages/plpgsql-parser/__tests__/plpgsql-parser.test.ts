@@ -1,4 +1,4 @@
-import { parse, transformSync, deparseSync, loadModule } from '../src';
+import { deparseSync, loadModule,parse, transformSync } from '../src';
 
 beforeAll(async () => {
   await loadModule();

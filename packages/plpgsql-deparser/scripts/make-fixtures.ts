@@ -1,9 +1,9 @@
 #!/usr/bin/env ts-node
-import * as path from 'path';
 import * as fs from 'fs';
 import { sync as globSync } from 'glob';
 import { parse } from 'libpg-query';
-import { parsePlPgSQLSync, loadModule } from 'libpg-query';
+import { loadModule,parsePlPgSQLSync } from 'libpg-query';
+import * as path from 'path';
 
 const FIXTURE_DIR = path.join(__dirname, '../../../__fixtures__/plpgsql');
 const OUT_DIR = path.join(__dirname, '../../../__fixtures__/plpgsql-generated');

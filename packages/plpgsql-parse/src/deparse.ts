@@ -9,26 +9,22 @@
 
 import {
   parsePlPgSQLSync,
-  parseSync as parseSqlSync,
 } from 'libpg-query';
-import type { ParseResult } from 'libpg-query';
-import {
-  deparseEnhanced,
-  isRawComment,
-  isRawWhitespace,
-  isRawStmt,
-  type EnhancedParseResult,
-} from 'pgsql-parse';
 import { Deparser } from 'pgsql-deparser';
 import {
-  hydratePlpgsqlAst,
+  isRawComment,
+  isRawStmt,
+  isRawWhitespace,
+} from 'pgsql-parse';
+import {
   dehydratePlpgsqlAst,
   deparseFunctionSync,
+  hydratePlpgsqlAst,
   type PLpgSQLParseResult,
 } from 'plpgsql-deparser';
-import { getReturnInfoFromParsedFunction } from './return-info';
-import { scanBodyComments, groupCommentsByAnchor } from './body-scanner';
-import type { PlpgsqlParseResult, FunctionComments, BodyComment } from './types';
+
+import { groupCommentsByAnchor } from './body-scanner';
+import type { BodyComment,FunctionComments, PlpgsqlParseResult } from './types';
 
 export interface DeparseOptions {
   pretty?: boolean;

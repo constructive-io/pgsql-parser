@@ -1,9 +1,9 @@
 #!/usr/bin/env ts-node
-import * as path from 'path';
+import { ParseResult, RawStmt } from '@pgsql/types';
 import * as fs from 'fs';
 import { sync as globSync } from 'glob';
 import { parse } from 'libpg-query';
-import { ParseResult, RawStmt } from '@pgsql/types';
+import * as path from 'path';
 
 const FIXTURE_DIR = path.join(__dirname, '../../../__fixtures__/kitchen-sink');
 const OUT_DIR = path.join(__dirname, '../__tests__/kitchen-sink');
@@ -22,7 +22,7 @@ const fixtures = new FixtureTestUtils(${versionPrevious}, ${versionNext});
 it('${name}', async () => {
   await fixtures.runFixtureTests(${JSON.stringify(tests, null, 2)});
 });
-`
+`;
 };
 
 const fixtures = globSync(path.join(FIXTURE_DIR, '**/*.sql'));

@@ -1,4 +1,5 @@
 import { Node } from '@pgsql/types';
+
 import { SqlFormatter } from '../utils/sql-formatter';
 
 export interface DeparserContextOptions {

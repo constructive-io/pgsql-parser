@@ -8,11 +8,12 @@
  * 2. The final SQL output after transformation
  */
 
-import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query';
-import { Deparser } from 'pgsql-deparser';
-import { hydratePlpgsqlAst, dehydratePlpgsqlAst, PLpgSQLParseResult, deparseSync } from '../src';
 import { readFileSync } from 'fs';
+import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query';
 import * as path from 'path';
+import { Deparser } from 'pgsql-deparser';
+
+import { dehydratePlpgsqlAst, deparseSync,hydratePlpgsqlAst, PLpgSQLParseResult } from '../src';
 
 const FIXTURE_PATH = path.join(__dirname, '../../../__fixtures__/plpgsql/plpgsql_schema_rename.sql');
 
@@ -377,15 +378,15 @@ describe('schema rename mapped', () => {
   it('should transform schema names and snapshot schema rename map and output', () => {
     // Define the schema rename map with schemas to transform
     const schemaRenameMap: SchemaRenameMap = {
-      'app_public': {
+      app_public: {
         newSchema: 'myapp_v2',
         references: [],
       },
-      'app_private': {
+      app_private: {
         newSchema: 'myapp_private_v2',
         references: [],
       },
-      'app_internal': {
+      app_internal: {
         newSchema: 'myapp_internal_v2',
         references: [],
       },

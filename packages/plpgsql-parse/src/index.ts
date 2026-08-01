@@ -11,21 +11,21 @@
  */
 
 // Enhanced parse functions (comment/whitespace preserving)
-export { parse, parseSync, loadModule } from './parse';
+export { loadModule,parse, parseSync } from './parse';
 
 // Enhanced deparse functions
-export { deparse, deparseSync, type DeparseOptions } from './deparse';
+export { deparse, type DeparseOptions,deparseSync } from './deparse';
 
 // Types
 export type {
-  PlpgsqlParseResult,
-  FunctionComments,
   BodyComment,
+  FunctionComments,
+  PlpgsqlParseResult,
 } from './types';
 
 // Body scanner (for advanced use)
-export { scanBodyComments, groupCommentsByAnchor, type CommentGroup } from './body-scanner';
+export { type CommentGroup,groupCommentsByAnchor, scanBodyComments } from './body-scanner';
 
 // Re-export pgsql-parse types for convenience
 export type { EnhancedParseResult, EnhancedStmt, RawComment, RawWhitespace } from 'pgsql-parse';
-export { isRawComment, isRawWhitespace, isRawStmt } from 'pgsql-parse';
+export { isRawComment, isRawStmt,isRawWhitespace } from 'pgsql-parse';

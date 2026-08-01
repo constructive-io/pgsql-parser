@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 // Coverage audit tool: enumerate every SQL statement node type and PL/pgSQL
 // node type present in a generated corpus, with an example file + frequency for
 // each. Use it to confirm the transform visitor + round-trip tests

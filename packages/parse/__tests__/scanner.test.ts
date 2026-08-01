@@ -1,5 +1,6 @@
-import { scanComments, ScannedElement } from '../src/scanner';
 import { loadModule } from 'libpg-query';
+
+import { scanComments } from '../src/scanner';
 
 describe('scanComments', () => {
   beforeAll(async () => {
@@ -62,14 +63,14 @@ describe('scanComments', () => {
 
   describe('dollar-quoted strings (should be skipped)', () => {
     it('ignores comments inside $$ dollar-quoted strings', () => {
-      const sql = "SELECT $$ -- not a comment $$;";
+      const sql = 'SELECT $$ -- not a comment $$;';
       const elements = scanComments(sql);
       const comments = elements.filter(e => e.kind === 'comment');
       expect(comments).toHaveLength(0);
     });
 
     it('ignores comments inside tagged dollar-quoted strings', () => {
-      const sql = "SELECT $body$ -- not a comment $body$;";
+      const sql = 'SELECT $body$ -- not a comment $body$;';
       const elements = scanComments(sql);
       const comments = elements.filter(e => e.kind === 'comment');
       expect(comments).toHaveLength(0);

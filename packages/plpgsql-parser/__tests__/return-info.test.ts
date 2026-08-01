@@ -1,4 +1,5 @@
 import { loadModule, parseSync } from 'libpg-query';
+
 import { getReturnInfo, getReturnInfoFromParsedFunction } from '../src/return-info';
 
 describe('getReturnInfo', () => {

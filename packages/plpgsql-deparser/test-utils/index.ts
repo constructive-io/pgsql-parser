@@ -1,8 +1,9 @@
-import { parsePlPgSQL, parsePlPgSQLSync, parseSync } from 'libpg-query';
-import { deparseSync, PLpgSQLParseResult, ReturnInfo } from '../src';
-import { readFileSync, readdirSync, existsSync } from 'fs';
-import * as path from 'path';
+import { existsSync,readdirSync, readFileSync } from 'fs';
 import { diff } from 'jest-diff';
+import { parsePlPgSQL, parsePlPgSQLSync, parseSync } from 'libpg-query';
+import * as path from 'path';
+
+import { deparseSync, PLpgSQLParseResult, ReturnInfo } from '../src';
 
 const PLPGSQL_FIXTURES_DIR = path.join(__dirname, '../../../__fixtures__/plpgsql');
 const GENERATED_JSON = path.join(__dirname, '../../../__fixtures__/plpgsql-generated/generated.json');
@@ -210,12 +211,12 @@ export const transform = (obj: any, props: any): any => {
   if (obj instanceof Object || typeof obj === 'object') {
     copy = {};
     for (const attr in obj) {
-      if (obj.hasOwnProperty(attr)) {
+      if (Object.prototype.hasOwnProperty.call(obj, attr)) {
         let value: any;
-        if (props.hasOwnProperty(attr)) {
+        if (Object.prototype.hasOwnProperty.call(props, attr)) {
           if (typeof props[attr] === 'function') {
             value = props[attr](obj[attr]);
-          } else if (props[attr].hasOwnProperty(obj[attr])) {
+          } else if (Object.prototype.hasOwnProperty.call(props[attr], obj[attr])) {
             value = props[attr][obj[attr]];
           } else {
             value = transform(obj[attr], props);
@@ -310,18 +311,18 @@ function createParseError(
 
 function getErrorMessage(type: ParseErrorType): string {
   switch (type) {
-    case 'PARSE_FAILED':
-      return 'PL/pgSQL parse failed';
-    case 'DEPARSE_FAILED':
-      return 'PL/pgSQL deparse failed';
-    case 'RECONSTRUCT_FAILED':
-      return 'Failed to reconstruct SQL statement';
-    case 'REPARSE_FAILED':
-      return 'Reparse of reconstructed SQL failed';
-    case 'AST_MISMATCH':
-      return 'AST mismatch after parse/deparse cycle';
-    case 'UNEXPECTED_ERROR':
-      return 'Unexpected error during parse/deparse cycle';
+  case 'PARSE_FAILED':
+    return 'PL/pgSQL parse failed';
+  case 'DEPARSE_FAILED':
+    return 'PL/pgSQL deparse failed';
+  case 'RECONSTRUCT_FAILED':
+    return 'Failed to reconstruct SQL statement';
+  case 'REPARSE_FAILED':
+    return 'Reparse of reconstructed SQL failed';
+  case 'AST_MISMATCH':
+    return 'AST mismatch after parse/deparse cycle';
+  case 'UNEXPECTED_ERROR':
+    return 'Unexpected error during parse/deparse cycle';
   }
 }
 

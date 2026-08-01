@@ -59,33 +59,33 @@ function generatePackageJson(packageName: string, pgVersion: string, versionInfo
 
 function generateTsConfig(): any {
   return {
-    "compilerOptions": {
-      "outDir": "dist",
-      "rootDir": "src/",  
-      "target": "es2022",
-      "module": "commonjs",
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true,
-      "strict": true,
-      "strictNullChecks": false,
-      "skipLibCheck": true,
-      "sourceMap": false,
-      "declaration": true,
-      "resolveJsonModule": true,
-      "moduleResolution": "node"
+    compilerOptions: {
+      outDir: 'dist',
+      rootDir: 'src/',  
+      target: 'es2022',
+      module: 'commonjs',
+      esModuleInterop: true,
+      forceConsistentCasingInFileNames: true,
+      strict: true,
+      strictNullChecks: false,
+      skipLibCheck: true,
+      sourceMap: false,
+      declaration: true,
+      resolveJsonModule: true,
+      moduleResolution: 'node'
     },
-    "include": ["src/**/*.ts"],
-    "exclude": ["dist", "node_modules", "**/*.spec.*", "**/*.test.*"]
+    include: ['src/**/*.ts'],
+    exclude: ['dist', 'node_modules', '**/*.spec.*', '**/*.test.*']
   };
 }
 
 function generateTsConfigEsm(): any {
   return {
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-      "module": "esnext",
-      "outDir": "./dist/esm",
-      "declaration": false
+    extends: './tsconfig.json',
+    compilerOptions: {
+      module: 'esnext',
+      outDir: './dist/esm',
+      declaration: false
     }
   };
 }

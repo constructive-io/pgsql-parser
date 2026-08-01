@@ -1,6 +1,7 @@
-import { parse } from 'libpg-query';
-import { Deparser } from '../src/deparser';
 import * as t from '@pgsql/types';
+import { parse } from 'libpg-query';
+
+import { Deparser } from '../src/deparser';
 
 describe('Entry Point Refactoring', () => {
   const sql = `

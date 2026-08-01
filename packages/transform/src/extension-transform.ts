@@ -18,7 +18,7 @@
 import { walk, walkSqlAst } from '@pgsql/traverse';
 import { Deparser, parseSql, transformSync } from 'plpgsql-parser';
 
-import type { ExtensionRouteSpec, ExtensionRouterOptions, ExtensionSymbolNamespace } from './extension-router';
+import type { ExtensionRouterOptions, ExtensionRouteSpec, ExtensionSymbolNamespace } from './extension-router';
 import { ExtensionRouter } from './extension-router';
 
 /** What an extension transform changed. */

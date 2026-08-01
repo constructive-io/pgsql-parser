@@ -7,20 +7,16 @@
  * composes them and adds body-comment metadata on top.
  */
 
-import {
-  parseSync as parseSqlSync,
-  parsePlPgSQLSync,
-  loadModule,
-} from 'libpg-query';
 import type { ParseResult } from 'libpg-query';
-import { parseSync as pgsqlParseSync } from 'pgsql-parse';
-import type { EnhancedParseResult, EnhancedStmt } from 'pgsql-parse';
 import {
-  hydratePlpgsqlAst,
-  type PLpgSQLParseResult,
-} from 'plpgsql-deparser';
+  loadModule,
+  parseSync as parseSqlSync,
+} from 'libpg-query';
+import type { EnhancedParseResult } from 'pgsql-parse';
+import { parseSync as pgsqlParseSync } from 'pgsql-parse';
+
 import { scanBodyComments } from './body-scanner';
-import type { PlpgsqlParseResult, FunctionComments } from './types';
+import type { FunctionComments,PlpgsqlParseResult } from './types';
 
 export { loadModule };
 

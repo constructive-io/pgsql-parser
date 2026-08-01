@@ -587,12 +587,12 @@ export class V13ToV14Transformer {
       };
       result.objects = Array.isArray(result.objects)
         ? result.objects.map((item: any) => {
-            const transformedItem = this.transform(item, childContext);
+          const transformedItem = this.transform(item, childContext);
             
             
             
-            return transformedItem;
-          })
+          return transformedItem;
+        })
         : this.transform(result.objects, childContext);
     }
 
@@ -2130,7 +2130,7 @@ export class V13ToV14Transformer {
           result.objfuncargs = Array.isArray(result.objargs)
             ? result.objargs.map((arg: any, index: number) => {
 
-                const transformedArgType = this.visit(arg, context);
+              const transformedArgType = this.visit(arg, context);
 
               // Check if there's an existing objfuncargs with original mode information
               let mode = 'FUNC_PARAM_DEFAULT';
@@ -2184,15 +2184,15 @@ export class V13ToV14Transformer {
 
               return parameter;
             })
-          : [{
+            : [{
               FunctionParameter: {
                 argType: this.visit(result.objargs, context),
                 mode: (originalObjfuncargs && originalObjfuncargs[0] && originalObjfuncargs[0].FunctionParameter && originalObjfuncargs[0].FunctionParameter.mode)
                   ? this.mapFunctionParameterMode(originalObjfuncargs[0].FunctionParameter.mode, context)
                   : (() => {
-                      const isVariadic = this.isVariadicParameterType(result.objargs, 0, [result.objargs], context);
-                      return isVariadic ? 'FUNC_PARAM_VARIADIC' : 'FUNC_PARAM_DEFAULT';
-                    })()
+                    const isVariadic = this.isVariadicParameterType(result.objargs, 0, [result.objargs], context);
+                    return isVariadic ? 'FUNC_PARAM_VARIADIC' : 'FUNC_PARAM_DEFAULT';
+                  })()
               }
             }];
         }
@@ -2442,7 +2442,7 @@ export class V13ToV14Transformer {
 
     // Check if this should be a variadic parameter
     const isVariadic = this.isVariadicParameterType(typeNameNode, index, undefined, context);
-    let mode = isVariadic ? "FUNC_PARAM_VARIADIC" : "FUNC_PARAM_DEFAULT";
+    let mode = isVariadic ? 'FUNC_PARAM_VARIADIC' : 'FUNC_PARAM_DEFAULT';
 
     const functionParam: any = {
       argType: argType,
@@ -2484,22 +2484,22 @@ export class V13ToV14Transformer {
 
   private transformA_Expr_Kind(kind: string): string {
     const pg13ToP14Map: { [key: string]: string } = {
-      'AEXPR_OP': 'AEXPR_OP',
-      'AEXPR_OP_ANY': 'AEXPR_OP_ANY',
-      'AEXPR_OP_ALL': 'AEXPR_OP_ALL',
-      'AEXPR_DISTINCT': 'AEXPR_DISTINCT',
-      'AEXPR_NOT_DISTINCT': 'AEXPR_NOT_DISTINCT',
-      'AEXPR_NULLIF': 'AEXPR_NULLIF',
-      'AEXPR_OF': 'AEXPR_IN', // AEXPR_OF removed, map to AEXPR_IN
-      'AEXPR_IN': 'AEXPR_IN',
-      'AEXPR_LIKE': 'AEXPR_LIKE',
-      'AEXPR_ILIKE': 'AEXPR_ILIKE',
-      'AEXPR_SIMILAR': 'AEXPR_SIMILAR',
-      'AEXPR_BETWEEN': 'AEXPR_BETWEEN',
-      'AEXPR_NOT_BETWEEN': 'AEXPR_NOT_BETWEEN',
-      'AEXPR_BETWEEN_SYM': 'AEXPR_BETWEEN_SYM',
-      'AEXPR_NOT_BETWEEN_SYM': 'AEXPR_NOT_BETWEEN_SYM',
-      'AEXPR_PAREN': 'AEXPR_OP' // AEXPR_PAREN removed, map to AEXPR_OP
+      AEXPR_OP: 'AEXPR_OP',
+      AEXPR_OP_ANY: 'AEXPR_OP_ANY',
+      AEXPR_OP_ALL: 'AEXPR_OP_ALL',
+      AEXPR_DISTINCT: 'AEXPR_DISTINCT',
+      AEXPR_NOT_DISTINCT: 'AEXPR_NOT_DISTINCT',
+      AEXPR_NULLIF: 'AEXPR_NULLIF',
+      AEXPR_OF: 'AEXPR_IN', // AEXPR_OF removed, map to AEXPR_IN
+      AEXPR_IN: 'AEXPR_IN',
+      AEXPR_LIKE: 'AEXPR_LIKE',
+      AEXPR_ILIKE: 'AEXPR_ILIKE',
+      AEXPR_SIMILAR: 'AEXPR_SIMILAR',
+      AEXPR_BETWEEN: 'AEXPR_BETWEEN',
+      AEXPR_NOT_BETWEEN: 'AEXPR_NOT_BETWEEN',
+      AEXPR_BETWEEN_SYM: 'AEXPR_BETWEEN_SYM',
+      AEXPR_NOT_BETWEEN_SYM: 'AEXPR_NOT_BETWEEN_SYM',
+      AEXPR_PAREN: 'AEXPR_OP' // AEXPR_PAREN removed, map to AEXPR_OP
     };
 
     return pg13ToP14Map[kind] || kind;
@@ -2507,10 +2507,10 @@ export class V13ToV14Transformer {
 
   private transformRoleSpecType(type: string): string {
     const pg13ToP14Map: { [key: string]: string } = {
-      'ROLESPEC_CSTRING': 'ROLESPEC_CSTRING',
-      'ROLESPEC_CURRENT_USER': 'ROLESPEC_CURRENT_USER',
-      'ROLESPEC_SESSION_USER': 'ROLESPEC_SESSION_USER',
-      'ROLESPEC_PUBLIC': 'ROLESPEC_PUBLIC'
+      ROLESPEC_CSTRING: 'ROLESPEC_CSTRING',
+      ROLESPEC_CURRENT_USER: 'ROLESPEC_CURRENT_USER',
+      ROLESPEC_SESSION_USER: 'ROLESPEC_SESSION_USER',
+      ROLESPEC_PUBLIC: 'ROLESPEC_PUBLIC'
     };
 
     return pg13ToP14Map[type] || type;
@@ -2590,10 +2590,10 @@ export class V13ToV14Transformer {
     const result: any = {};
 
     if (node.kind !== undefined) {
-      if (node.kind === "AEXPR_OF") {
-        result.kind = "AEXPR_IN";
-      } else if (node.kind === "AEXPR_PAREN") {
-        result.kind = "AEXPR_OP";
+      if (node.kind === 'AEXPR_OF') {
+        result.kind = 'AEXPR_IN';
+      } else if (node.kind === 'AEXPR_PAREN') {
+        result.kind = 'AEXPR_OP';
       } else {
         result.kind = node.kind;
       }
@@ -3048,43 +3048,43 @@ export class V13ToV14Transformer {
     if (node.exprs !== undefined) {
       result.exprs = Array.isArray(node.exprs)
         ? node.exprs.map((item: any) => {
-            // Check if this is a simple column reference
-            if (item && item.ColumnRef && item.ColumnRef.fields && 
+          // Check if this is a simple column reference
+          if (item && item.ColumnRef && item.ColumnRef.fields && 
                 Array.isArray(item.ColumnRef.fields) && item.ColumnRef.fields.length === 1 &&
                 item.ColumnRef.fields[0] && item.ColumnRef.fields[0].String) {
-              return {
-                StatsElem: {
-                  name: item.ColumnRef.fields[0].String.str || item.ColumnRef.fields[0].String.sval
-                }
-              };
-            } else {
-              const transformedExpr = this.transform(item as any, context);
-              return {
-                StatsElem: {
-                  expr: transformedExpr
-                }
-              };
-            }
-          })
+            return {
+              StatsElem: {
+                name: item.ColumnRef.fields[0].String.str || item.ColumnRef.fields[0].String.sval
+              }
+            };
+          } else {
+            const transformedExpr = this.transform(item as any, context);
+            return {
+              StatsElem: {
+                expr: transformedExpr
+              }
+            };
+          }
+        })
         : (() => {
-            // Handle single expression case
-            if (node.exprs && node.exprs.ColumnRef && node.exprs.ColumnRef.fields && 
+          // Handle single expression case
+          if (node.exprs && node.exprs.ColumnRef && node.exprs.ColumnRef.fields && 
                 Array.isArray(node.exprs.ColumnRef.fields) && node.exprs.ColumnRef.fields.length === 1 &&
                 node.exprs.ColumnRef.fields[0] && node.exprs.ColumnRef.fields[0].String) {
-              return {
-                StatsElem: {
-                  name: node.exprs.ColumnRef.fields[0].String.str || node.exprs.ColumnRef.fields[0].String.sval
-                }
-              };
-            } else {
-              const transformedExpr = this.transform(node.exprs as any, context);
-              return {
-                StatsElem: {
-                  expr: transformedExpr
-                }
-              };
-            }
-          })();
+            return {
+              StatsElem: {
+                name: node.exprs.ColumnRef.fields[0].String.str || node.exprs.ColumnRef.fields[0].String.sval
+              }
+            };
+          } else {
+            const transformedExpr = this.transform(node.exprs as any, context);
+            return {
+              StatsElem: {
+                expr: transformedExpr
+              }
+            };
+          }
+        })();
     }
 
     if (node.relations !== undefined) {
@@ -3344,30 +3344,30 @@ export class V13ToV14Transformer {
   private mapFunctionParameterMode(pg13Mode: string, context?: TransformerContext, hasParameterName?: boolean): string {
     // Handle specific mode mappings between PG13 and PG14
     switch (pg13Mode) {
-      case 'FUNC_PARAM_VARIADIC':
-        return 'FUNC_PARAM_VARIADIC';
-      case 'FUNC_PARAM_IN':
-        if (context && context.parentNodeTypes?.includes('DropStmt')) {
-          return 'FUNC_PARAM_IN';
-        }
+    case 'FUNC_PARAM_VARIADIC':
+      return 'FUNC_PARAM_VARIADIC';
+    case 'FUNC_PARAM_IN':
+      if (context && context.parentNodeTypes?.includes('DropStmt')) {
+        return 'FUNC_PARAM_IN';
+      }
         
-        if (context && 
+      if (context && 
             ((context as any).functionHasExplicitModes && 
              !(context as any).hasExplicitInParameters &&
              (context as any).allParametersHaveExplicitModes === false)) {
-          return 'FUNC_PARAM_DEFAULT';
-        }
+        return 'FUNC_PARAM_DEFAULT';
+      }
         
-        // Convert implicit IN parameters to DEFAULT for functions with only IN parameters
-        if (context && 
+      // Convert implicit IN parameters to DEFAULT for functions with only IN parameters
+      if (context && 
             !(context as any).functionHasExplicitModes &&
             !(context as any).hasExplicitInParameters) {
-          return 'FUNC_PARAM_DEFAULT';
-        }
+        return 'FUNC_PARAM_DEFAULT';
+      }
         
-        return 'FUNC_PARAM_IN';
-      default:
-        return pg13Mode;
+      return 'FUNC_PARAM_IN';
+    default:
+      return pg13Mode;
     }
   }
 

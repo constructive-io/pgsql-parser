@@ -1,5 +1,5 @@
-import { cleanTree } from './clean-tree';
 import { ASTTransformer } from '../src/multi-version-transformer';
+import { cleanTree } from './clean-tree';
 
 export async function expectOldAstToTransformToNewAst(
   oldAst: any,

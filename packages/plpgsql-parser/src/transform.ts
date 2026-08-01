@@ -1,14 +1,13 @@
-import { parse } from './parse';
 import { deparse, deparseSync } from './deparse';
+import { parse } from './parse';
 import type {
-  TransformOptions,
+  ParsedFunction,
+  ParsedStatement,
+  TransformCallback,
   TransformContext,
   TransformInput,
-  TransformCallback,
-  TransformVisitors,
-  ParsedFunction,
-  ParsedStatement
-} from './types';
+  TransformOptions,
+  TransformVisitors} from './types';
 
 function isCallback(input: TransformInput): input is TransformCallback {
   return typeof input === 'function';

@@ -1,10 +1,11 @@
 import { parse } from '@launchql/protobufjs';
 import { readFileSync } from 'fs';
-import { ProtoStore } from './store';
+
 import {
   getOptionsWithDefaults,
   PgProtoParserOptions
 } from './options';
+import { ProtoStore } from './store';
 
 export class PgProtoParser {
   inFile: string;

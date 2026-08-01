@@ -1,16 +1,16 @@
+import { Node,ParseResult } from '@pgsql/types';
 import { parseSync, scanSync } from 'libpg-query';
-import { ParseResult, Node } from '@pgsql/types';
 import { Deparser, DeparserOptions } from 'pgsql-deparser';
+
 import {
+  HydratedExprAssign,
   HydratedExprQuery,
-  HydratedExprRaw,
   HydratedExprSqlExpr,
   HydratedExprSqlStmt,
-  HydratedExprAssign,
   HydratedTypeName,
+  HydrationError,
   HydrationOptions,
   HydrationResult,
-  HydrationError,
   HydrationStats,
   ParseMode,
 } from './hydrate-types';
@@ -724,64 +724,64 @@ function normalizeForComparison(str: string): string {
 
 function dehydrateQuery(query: HydratedExprQuery, sqlDeparseOptions?: DeparserOptions): string {
   switch (query.kind) {
-    case 'assign': {
-      // For assignments, always prefer deparsing the AST nodes if they exist.
-      // This enables AST-based transformations (e.g., schema renaming).
-      // Fall back to string fields if AST nodes are missing or deparse fails.
-      const assignQuery = query as HydratedExprAssign;
+  case 'assign': {
+    // For assignments, always prefer deparsing the AST nodes if they exist.
+    // This enables AST-based transformations (e.g., schema renaming).
+    // Fall back to string fields if AST nodes are missing or deparse fails.
+    const assignQuery = query as HydratedExprAssign;
       
-      let target = assignQuery.target;
-      let value = assignQuery.value;
+    let target = assignQuery.target;
+    let value = assignQuery.value;
       
-      // For target: prefer deparsed AST if available
-      if (assignQuery.targetExpr) {
-        const deparsedTarget = deparseExprNode(assignQuery.targetExpr, sqlDeparseOptions);
-        if (deparsedTarget !== null) {
-          target = deparsedTarget;
-        }
+    // For target: prefer deparsed AST if available
+    if (assignQuery.targetExpr) {
+      const deparsedTarget = deparseExprNode(assignQuery.targetExpr, sqlDeparseOptions);
+      if (deparsedTarget !== null) {
+        target = deparsedTarget;
       }
-      
-      // For value: prefer deparsed AST if available
-      if (assignQuery.valueExpr) {
-        const deparsedValue = deparseExprNode(assignQuery.valueExpr, sqlDeparseOptions);
-        if (deparsedValue !== null) {
-          value = deparsedValue;
-        }
-      }
-      
-      return `${target} := ${value}`;
     }
-    case 'sql-stmt': {
-      // Deparse the modified parseResult back to SQL
-      // This enables AST-based transformations (e.g., schema renaming)
-      // Pass through sqlDeparseOptions to control formatting (pretty printing, etc.)
-      const stmtQuery = query as HydratedExprSqlStmt;
-      if (stmtQuery.parseResult?.stmts?.[0]?.stmt) {
-        try {
-          return Deparser.deparse(stmtQuery.parseResult.stmts[0].stmt, sqlDeparseOptions);
-        } catch {
-          // Fall back to original if deparse fails
-          return query.original;
-        }
+      
+    // For value: prefer deparsed AST if available
+    if (assignQuery.valueExpr) {
+      const deparsedValue = deparseExprNode(assignQuery.valueExpr, sqlDeparseOptions);
+      if (deparsedValue !== null) {
+        value = deparsedValue;
       }
-      return query.original;
     }
-    case 'sql-expr': {
-      // For sql-expr, always prefer deparsing the AST.
-      // This enables AST-based transformations (e.g., schema renaming).
-      // Fall back to original only if deparse fails.
-      const exprQuery = query as HydratedExprSqlExpr;
-      if (exprQuery.expr) {
-        const deparsed = deparseExprNode(exprQuery.expr, sqlDeparseOptions);
-        if (deparsed !== null) {
-          return deparsed;
-        }
+      
+    return `${target} := ${value}`;
+  }
+  case 'sql-stmt': {
+    // Deparse the modified parseResult back to SQL
+    // This enables AST-based transformations (e.g., schema renaming)
+    // Pass through sqlDeparseOptions to control formatting (pretty printing, etc.)
+    const stmtQuery = query as HydratedExprSqlStmt;
+    if (stmtQuery.parseResult?.stmts?.[0]?.stmt) {
+      try {
+        return Deparser.deparse(stmtQuery.parseResult.stmts[0].stmt, sqlDeparseOptions);
+      } catch {
+        // Fall back to original if deparse fails
+        return query.original;
       }
-      // Fall back to original if deparse fails
-      return query.original;
     }
-    case 'raw':
-    default:
-      return query.original;
+    return query.original;
+  }
+  case 'sql-expr': {
+    // For sql-expr, always prefer deparsing the AST.
+    // This enables AST-based transformations (e.g., schema renaming).
+    // Fall back to original only if deparse fails.
+    const exprQuery = query as HydratedExprSqlExpr;
+    if (exprQuery.expr) {
+      const deparsed = deparseExprNode(exprQuery.expr, sqlDeparseOptions);
+      if (deparsed !== null) {
+        return deparsed;
+      }
+    }
+    // Fall back to original if deparse fails
+    return query.original;
+  }
+  case 'raw':
+  default:
+    return query.original;
   }
 }

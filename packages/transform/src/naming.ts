@@ -66,51 +66,51 @@ export function identityOf(facts: StatementFacts): ObjectIdentity | null {
   if (!created) return null;
 
   switch (facts.kind) {
-    case 'schema':
-      return { kind: 'schema', schema: null, name: created.name };
-    case 'trigger':
-    case 'policy': {
-      const dot = created.name.indexOf('.');
-      if (dot > 0) {
-        return {
-          kind: facts.kind,
-          schema: created.schema,
-          name: created.name.slice(dot + 1),
-          table: created.name.slice(0, dot)
-        };
-      }
-      return { kind: facts.kind, schema: created.schema, name: created.name };
-    }
-    case 'index': {
-      // IndexStmt records the index name in creates and the indexed relation
-      // in references (same-schema RangeVar).
-      const rel = facts.references.find(r => r.schema === created.schema) ?? facts.references[0];
+  case 'schema':
+    return { kind: 'schema', schema: null, name: created.name };
+  case 'trigger':
+  case 'policy': {
+    const dot = created.name.indexOf('.');
+    if (dot > 0) {
       return {
-        kind: 'index',
+        kind: facts.kind,
         schema: created.schema,
-        name: created.name,
-        table: rel?.name
+        name: created.name.slice(dot + 1),
+        table: created.name.slice(0, dot)
       };
     }
-    case 'fk_constraint':
-    case 'constraint':
-    case 'rls_enable':
-      // ALTER TABLE statements target their table.
-      return { kind: 'constraint', schema: created.schema, name: created.name, table: created.name };
-    case 'seed_dml':
-      return { kind: 'seed_dml', schema: created.schema, name: created.name, table: created.name };
-    case 'table':
-      // AlterTableStmt facts also classify as `table`-targeting; the created
-      // name is the table either way.
-      return { kind: 'table', schema: created.schema, name: created.name };
-    case 'view':
-    case 'function':
-    case 'type':
-      return { kind: facts.kind, schema: created.schema, name: created.name };
-    default:
-      if (facts.nodeTag === 'CreateSeqStmt') {
-        return { kind: 'sequence', schema: created.schema, name: created.name };
-      }
-      return { kind: 'other', schema: created.schema, name: created.name };
+    return { kind: facts.kind, schema: created.schema, name: created.name };
+  }
+  case 'index': {
+    // IndexStmt records the index name in creates and the indexed relation
+    // in references (same-schema RangeVar).
+    const rel = facts.references.find(r => r.schema === created.schema) ?? facts.references[0];
+    return {
+      kind: 'index',
+      schema: created.schema,
+      name: created.name,
+      table: rel?.name
+    };
+  }
+  case 'fk_constraint':
+  case 'constraint':
+  case 'rls_enable':
+    // ALTER TABLE statements target their table.
+    return { kind: 'constraint', schema: created.schema, name: created.name, table: created.name };
+  case 'seed_dml':
+    return { kind: 'seed_dml', schema: created.schema, name: created.name, table: created.name };
+  case 'table':
+    // AlterTableStmt facts also classify as `table`-targeting; the created
+    // name is the table either way.
+    return { kind: 'table', schema: created.schema, name: created.name };
+  case 'view':
+  case 'function':
+  case 'type':
+    return { kind: facts.kind, schema: created.schema, name: created.name };
+  default:
+    if (facts.nodeTag === 'CreateSeqStmt') {
+      return { kind: 'sequence', schema: created.schema, name: created.name };
+    }
+    return { kind: 'other', schema: created.schema, name: created.name };
   }
 }

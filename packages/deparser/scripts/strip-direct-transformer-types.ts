@@ -1,6 +1,6 @@
-import * as ts from 'typescript';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as ts from 'typescript';
 
 /**
  * Script to strip types from direct transformer files and replace them with 'any'

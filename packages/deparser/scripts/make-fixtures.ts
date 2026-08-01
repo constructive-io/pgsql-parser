@@ -1,9 +1,10 @@
 #!/usr/bin/env ts-node
-import * as path from 'path';
 import * as fs from 'fs';
 import { sync as globSync } from 'glob';
 import { parse } from 'libpg-query';
-import { splitStatements, generateStatementKey } from './statement-splitter';
+import * as path from 'path';
+
+import { generateStatementKey,splitStatements } from './statement-splitter';
 
 const FIXTURE_DIR = path.join(__dirname, '../../../__fixtures__/kitchen-sink');
 const OUT_DIR = path.join(__dirname, '../../../__fixtures__/generated');

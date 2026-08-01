@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-syntax */
+ 
 
 export const cleanLines = (sql: string) => {
   return sql
@@ -35,11 +35,11 @@ export const transform = (obj: any, props: any): any => {
   if (obj instanceof Object || typeof obj === 'object') {
     copy = {};
     for (const attr in obj) {
-      if (obj.hasOwnProperty(attr)) {
-        if (props.hasOwnProperty(attr)) {
+      if (Object.prototype.hasOwnProperty.call(obj, attr)) {
+        if (Object.prototype.hasOwnProperty.call(props, attr)) {
           if (typeof props[attr] === 'function') {
             copy[attr] = props[attr](obj[attr]);
-          } else if (props[attr].hasOwnProperty(obj[attr])) {
+          } else if (Object.prototype.hasOwnProperty.call(props[attr], obj[attr])) {
             copy[attr] = props[attr][obj[attr]];
           } else {
             copy[attr] = transform(obj[attr], props);

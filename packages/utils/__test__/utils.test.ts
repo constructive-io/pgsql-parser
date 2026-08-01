@@ -1,6 +1,7 @@
-import * as t from '../src';
 import { RangeVar, SelectStmt } from '@pgsql/types';
 import { deparseSync as deparse } from 'pgsql-deparser';
+
+import * as t from '../src';
 
 it('simple SelectStmt', () => {
   const stmt: { SelectStmt: SelectStmt } = t.nodes.selectStmt({
@@ -112,12 +113,12 @@ it('queries', () => {
 it('dynamic creation of tables', () => {
   // Example JSON schema
   const schema = {
-    "tableName": "users",
-    "columns": [
-      { "name": "id", "type": "int", "constraints": ["PRIMARY KEY"] },
-      { "name": "username", "type": "text" },
-      { "name": "email", "type": "text", "constraints": ["UNIQUE"] },
-      { "name": "created_at", "type": "timestamp", "constraints": ["NOT NULL"] }
+    tableName: 'users',
+    columns: [
+      { name: 'id', type: 'int', constraints: ['PRIMARY KEY'] },
+      { name: 'username', type: 'text' },
+      { name: 'email', type: 'text', constraints: ['UNIQUE'] },
+      { name: 'created_at', type: 'timestamp', constraints: ['NOT NULL'] }
     ]
   };
 
@@ -135,7 +136,7 @@ it('dynamic creation of tables', () => {
       }),
       constraints: column.constraints?.map(constraint =>
         t.nodes.constraint({
-          contype: constraint === "PRIMARY KEY" ? "CONSTR_PRIMARY" : constraint === "UNIQUE" ? "CONSTR_UNIQUE" : "CONSTR_NOTNULL"
+          contype: constraint === 'PRIMARY KEY' ? 'CONSTR_PRIMARY' : constraint === 'UNIQUE' ? 'CONSTR_UNIQUE' : 'CONSTR_NOTNULL'
         })
       )
     }))
@@ -144,4 +145,4 @@ it('dynamic creation of tables', () => {
   // `deparse` function converts AST to SQL string
   const sql = deparse(createStmt, { pretty: false });
   expect(sql).toMatchSnapshot();
-})
+});

@@ -150,8 +150,8 @@ export class V16ToV17Transformer {
       };
       result.valuesLists = Array.isArray(node.valuesLists)
         ? node.valuesLists.map(item => Array.isArray(item)
-            ? item.map(subItem => this.transform(subItem as any, valuesContext))
-            : this.transform(item as any, valuesContext))
+          ? item.map(subItem => this.transform(subItem as any, valuesContext))
+          : this.transform(item as any, valuesContext))
         : this.transform(node.valuesLists as any, valuesContext);
     }
     if (node.sortClause !== undefined) {

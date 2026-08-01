@@ -1,5 +1,5 @@
+import { join,resolve } from 'path';
 import { PgProtoParser, PgProtoParserOptions } from 'pg-proto-parser';
-import { resolve, join } from 'path';
 
 const inFile: string = join(__dirname, '../../../__fixtures__/proto/18-latest.proto');
 const outDir: string = resolve(join(__dirname, '../src'));

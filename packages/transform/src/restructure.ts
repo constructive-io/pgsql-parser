@@ -209,20 +209,20 @@ function foldStatements(
 
       let foldable = false;
       switch (cmd.subtype) {
-        case 'AT_AddColumn':
-          foldable = !!cmd.def?.ColumnDef;
-          break;
-        case 'AT_ColumnDefault':
-          foldable = !!cmd.name && cmd.def !== undefined;
-          break;
-        case 'AT_SetNotNull':
-          foldable = !!cmd.name;
-          break;
-        case 'AT_AddConstraint':
-          foldable = isFk ? selfFk || inlineFks : true;
-          break;
-        default:
-          foldable = false;
+      case 'AT_AddColumn':
+        foldable = !!cmd.def?.ColumnDef;
+        break;
+      case 'AT_ColumnDefault':
+        foldable = !!cmd.name && cmd.def !== undefined;
+        break;
+      case 'AT_SetNotNull':
+        foldable = !!cmd.name;
+        break;
+      case 'AT_AddConstraint':
+        foldable = isFk ? selfFk || inlineFks : true;
+        break;
+      default:
+        foldable = false;
       }
 
       if (foldable && !selfFk && !safeToFold(j, i)) {
@@ -263,28 +263,28 @@ function applyFold(create: AnyNode, cmd: AnyNode): boolean {
     create.tableElts.find((e: AnyNode) => e?.ColumnDef?.colname === name)?.ColumnDef;
 
   switch (cmd.subtype) {
-    case 'AT_AddColumn':
-      create.tableElts.push({ ColumnDef: cmd.def.ColumnDef });
-      return true;
-    case 'AT_ColumnDefault': {
-      const col = findColumn(cmd.name);
-      if (!col) return false;
-      col.constraints = col.constraints ?? [];
-      col.constraints.push({ Constraint: { contype: 'CONSTR_DEFAULT', raw_expr: cmd.def } });
-      return true;
-    }
-    case 'AT_SetNotNull': {
-      const col = findColumn(cmd.name);
-      if (!col) return false;
-      col.constraints = col.constraints ?? [];
-      col.constraints.push({ Constraint: { contype: 'CONSTR_NOTNULL' } });
-      return true;
-    }
-    case 'AT_AddConstraint':
-      create.tableElts.push({ Constraint: cmd.def.Constraint });
-      return true;
-    default:
-      return false;
+  case 'AT_AddColumn':
+    create.tableElts.push({ ColumnDef: cmd.def.ColumnDef });
+    return true;
+  case 'AT_ColumnDefault': {
+    const col = findColumn(cmd.name);
+    if (!col) return false;
+    col.constraints = col.constraints ?? [];
+    col.constraints.push({ Constraint: { contype: 'CONSTR_DEFAULT', raw_expr: cmd.def } });
+    return true;
+  }
+  case 'AT_SetNotNull': {
+    const col = findColumn(cmd.name);
+    if (!col) return false;
+    col.constraints = col.constraints ?? [];
+    col.constraints.push({ Constraint: { contype: 'CONSTR_NOTNULL' } });
+    return true;
+  }
+  case 'AT_AddConstraint':
+    create.tableElts.push({ Constraint: cmd.def.Constraint });
+    return true;
+  default:
+    return false;
   }
 }
 
@@ -377,13 +377,13 @@ function explodeStatements(stmts: AnyNode[]): ExplodeResult {
 function columnConstraintToTable(constraint: AnyNode, colname: string): AnyNode {
   const strNode = (sval: string): AnyNode => ({ String: { sval } });
   switch (constraint.contype) {
-    case 'CONSTR_PRIMARY':
-    case 'CONSTR_UNIQUE':
-      return { ...constraint, keys: [strNode(colname)] };
-    case 'CONSTR_FOREIGN':
-      return { ...constraint, fk_attrs: [strNode(colname)] };
-    default:
-      // CHECK and others are valid table constraints as-is.
-      return constraint;
+  case 'CONSTR_PRIMARY':
+  case 'CONSTR_UNIQUE':
+    return { ...constraint, keys: [strNode(colname)] };
+  case 'CONSTR_FOREIGN':
+    return { ...constraint, fk_attrs: [strNode(colname)] };
+  default:
+    // CHECK and others are valid table constraints as-is.
+    return constraint;
   }
 }

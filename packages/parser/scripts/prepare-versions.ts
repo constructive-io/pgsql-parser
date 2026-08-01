@@ -79,40 +79,40 @@ export * from '@pgsql/types';
   );
 
   fs.writeFileSync(path.join(versionDir, 'tsconfig.json'), JSON.stringify({
-    "compilerOptions": {
-      "outDir": "dist",
-      "rootDir": "src/",
-      "target": "es2022",
-      "module": "commonjs",
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true,
-      "strict": true,
-      "strictNullChecks": false,
-      "skipLibCheck": true,
-      "sourceMap": false,
-      "declaration": true,
-      "resolveJsonModule": true,
-      "moduleResolution": "node"
+    compilerOptions: {
+      outDir: 'dist',
+      rootDir: 'src/',
+      target: 'es2022',
+      module: 'commonjs',
+      esModuleInterop: true,
+      forceConsistentCasingInFileNames: true,
+      strict: true,
+      strictNullChecks: false,
+      skipLibCheck: true,
+      sourceMap: false,
+      declaration: true,
+      resolveJsonModule: true,
+      moduleResolution: 'node'
     },
-    "include": [
-      "src/**/*.ts"
+    include: [
+      'src/**/*.ts'
     ],
-    "exclude": [
-      "dist",
-      "node_modules",
-      "**/*.spec.*",
-      "**/*.test.*"
+    exclude: [
+      'dist',
+      'node_modules',
+      '**/*.spec.*',
+      '**/*.test.*'
     ]
   }, null, 2));
 
 
   fs.writeFileSync(path.join(versionDir, 'tsconfig.esm.json'), JSON.stringify({
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-      "outDir": "dist/esm",
-      "module": "es2022",
-      "rootDir": "src/",
-      "declaration": false
+    extends: './tsconfig.json',
+    compilerOptions: {
+      outDir: 'dist/esm',
+      module: 'es2022',
+      rootDir: 'src/',
+      declaration: false
     }
   }, null, 2));
 
