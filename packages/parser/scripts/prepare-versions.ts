@@ -15,6 +15,14 @@ if (!fs.existsSync(versionsDir)) {
   fs.mkdirSync(versionsDir, { recursive: true });
 }
 
+// The generated tree is gitignored, so it is its own pnpm workspace rather than
+// a member of the root one: root membership would depend on whether this script
+// has been run, and pnpm would rewrite the root lockfile accordingly.
+fs.writeFileSync(
+  path.join(versionsDir, 'pnpm-workspace.yaml'),
+  "packages:\n  - '*'\n"
+);
+
 // Generate version-specific packages
 const pgVersions = Object.keys(rootConfig.versions);
 

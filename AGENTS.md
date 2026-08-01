@@ -106,6 +106,12 @@ Every package supports these scripts:
 
 Version configuration lives in `config/versions.json` — maps PG versions (13-17) to their `libpg-query`, `pgsql-parser`, `pgsql-deparser`, and `@pgsql/types` versions plus npm dist-tags.
 
+`prepare-versions` writes into `packages/{parser,deparser}/versions/`, which is gitignored and
+**not** part of the root pnpm workspace — each generated tree gets its own `pnpm-workspace.yaml`,
+so run `pnpm install` inside `versions/` before building them (see `PUBLISH.md`). Adding those
+directories back to the root `pnpm-workspace.yaml` makes the root `pnpm-lock.yaml` depend on
+whether a machine has run the generator, which means every install rewrites it.
+
 ### CLI Development
 
 | Package | Script | Description |

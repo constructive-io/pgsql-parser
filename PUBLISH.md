@@ -75,6 +75,15 @@ The `generate-packages` script (`scripts/generate-version-packages.ts`):
 - Uses the template from `config/deparser-versions.json`
 - Creates version-specific packages in `packages/deparser/versions/`
 - Sets up proper dependencies and npm tags for each PostgreSQL version
+- Writes a `pnpm-workspace.yaml` into `versions/`, making the generated tree its
+  own workspace (it is gitignored, so it is deliberately not part of the root one)
+
+#### Install Dependencies
+```bash
+# Once per generation — covers every version directory
+cd packages/deparser/versions
+pnpm install
+```
 
 #### Build and Publish Individual Versions
 ```bash
@@ -106,6 +115,7 @@ cd packages/deparser
 
 # Prepare all versions
 npm run prepare-versions
+(cd versions && pnpm install)
 
 # Build and publish each version
 for version in versions/*/; do
@@ -132,6 +142,15 @@ This script (`scripts/prepare-versions.ts`):
 - Creates version-specific directories in `packages/parser/versions/`
 - Generates `package.json`, `tsconfig.json`, and source files for each PostgreSQL version
 - Each version gets its own libpg-query dependency and npm tag
+- Writes a `pnpm-workspace.yaml` into `versions/`, making the generated tree its
+  own workspace (it is gitignored, so it is deliberately not part of the root one)
+
+#### Install Dependencies
+```bash
+# Once per generation — covers every version directory
+cd packages/parser/versions
+pnpm install
+```
 
 #### Build and Publish Individual Versions
 ```bash
@@ -155,6 +174,7 @@ cd packages/parser
 
 # Prepare all versions
 npm run prepare-versions
+(cd versions && pnpm install)
 
 # Build and publish each version
 for version in versions/*/; do
