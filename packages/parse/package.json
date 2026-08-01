@@ -1,6 +1,6 @@
 {
   "name": "pgsql-parse",
-  "version": "18.1.2",
+  "version": "18.2.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "Comment and whitespace preserving PostgreSQL parser",
   "main": "index.js",

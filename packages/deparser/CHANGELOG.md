@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.3.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@18.2.0...pgsql-deparser@18.3.0) (2026-08-01)
+
+### Bug Fixes
+
+- **deparser:** keep the constraint name on EXCLUDE constraints ([b3f5c56](https://github.com/constructive-io/pgsql-parser/commit/b3f5c56e8e8b36d8778e3619846a421c3135d6b7))
+
 # [18.2.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@18.1.1...pgsql-deparser@18.2.0) (2026-07-31)
 
 ### Features
