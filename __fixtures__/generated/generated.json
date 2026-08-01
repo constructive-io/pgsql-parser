@@ -21372,6 +21372,8 @@
   "misc/issues-18.sql": "SELECT (- (-10 - -12))::numeric AS delta",
   "misc/issues-19.sql": "SELECT (- (a.actual_eur - a.budget_eur))::numeric AS delta_eur FROM accounts a",
   "misc/issues-20.sql": "CREATE TABLE test_exclude_where (\n  id uuid PRIMARY KEY,\n  database_id uuid NOT NULL,\n  status text NOT NULL DEFAULT 'pending',\n  EXCLUDE USING btree (database_id WITH =)\n    WHERE (status = 'pending')\n)",
+  "misc/issues-21.sql": "CREATE TABLE test_named_exclude (\n  id uuid PRIMARY KEY,\n  database_id uuid NOT NULL,\n  status text NOT NULL DEFAULT 'pending',\n  CONSTRAINT one_pending_per_database\n    EXCLUDE USING btree (database_id WITH =)\n    WHERE (status = 'pending')\n)",
+  "misc/issues-22.sql": "ALTER TABLE test_named_exclude ADD CONSTRAINT no_overlap EXCLUDE USING gist (room WITH =, during WITH &&)",
   "misc/inflection-1.sql": "CREATE SCHEMA inflection",
   "misc/inflection-2.sql": "GRANT USAGE ON SCHEMA inflection TO PUBLIC",
   "misc/inflection-3.sql": "ALTER DEFAULT PRIVILEGES IN SCHEMA inflection \n GRANT EXECUTE ON FUNCTIONS  TO PUBLIC",

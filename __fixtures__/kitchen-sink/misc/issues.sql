@@ -92,3 +92,14 @@ CREATE TABLE test_exclude_where (
   EXCLUDE USING btree (database_id WITH =)
     WHERE (status = 'pending')
 );
+
+-- Named EXCLUDE constraint: the deparser dropped `CONSTRAINT <name>` for CONSTR_EXCLUSION
+CREATE TABLE test_named_exclude (
+  id uuid PRIMARY KEY,
+  database_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  CONSTRAINT one_pending_per_database
+    EXCLUDE USING btree (database_id WITH =)
+    WHERE (status = 'pending')
+);
+ALTER TABLE test_named_exclude ADD CONSTRAINT no_overlap EXCLUDE USING gist (room WITH =, during WITH &&);
