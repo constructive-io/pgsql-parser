@@ -1,5 +1,5 @@
-import { parse } from 'libpg-query';
 import { ParseResult, RawStmt } from '@pgsql/types';
+import { parse } from 'libpg-query';
 
 export interface ExtractedStatement {
   statement: string;

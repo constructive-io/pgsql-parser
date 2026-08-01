@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 // Bug-hunt sweep: run esoteric PL/pgSQL shapes through transformSql with
 // roundTrip:true, and also check that key tokens survive in the output.
 const { loadModule } = require('plpgsql-parser');

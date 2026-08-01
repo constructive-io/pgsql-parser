@@ -180,13 +180,13 @@ export function walk(
     const ctx =
       isWrite || isRead
         ? makeContext({
-            stmtTag: tag,
-            stmtIndex: inherited.stmtIndex,
-            isWrite,
-            isRead,
-            insideFunction: inherited.insideFunction,
-            functionName: inherited.functionName,
-          })
+          stmtTag: tag,
+          stmtIndex: inherited.stmtIndex,
+          isWrite,
+          isRead,
+          insideFunction: inherited.insideFunction,
+          functionName: inherited.functionName,
+        })
         : inherited;
 
     contexts.set(path, ctx);

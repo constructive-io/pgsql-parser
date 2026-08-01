@@ -1,6 +1,7 @@
 import { loadModule } from 'libpg-query';
+import { isRawComment, isRawStmt } from 'pgsql-parse';
+
 import { parseSync } from '../src/parse';
-import { isRawComment, isRawWhitespace, isRawStmt } from 'pgsql-parse';
 
 beforeAll(async () => {
   await loadModule();

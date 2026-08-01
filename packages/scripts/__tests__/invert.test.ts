@@ -135,7 +135,7 @@ describe('revertFor', () => {
   });
 
   it('never guesses for DML', () => {
-    const result = revert("INSERT INTO app.users (id) VALUES (1);");
+    const result = revert('INSERT INTO app.users (id) VALUES (1);');
     expect(result.sql).toEqual('-- revert not derivable: DML is not mechanically invertible');
     expect(result.warnings).toEqual(['revert not derivable: DML is not mechanically invertible']);
   });
@@ -147,7 +147,7 @@ describe('revertFor', () => {
   });
 
   it('warns instead of using CASCADE for ALTER ... SET (prior value unknown)', () => {
-    const result = revert("ALTER TABLE app.users ALTER COLUMN id SET DEFAULT 0;");
+    const result = revert('ALTER TABLE app.users ALTER COLUMN id SET DEFAULT 0;');
     expect(result.sql).toContain('-- revert not derivable: ALTER TABLE app.users AT_ColumnDefault');
     expect(result.warnings).toHaveLength(1);
   });
@@ -237,7 +237,7 @@ describe('verifyFor', () => {
   it('checks added columns via information_schema.columns', () => {
     expect(verify('ALTER TABLE app.users ADD COLUMN age int;').sql)
       .toEqual(
-        "SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE " +
+        'SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE ' +
         "table_name = 'users' AND column_name = 'age' AND table_schema = 'app') THEN 1 ELSE 0 END);"
       );
   });
@@ -245,7 +245,7 @@ describe('verifyFor', () => {
   it('checks added constraints via information_schema.table_constraints', () => {
     expect(verify('ALTER TABLE app.users ADD CONSTRAINT age_ck CHECK (age > 0);').sql)
       .toEqual(
-        "SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE " +
+        'SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE ' +
         "table_name = 'users' AND constraint_name = 'age_ck' AND table_schema = 'app') THEN 1 ELSE 0 END);"
       );
   });
@@ -259,7 +259,7 @@ describe('verifyFor', () => {
   it('checks RLS via pg_class.relrowsecurity', () => {
     expect(verify('ALTER TABLE app.users ENABLE ROW LEVEL SECURITY;').sql)
       .toEqual(
-        "SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace " +
+        'SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace ' +
         "WHERE c.relname = 'users' AND n.nspname = 'app' AND c.relrowsecurity) THEN 1 ELSE 0 END);"
       );
     expect(verify('ALTER TABLE app.users FORCE ROW LEVEL SECURITY;').sql)
@@ -288,9 +288,9 @@ describe('verifyFor', () => {
   it('checks role membership grants via pg_auth_members', () => {
     expect(verify('GRANT reader TO alice;').sql)
       .toEqual(
-        "SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_auth_members m " +
-        "JOIN pg_roles granted ON granted.oid = m.roleid " +
-        "JOIN pg_roles member ON member.oid = m.member " +
+        'SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_auth_members m ' +
+        'JOIN pg_roles granted ON granted.oid = m.roleid ' +
+        'JOIN pg_roles member ON member.oid = m.member ' +
         "WHERE granted.rolname = 'reader' AND member.rolname = 'alice') THEN 1 ELSE 0 END);"
       );
   });
@@ -304,7 +304,7 @@ describe('verifyFor', () => {
 
   it('emits nothing for comments and seed DML', () => {
     expect(verify("COMMENT ON TABLE app.users IS 'x';")).toEqual({ sql: '', warnings: [] });
-    expect(verify("INSERT INTO app.users (id) VALUES (1);")).toEqual({ sql: '', warnings: [] });
+    expect(verify('INSERT INTO app.users (id) VALUES (1);')).toEqual({ sql: '', warnings: [] });
   });
 
   it('quotes identifiers and escapes literals in generated checks', () => {
@@ -407,9 +407,9 @@ describe('verifyFor — extended vocabulary', () => {
   });
 
   it('checks foreign servers and user mappings via catalogs', () => {
-    expect(verify("CREATE SERVER films_server FOREIGN DATA WRAPPER postgres_fdw;").sql)
+    expect(verify('CREATE SERVER films_server FOREIGN DATA WRAPPER postgres_fdw;').sql)
       .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_foreign_server WHERE srvname = 'films_server') THEN 1 ELSE 0 END);");
-    expect(verify("CREATE USER MAPPING FOR bob SERVER films_server;").sql)
+    expect(verify('CREATE USER MAPPING FOR bob SERVER films_server;').sql)
       .toEqual("SELECT 1/(CASE WHEN EXISTS (SELECT 1 FROM pg_user_mappings WHERE srvname = 'films_server' AND usename = 'bob') THEN 1 ELSE 0 END);");
   });
 

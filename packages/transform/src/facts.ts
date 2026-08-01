@@ -301,143 +301,143 @@ function classifyOne(nodeTag: string, node: any): StatementFacts {
   };
 
   switch (nodeTag) {
-    case 'CreateSchemaStmt':
-      facts.creates.push(qn(null, node.schemaname));
-      break;
-    case 'CreateExtensionStmt':
-      facts.extension = {
-        name: node.extname,
-        schema: extensionSchemaOption(node.options),
-        action: 'create',
-        ifNotExists: node.if_not_exists === true
-      };
-      break;
-    case 'CreateStmt':
-    case 'ViewStmt': {
-      const rel = nodeTag === 'ViewStmt' ? node.view : node.relation;
-      if (rel) facts.creates.push(qn(rel.schemaname ?? null, rel.relname));
-      break;
+  case 'CreateSchemaStmt':
+    facts.creates.push(qn(null, node.schemaname));
+    break;
+  case 'CreateExtensionStmt':
+    facts.extension = {
+      name: node.extname,
+      schema: extensionSchemaOption(node.options),
+      action: 'create',
+      ifNotExists: node.if_not_exists === true
+    };
+    break;
+  case 'CreateStmt':
+  case 'ViewStmt': {
+    const rel = nodeTag === 'ViewStmt' ? node.view : node.relation;
+    if (rel) facts.creates.push(qn(rel.schemaname ?? null, rel.relname));
+    break;
+  }
+  case 'IndexStmt':
+    if (node.relation) {
+      facts.creates.push(qn(node.relation.schemaname ?? null, node.idxname ?? node.relation.relname));
     }
-    case 'IndexStmt':
-      if (node.relation) {
-        facts.creates.push(qn(node.relation.schemaname ?? null, node.idxname ?? node.relation.relname));
+    break;
+  case 'CreateFunctionStmt': {
+    const name = nameListToQualified(node.funcname);
+    if (name) facts.creates.push(name);
+    for (const opt of node.options ?? []) {
+      const def = opt?.DefElem;
+      if (def?.defname === 'security' && def?.arg?.Boolean?.boolval === true) {
+        facts.securityDefiner = true;
       }
-      break;
-    case 'CreateFunctionStmt': {
-      const name = nameListToQualified(node.funcname);
-      if (name) facts.creates.push(name);
-      for (const opt of node.options ?? []) {
-        const def = opt?.DefElem;
-        if (def?.defname === 'security' && def?.arg?.Boolean?.boolval === true) {
-          facts.securityDefiner = true;
-        }
-      }
-      break;
     }
-    case 'CreateTrigStmt':
-      if (node.relation) {
-        // Trigger names are only unique per table; qualify with the table.
-        facts.creates.push(
-          qn(node.relation.schemaname ?? null, `${node.relation.relname}.${node.trigname}`)
-        );
-      }
-      pushRef(facts.references, nameListToQualified(node.funcname));
-      break;
-    case 'CreatePolicyStmt':
-    case 'AlterPolicyStmt':
-      if (node.table) {
-        // Policy names are only unique per table; qualify with the table.
-        facts.creates.push(
-          qn(node.table.schemaname ?? null, `${node.table.relname}.${node.policy_name}`)
-        );
-        // The guarded table lives on `node.table`; the generic RangeVar walker
-        // does not descend into it, so capture the reference explicitly.
-        if (node.table.schemaname) {
-          pushRef(facts.references, qn(node.table.schemaname, node.table.relname));
-        }
-      }
-      break;
-    case 'CreateSeqStmt':
-      if (node.sequence) {
-        facts.creates.push(qn(node.sequence.schemaname ?? null, node.sequence.relname));
-      }
-      break;
-    case 'CompositeTypeStmt':
-      if (node.typevar) {
-        facts.creates.push(qn(node.typevar.schemaname ?? null, node.typevar.relname));
-      }
-      break;
-    case 'CreateEnumStmt':
-    case 'CreateRangeStmt': {
-      const name = nameListToQualified(node.typeName);
-      if (name) facts.creates.push(name);
-      break;
+    break;
+  }
+  case 'CreateTrigStmt':
+    if (node.relation) {
+      // Trigger names are only unique per table; qualify with the table.
+      facts.creates.push(
+        qn(node.relation.schemaname ?? null, `${node.relation.relname}.${node.trigname}`)
+      );
     }
-    case 'CreateDomainStmt': {
-      // `typeName` on a domain is the base type; the name is `domainname`.
-      const name = nameListToQualified(node.domainname);
-      if (name) facts.creates.push(name);
-      break;
+    pushRef(facts.references, nameListToQualified(node.funcname));
+    break;
+  case 'CreatePolicyStmt':
+  case 'AlterPolicyStmt':
+    if (node.table) {
+      // Policy names are only unique per table; qualify with the table.
+      facts.creates.push(
+        qn(node.table.schemaname ?? null, `${node.table.relname}.${node.policy_name}`)
+      );
+      // The guarded table lives on `node.table`; the generic RangeVar walker
+      // does not descend into it, so capture the reference explicitly.
+      if (node.table.schemaname) {
+        pushRef(facts.references, qn(node.table.schemaname, node.table.relname));
+      }
     }
-    case 'AlterObjectSchemaStmt':
-      // ALTER EXTENSION <name> SET SCHEMA <newschema>. Other object types
-      // (TABLE/TYPE/FUNCTION ... SET SCHEMA) keep their default classification.
-      if (node.objectType === 'OBJECT_EXTENSION') {
-        const name = node.object?.String?.sval;
-        if (typeof name === 'string') {
-          facts.kind = 'extension';
-          facts.extension = {
-            name,
-            schema: typeof node.newschema === 'string' ? node.newschema : null,
-            action: 'set_schema'
-          };
-        }
+    break;
+  case 'CreateSeqStmt':
+    if (node.sequence) {
+      facts.creates.push(qn(node.sequence.schemaname ?? null, node.sequence.relname));
+    }
+    break;
+  case 'CompositeTypeStmt':
+    if (node.typevar) {
+      facts.creates.push(qn(node.typevar.schemaname ?? null, node.typevar.relname));
+    }
+    break;
+  case 'CreateEnumStmt':
+  case 'CreateRangeStmt': {
+    const name = nameListToQualified(node.typeName);
+    if (name) facts.creates.push(name);
+    break;
+  }
+  case 'CreateDomainStmt': {
+    // `typeName` on a domain is the base type; the name is `domainname`.
+    const name = nameListToQualified(node.domainname);
+    if (name) facts.creates.push(name);
+    break;
+  }
+  case 'AlterObjectSchemaStmt':
+    // ALTER EXTENSION <name> SET SCHEMA <newschema>. Other object types
+    // (TABLE/TYPE/FUNCTION ... SET SCHEMA) keep their default classification.
+    if (node.objectType === 'OBJECT_EXTENSION') {
+      const name = node.object?.String?.sval;
+      if (typeof name === 'string') {
+        facts.kind = 'extension';
+        facts.extension = {
+          name,
+          schema: typeof node.newschema === 'string' ? node.newschema : null,
+          action: 'set_schema'
+        };
       }
-      break;
-    case 'DropStmt':
-      // DROP EXTENSION <name> [, ...]. Extension names are bare String nodes.
-      // Other DROP object types keep their default classification. When
-      // several extensions are dropped in one statement the first names the
-      // fact; the full list stays available via the raw node.
-      if (node.removeType === 'OBJECT_EXTENSION' && Array.isArray(node.objects)) {
-        const name = node.objects[0]?.String?.sval;
-        if (typeof name === 'string') {
-          facts.kind = 'extension';
-          facts.extension = { name, schema: null, action: 'drop' };
-        }
+    }
+    break;
+  case 'DropStmt':
+    // DROP EXTENSION <name> [, ...]. Extension names are bare String nodes.
+    // Other DROP object types keep their default classification. When
+    // several extensions are dropped in one statement the first names the
+    // fact; the full list stays available via the raw node.
+    if (node.removeType === 'OBJECT_EXTENSION' && Array.isArray(node.objects)) {
+      const name = node.objects[0]?.String?.sval;
+      if (typeof name === 'string') {
+        facts.kind = 'extension';
+        facts.extension = { name, schema: null, action: 'drop' };
       }
-      break;
-    case 'AlterTableStmt': {
-      if (node.relation) {
-        facts.creates.push(qn(node.relation.schemaname ?? null, node.relation.relname));
-      }
-      const cmds: any[] = node.cmds ?? [];
-      for (const cmd of cmds) {
-        const subtype = cmd?.AlterTableCmd?.subtype;
-        if (subtype === 'AT_EnableRowSecurity' || subtype === 'AT_ForceRowSecurity' ||
+    }
+    break;
+  case 'AlterTableStmt': {
+    if (node.relation) {
+      facts.creates.push(qn(node.relation.schemaname ?? null, node.relation.relname));
+    }
+    const cmds: any[] = node.cmds ?? [];
+    for (const cmd of cmds) {
+      const subtype = cmd?.AlterTableCmd?.subtype;
+      if (subtype === 'AT_EnableRowSecurity' || subtype === 'AT_ForceRowSecurity' ||
             subtype === 'AT_DisableRowSecurity' || subtype === 'AT_NoForceRowSecurity') {
-          facts.kind = 'rls_enable';
-          facts.securityRelevant = true;
-        } else if (subtype === 'AT_AddConstraint') {
-          const contype = cmd?.AlterTableCmd?.def?.Constraint?.contype;
-          facts.kind = contype === 'CONSTR_FOREIGN' ? 'fk_constraint' : 'constraint';
-        } else if (subtype === 'AT_ChangeOwner') {
-          facts.securityRelevant = true;
-          const owner = cmd?.AlterTableCmd?.newowner?.rolename;
-          if (owner && !facts.roles.includes(owner)) facts.roles.push(owner);
-        }
+        facts.kind = 'rls_enable';
+        facts.securityRelevant = true;
+      } else if (subtype === 'AT_AddConstraint') {
+        const contype = cmd?.AlterTableCmd?.def?.Constraint?.contype;
+        facts.kind = contype === 'CONSTR_FOREIGN' ? 'fk_constraint' : 'constraint';
+      } else if (subtype === 'AT_ChangeOwner') {
+        facts.securityRelevant = true;
+        const owner = cmd?.AlterTableCmd?.newowner?.rolename;
+        if (owner && !facts.roles.includes(owner)) facts.roles.push(owner);
       }
-      break;
     }
-    case 'InsertStmt':
-    case 'UpdateStmt':
-    case 'DeleteStmt':
-      if (node.relation) {
-        facts.creates.push(qn(node.relation.schemaname ?? null, node.relation.relname));
-      }
-      break;
-    default:
-      break;
+    break;
+  }
+  case 'InsertStmt':
+  case 'UpdateStmt':
+  case 'DeleteStmt':
+    if (node.relation) {
+      facts.creates.push(qn(node.relation.schemaname ?? null, node.relation.relname));
+    }
+    break;
+  default:
+    break;
   }
 
   collectRoles(node, facts.roles);

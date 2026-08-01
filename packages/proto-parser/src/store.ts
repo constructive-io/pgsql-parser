@@ -1,15 +1,16 @@
-import { Service, Type, Field, Enum, Namespace, ReflectionObject } from '@launchql/protobufjs';
-import { generateEnumImports, generateAstHelperMethods, generateWrappedAstHelperMethods, generateTypeImportSpecifiers, generateEnumValueFunctions, generateEnumToIntFunctions, generateEnumToStringFunctions, generateEnumToIntFunctionsNested, generateEnumToStringFunctionsNested, convertEnumToTsUnionType, convertEnumToTsEnumDeclaration, generateNodeUnionType, convertTypeToTsInterface } from './ast';
-import { RuntimeSchemaGenerator } from './runtime-schema';
-import { generateEnum2IntJSON, generateEnum2StrJSON } from './ast/enums/enums-json';
-import { jsStringify } from 'strfy-js';
-import { mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { getOptionsWithDefaults, PgProtoStoreOptions } from './options';
-import { cloneAndNameNode, convertAstToCode, createDefaultImport, getUndefinedKey, hasUndefinedInitialValue, stripExtension, writeFileToDisk } from './utils';
-import { nestedObjCode } from './inline-helpers';
 import * as t from '@babel/types';
+import { Enum, Field, Namespace, ReflectionObject,Service, Type } from '@launchql/protobufjs';
+import { mkdirSync } from 'fs';
+import { dirname,join } from 'path';
+import { jsStringify } from 'strfy-js';
+
+import { convertEnumToTsEnumDeclaration, convertEnumToTsUnionType, convertTypeToTsInterface,generateAstHelperMethods, generateEnumImports, generateEnumToIntFunctions, generateEnumToIntFunctionsNested, generateEnumToStringFunctions, generateEnumToStringFunctionsNested, generateEnumValueFunctions, generateNodeUnionType, generateTypeImportSpecifiers, generateWrappedAstHelperMethods } from './ast';
+import { generateEnum2IntJSON, generateEnum2StrJSON } from './ast/enums/enums-json';
 import { NODE_TYPE } from './constants';
+import { nestedObjCode } from './inline-helpers';
+import { getOptionsWithDefaults, PgProtoStoreOptions } from './options';
+import { RuntimeSchemaGenerator } from './runtime-schema';
+import { cloneAndNameNode, convertAstToCode, createDefaultImport, getUndefinedKey, hasUndefinedInitialValue, stripExtension, writeFileToDisk } from './utils';
 
 interface IProtoStore {
   options: PgProtoStoreOptions;
@@ -158,7 +159,7 @@ export class ProtoStore implements IProtoStore {
       const node = generateNodeUnionType(this.options, typesToProcess);
       const enumImports = generateEnumImports(enumsToProcess, this.options.types.enumsSource);
       const types = typesToProcess.reduce((m, type) => {
-        return [...m, convertTypeToTsInterface(type, this.options)]
+        return [...m, convertTypeToTsInterface(type, this.options)];
       }, []);
       const filename = this.ensureCorrectExtension(this.options.types.filename, '.ts');
       this.writeCodeToFile(filename, [

@@ -1,9 +1,10 @@
-import { parse } from 'libpg-query';
-import { deparseSync as deparse, DeparserOptions } from '../src';
-import { cleanTree } from '../scripts/clean-utils';
 import { readFileSync } from 'fs';
+import { diff } from 'jest-diff';
+import { parse } from 'libpg-query';
 import * as path from 'path';
-import { diff } from 'jest-diff'
+
+import { cleanTree } from '../scripts/clean-utils';
+import { DeparserOptions,deparseSync as deparse } from '../src';
 
 export async function expectParseDeparse(sql1: string, options: DeparserOptions = { pretty: false }) {
   const parsed = await parse(sql1);
@@ -61,24 +62,24 @@ function createParseError(
 
 function getErrorMessage(type: ParseErrorType): string {
   switch (type) {
-    case 'PARSE_FAILED':
-      return 'Parse failed - no statements returned';
-    case 'INVALID_STATEMENT':
-      return 'Invalid statement structure';
-    case 'REPARSE_FAILED':
-      return 'Reparse failed - no statements returned';
-    case 'AST_MISMATCH':
-      return 'AST mismatch after parse/deparse cycle';
-    case 'UNEXPECTED_ERROR':
-      return 'Unexpected error during parse/deparse cycle';
-    case 'INVALID_DEPARSED_SQL':
-      return 'Invalid deparsed SQL';
-    case 'PRETTY_INVALID_DEPARSED_SQL':
-      return 'Invalid deparsed SQL (pretty)';
-    case 'PRETTY_REPARSE_FAILED':
-      return 'Reparse failed - no statements returned (pretty)';
-    case 'PRETTY_AST_MISMATCH':
-      return 'AST mismatch after parse/deparse cycle (pretty)';
+  case 'PARSE_FAILED':
+    return 'Parse failed - no statements returned';
+  case 'INVALID_STATEMENT':
+    return 'Invalid statement structure';
+  case 'REPARSE_FAILED':
+    return 'Reparse failed - no statements returned';
+  case 'AST_MISMATCH':
+    return 'AST mismatch after parse/deparse cycle';
+  case 'UNEXPECTED_ERROR':
+    return 'Unexpected error during parse/deparse cycle';
+  case 'INVALID_DEPARSED_SQL':
+    return 'Invalid deparsed SQL';
+  case 'PRETTY_INVALID_DEPARSED_SQL':
+    return 'Invalid deparsed SQL (pretty)';
+  case 'PRETTY_REPARSE_FAILED':
+    return 'Reparse failed - no statements returned (pretty)';
+  case 'PRETTY_AST_MISMATCH':
+    return 'AST mismatch after parse/deparse cycle (pretty)';
   }
 }
 
@@ -287,11 +288,7 @@ export class FixtureTestUtils extends TestUtils {
     }
     const entries = this.getTestEntries(filters);
     for (const [relativePath, sql] of entries) {
-      try {
-        await this.expectAstMatch(relativePath, sql);
-      } catch (err) {
-        throw err;
-      }
+      await this.expectAstMatch(relativePath, sql);
     }
   }
 }

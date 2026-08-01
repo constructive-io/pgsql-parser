@@ -1,9 +1,9 @@
 #!/usr/bin/env ts-node
-import * as path from 'path';
+import { ParseResult } from '@pgsql/types';
 import * as fs from 'fs';
 import { sync as globSync } from 'glob';
-import { parse, deparse } from 'libpg-query';
-import { ParseResult, RawStmt } from '@pgsql/types';
+import { deparse,parse } from 'libpg-query';
+import * as path from 'path';
 
 const FIXTURE_DIR = path.join(__dirname, '../../../__fixtures__/legacy');
 const OUT_DIR = path.join(__dirname, '../../../__fixtures__/generated');

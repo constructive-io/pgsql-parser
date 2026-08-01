@@ -1,5 +1,6 @@
 import { loadModule, parsePlPgSQLSync } from 'libpg-query';
-import { hydratePlpgsqlAst, dehydratePlpgsqlAst, deparseSync, isHydratedExpr, getOriginalQuery, PLpgSQLParseResult } from '../src';
+
+import { dehydratePlpgsqlAst, deparseSync, getOriginalQuery, hydratePlpgsqlAst, isHydratedExpr, PLpgSQLParseResult } from '../src';
 
 describe('hydratePlpgsqlAst', () => {
   beforeAll(async () => {

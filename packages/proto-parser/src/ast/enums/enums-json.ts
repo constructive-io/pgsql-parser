@@ -9,17 +9,17 @@ type EnumNameToValue = Record<string, Record<string, number>>;
  * Used for creating enum-to-string mapping files (JSON or TypeScript).
  */
 export const generateEnum2StrJSON = (enums: Enum[]): EnumValueToName => {
-    const valueToName: EnumValueToName = {};
+  const valueToName: EnumValueToName = {};
 
-    enums.forEach(enumObj => {
-        valueToName[enumObj.name] = {};
+  enums.forEach(enumObj => {
+    valueToName[enumObj.name] = {};
 
-        for (const [key, value] of Object.entries(enumObj.values)) {
-            valueToName[enumObj.name][value as number] = key;
-        }
-    });
+    for (const [key, value] of Object.entries(enumObj.values)) {
+      valueToName[enumObj.name][value as number] = key;
+    }
+  });
 
-    return valueToName;
+  return valueToName;
 };
 
 /**
@@ -28,15 +28,15 @@ export const generateEnum2StrJSON = (enums: Enum[]): EnumValueToName => {
  * Used for creating string-to-enum mapping files (JSON or TypeScript).
  */
 export const generateEnum2IntJSON = (enums: Enum[]): EnumNameToValue => {
-    const nameToValue: EnumNameToValue = {};
+  const nameToValue: EnumNameToValue = {};
 
-    enums.forEach(enumObj => {
-        nameToValue[enumObj.name] = {};
+  enums.forEach(enumObj => {
+    nameToValue[enumObj.name] = {};
 
-        for (const [key, value] of Object.entries(enumObj.values)) {
-            nameToValue[enumObj.name][key] = value as number;
-        }
-    });
+    for (const [key, value] of Object.entries(enumObj.values)) {
+      nameToValue[enumObj.name][key] = value as number;
+    }
+  });
 
-    return nameToValue;
+  return nameToValue;
 };

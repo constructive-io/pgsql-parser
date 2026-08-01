@@ -1,7 +1,8 @@
-import { PgProtoParser, PgProtoParserOptions, getOptionsWithDefaults } from 'pg-proto-parser';
+import chalk from 'chalk';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import chalk from 'chalk';
+import { getOptionsWithDefaults,PgProtoParser, PgProtoParserOptions } from 'pg-proto-parser';
+
 import { showHelp } from '../utils/help';
 
 export async function runtimeSchemaCommand(argv: any) {

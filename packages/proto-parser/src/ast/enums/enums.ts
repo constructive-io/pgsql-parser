@@ -1,5 +1,6 @@
-import { Enum } from '@launchql/protobufjs';
 import * as t from '@babel/types';
+import { Enum } from '@launchql/protobufjs';
+
 import { createNamedImport } from '../../utils';
 
 /**
@@ -129,7 +130,7 @@ export const generateEnumValueFunctions = (enumData: Enum[]) => {
 
   // Return the entire AST
   return [exportedEnumTypeAlias, exportedFunction];
-}
+};
 
 /**
  * Generates a unidirectional function that converts enum string keys to their numeric values.
@@ -211,7 +212,7 @@ export const generateEnumToIntFunctions = (enumData: Enum[]) => {
 
   // Return the entire AST
   return [exportedEnumTypeAlias, exportedFunction];
-}
+};
 
 /**
  * Generates a nested object structure with individual converter functions for each enum.
@@ -308,7 +309,7 @@ export const generateEnumToIntFunctionsNested = (enumData: Enum[]) => {
   const exportedMapType = t.exportNamedDeclaration(enumToIntMapTypeAlias, []);
 
   return [exportedEnumType, exportedMapType, exportedObject];
-}
+};
 
 /**
  * Generates a nested object structure with functions to convert enum numeric values to string keys.
@@ -405,7 +406,7 @@ export const generateEnumToStringFunctionsNested = (enumData: Enum[]) => {
   const exportedMapType = t.exportNamedDeclaration(enumToStringMapTypeAlias, []);
 
   return [exportedEnumType, exportedMapType, exportedObject];
-}
+};
 
 /**
  * Generates a unidirectional function that converts enum numeric values to their string keys.
@@ -487,4 +488,4 @@ export const generateEnumToStringFunctions = (enumData: Enum[]) => {
 
   // Return the entire AST
   return [exportedEnumTypeAlias, exportedFunction];
-}
+};

@@ -1,7 +1,8 @@
 import { Enum, Field, ReflectionObject } from '@launchql/protobufjs';
-import { PgProtoParserOptions } from '../options';
 import { writeFileSync } from 'fs';
-import { extname, basename } from 'path';
+import { basename,extname } from 'path';
+
+import { PgProtoParserOptions } from '../options';
 import { readAndParsePackageJson } from '../package';
 
 const pkg = readAndParsePackageJson();
@@ -21,16 +22,16 @@ export const getUndefinedKey = (enumName: string) => {
   const upperSnakeCase = processedParts.join('_').toUpperCase();
 
   return `${upperSnakeCase}_UNDEFINED`;
-}
+};
 
 export const toSpecialCamelCase = (s: string) => {
   return s
-      .replace(/_+/g, '') // Remove all underscores
-      .replace(/([A-Z]+)([A-Z][a-z]|$)/g, (match: string, p1: string, p2: string) => 
-          p1.toLowerCase() + p2 // Lowercase all but the last letter of consecutive caps
-      )
-      .replace(/^./, (match: string) => match.toLowerCase()); // Ensure the first character is lowercase
-}
+    .replace(/_+/g, '') // Remove all underscores
+    .replace(/([A-Z]+)([A-Z][a-z]|$)/g, (match: string, p1: string, p2: string) => 
+      p1.toLowerCase() + p2 // Lowercase all but the last letter of consecutive caps
+    )
+    .replace(/^./, (match: string) => match.toLowerCase()); // Ensure the first character is lowercase
+};
 
 export const hasUndefinedInitialValue = (enumData: Enum) => {
   const entries = Object.entries(enumData.values);
@@ -39,19 +40,19 @@ export const hasUndefinedInitialValue = (enumData: Enum) => {
   const undefinedKey = getUndefinedKey(enumData.name);
   const firstEntry = entries[0];
   return firstEntry[0] === undefinedKey && firstEntry[1] === 0;
-}
+};
 
 export const cloneAndNameNode = (node: ReflectionObject, name: string) => {
   const clone = JSON.parse(JSON.stringify(node));
   return {
     name,
     ...clone
-  }
-}
+  };
+};
 
 export const getFieldName = (field: Field, fallbackName: string) => {
- return field.options?.json_name ? field.options.json_name : fallbackName;
-}
+  return field.options?.json_name ? field.options.json_name : fallbackName;
+};
 
 export const getHeader = () => {
   const version = process.env.NODE_ENV === 'test' ? 'latest' : pkg.version;
@@ -66,10 +67,10 @@ export const getHeader = () => {
 export const writeFileToDisk = (path: string, contents: string, options: PgProtoParserOptions) => {
   const c = (options.includeHeader && extname(path) === '.ts') ? `${getHeader()}${contents}` : contents;
   writeFileSync(path, c);
-}
+};
 
 export const stripExtension = (filename: string) => {
   const extension = extname(filename);
   return basename(filename, extension);
-}
+};
 

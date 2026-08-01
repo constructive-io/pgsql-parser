@@ -1,7 +1,8 @@
-import { readFileSync, writeFileSync } from 'fs';
-import { resolve, join } from 'path';
-import { parse } from 'pgsql-parser';
 import chalk from 'chalk';
+import { readFileSync, writeFileSync } from 'fs';
+import { join,resolve } from 'path';
+import { parse } from 'pgsql-parser';
+
 import { showHelp } from '../utils/help';
 
 export async function parseCommand(argv: any) {

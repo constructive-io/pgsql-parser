@@ -1,8 +1,9 @@
+import { readdirSync,readFileSync } from 'fs';
 import { loadModule } from 'libpg-query';
-import { parseSync } from '../src/parse';
-import { deparseSync } from '../src/deparse';
-import { readFileSync, readdirSync } from 'fs';
 import * as path from 'path';
+
+import { deparseSync } from '../src/deparse';
+import { parseSync } from '../src/parse';
 
 const FIXTURES_DIR = path.join(__dirname, 'fixtures');
 

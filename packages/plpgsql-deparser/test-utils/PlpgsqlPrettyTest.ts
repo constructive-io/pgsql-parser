@@ -1,7 +1,8 @@
-import { parsePlPgSQLSync, loadModule } from 'libpg-query';
-import { deparseSync, PLpgSQLParseResult } from '../src';
 import * as fs from 'fs';
+import { loadModule,parsePlPgSQLSync } from 'libpg-query';
 import * as path from 'path';
+
+import { deparseSync, PLpgSQLParseResult } from '../src';
 
 export class PlpgsqlPrettyTest {
   private testCases: string[];

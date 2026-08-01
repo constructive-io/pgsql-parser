@@ -26,7 +26,7 @@
 
 import { QuoteUtils } from '@pgsql/quotes';
 import { walk, walkSqlAst } from '@pgsql/traverse';
-import { Deparser,parseSql, transformSync, walkPlpgsqlAst } from 'plpgsql-parser';
+import { Deparser,parseSql, transformSync } from 'plpgsql-parser';
 
 import type { QualifyUnqualifiedOptions } from './qualify';
 import { qualifyUnqualified } from './qualify';
@@ -337,23 +337,23 @@ export function createSqlVisitor(
   // object routes apply to DROP TABLE/FUNCTION/TYPE (e.g. revert scripts).
   const namespaceOfObjectType = (objType: string | undefined): RouteNamespace => {
     switch (objType) {
-      case 'OBJECT_TABLE':
-      case 'OBJECT_VIEW':
-      case 'OBJECT_SEQUENCE':
-      case 'OBJECT_MATVIEW':
-      case 'OBJECT_FOREIGN_TABLE':
-      case 'OBJECT_INDEX':
-        return 'relation';
-      case 'OBJECT_FUNCTION':
-      case 'OBJECT_PROCEDURE':
-      case 'OBJECT_AGGREGATE':
-      case 'OBJECT_ROUTINE':
-        return 'function';
-      case 'OBJECT_TYPE':
-      case 'OBJECT_DOMAIN':
-        return 'type';
-      default:
-        return 'unknown';
+    case 'OBJECT_TABLE':
+    case 'OBJECT_VIEW':
+    case 'OBJECT_SEQUENCE':
+    case 'OBJECT_MATVIEW':
+    case 'OBJECT_FOREIGN_TABLE':
+    case 'OBJECT_INDEX':
+      return 'relation';
+    case 'OBJECT_FUNCTION':
+    case 'OBJECT_PROCEDURE':
+    case 'OBJECT_AGGREGATE':
+    case 'OBJECT_ROUTINE':
+      return 'function';
+    case 'OBJECT_TYPE':
+    case 'OBJECT_DOMAIN':
+      return 'type';
+    default:
+      return 'unknown';
     }
   };
 

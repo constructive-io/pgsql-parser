@@ -1,6 +1,7 @@
-import { PgProtoParser, PgProtoParserOptions, getOptionsWithDefaults } from 'pg-proto-parser';
-import o from 'nested-obj';
 import chalk from 'chalk';
+import o from 'nested-obj';
+import { getOptionsWithDefaults,PgProtoParser, PgProtoParserOptions } from 'pg-proto-parser';
+
 import { showHelp } from '../utils/help';
 
 export async function protoGenCommand(argv: any) {

@@ -960,12 +960,12 @@ export class V15ToV16Transformer {
     if (node.items !== undefined) {
       result.items = Array.isArray(node.items)
         ? node.items.map((item: any) => {
-            const transformed = this.transform(item as any, context);
-            if (transformed === null) {
-              return {};
-            }
-            return transformed;
-          })
+          const transformed = this.transform(item as any, context);
+          if (transformed === null) {
+            return {};
+          }
+          return transformed;
+        })
         : this.transform(node.items as any, context);
     }
 
@@ -1001,9 +1001,9 @@ export class V15ToV16Transformer {
 
       if (partspec.strategy !== undefined) {
         const strategyMap: Record<string, string> = {
-          'range': 'PARTITION_STRATEGY_RANGE',
-          'list': 'PARTITION_STRATEGY_LIST',
-          'hash': 'PARTITION_STRATEGY_HASH'
+          range: 'PARTITION_STRATEGY_RANGE',
+          list: 'PARTITION_STRATEGY_LIST',
+          hash: 'PARTITION_STRATEGY_HASH'
         };
         partspec.strategy = strategyMap[partspec.strategy] || partspec.strategy;
       }
@@ -3319,13 +3319,13 @@ export class V15ToV16Transformer {
       result.opt = [
         {
           DefElem: {
-            defname: "admin",
+            defname: 'admin',
             arg: {
               Boolean: {
                 boolval: true
               }
             },
-            defaction: "DEFELEM_UNSPEC"
+            defaction: 'DEFELEM_UNSPEC'
           }
         }
       ];

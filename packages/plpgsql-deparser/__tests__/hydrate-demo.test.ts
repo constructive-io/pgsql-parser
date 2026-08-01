@@ -1,8 +1,9 @@
-import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query';
-import { deparse } from 'pgsql-deparser';
 import * as fs from 'fs';
+import { loadModule, parsePlPgSQLSync, parseSync } from 'libpg-query';
 import * as path from 'path';
-import { hydratePlpgsqlAst, dehydratePlpgsqlAst, PLpgSQLParseResult, deparseSync } from '../src';
+import { deparse } from 'pgsql-deparser';
+
+import { dehydratePlpgsqlAst, deparseSync,hydratePlpgsqlAst, PLpgSQLParseResult } from '../src';
 
 describe('hydrate demonstration with big-function.sql', () => {
   beforeAll(async () => {

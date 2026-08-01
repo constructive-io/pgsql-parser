@@ -11,21 +11,21 @@ describe('types', () => {
   });
   it('fieldsRequired', () => {
     parseAndSnap('types/fieldsRequired', {
-        types: {
-          enabled: true,
-          optionalFields: false
-        }
+      types: {
+        enabled: true,
+        optionalFields: false
+      }
     });
   });
 
   it('wrappedNodeTypeExport', () => {
     parseAndSnap('types/node-wrapped', {
-        types: {
-          enabled: true,
-          enumsSource: 'my-enums.ts',
-          filename: 'types.ts',
-          wrappedNodeTypeExport: true
-        }
+      types: {
+        enabled: true,
+        enumsSource: 'my-enums.ts',
+        filename: 'types.ts',
+        wrappedNodeTypeExport: true
+      }
     });
   });
 });

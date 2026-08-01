@@ -1,12 +1,12 @@
 #!/usr/bin/env ts-node
-import * as path from 'path';
 import * as fs from 'fs';
 import { sync as globSync } from 'glob';
-import { parse, deparse } from 'libpg-query';
-import { ParseResult, RawStmt } from '@pgsql/types';
+import { deparse,parse } from 'libpg-query';
+import * as path from 'path';
+
 import { deparse as ourDeparse } from '../src';
 import { cleanTree } from './clean-utils';
-import { splitStatements, generateStatementKey } from './statement-splitter';
+import { generateStatementKey,splitStatements } from './statement-splitter';
 
 const FIXTURE_DIR = path.join(__dirname, '../../../__fixtures__/kitchen-sink');
 const OUT_DIR = path.join(__dirname, '../../../__fixtures__/generated');

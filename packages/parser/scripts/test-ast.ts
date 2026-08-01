@@ -1,7 +1,8 @@
-import { parse } from '../src/';
-import { cleanTree } from '../src/utils';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
+
+import { parse } from '../src/';
+import { cleanTree } from '../src/utils';
 
 async function testAst() {
   try {

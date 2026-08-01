@@ -1,7 +1,8 @@
-import { parseSync, loadModule } from 'libpg-query';
-import { runtimeSchema, NodeSpec, FieldSpec } from '../../utils/src/runtime-schema';
 import * as fs from 'fs';
+import { loadModule,parseSync } from 'libpg-query';
 import * as path from 'path';
+
+import { FieldSpec,NodeSpec, runtimeSchema } from '../../utils/src/runtime-schema';
 
 interface FieldMetadata {
   nullable: boolean;

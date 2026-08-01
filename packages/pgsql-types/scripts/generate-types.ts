@@ -1,6 +1,7 @@
-import { runtimeSchema, NodeSpec, FieldSpec } from '../../utils/src/runtime-schema';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { FieldSpec,NodeSpec, runtimeSchema } from '../../utils/src/runtime-schema';
 
 interface FieldMetadata {
   nullable: boolean;
@@ -21,15 +22,15 @@ const schemaMap = new Map<string, NodeSpec>(
 );
 
 const primitiveTypeMap: Record<string, string> = {
-  'string': 'string',
-  'bool': 'boolean',
-  'int32': 'number',
-  'int64': 'number',
-  'uint32': 'number',
-  'uint64': 'number',
-  'float': 'number',
-  'double': 'number',
-  'bytes': 'Uint8Array',
+  string: 'string',
+  bool: 'boolean',
+  int32: 'number',
+  int64: 'number',
+  uint32: 'number',
+  uint64: 'number',
+  float: 'number',
+  double: 'number',
+  bytes: 'Uint8Array',
 };
 
 function isPrimitiveType(type: string): boolean {

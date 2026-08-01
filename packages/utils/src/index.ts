@@ -3,6 +3,6 @@ import nodes from './wrapped';
 export { nodes };
 export { ast };
 export default {
-    nodes,
-    ast
-}
+  nodes,
+  ast
+};

@@ -8,13 +8,13 @@
  */
 
 import { Deparser, DeparserOptions } from 'pgsql-deparser';
+
 import {
   EnhancedParseResult,
   isRawComment,
-  isRawWhitespace,
   isRawStmt,
+  isRawWhitespace,
   RawComment,
-  RawWhitespace,
 } from './types';
 
 /**

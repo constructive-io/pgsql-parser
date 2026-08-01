@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { readFileSync } from 'fs';
-import { resolve, join } from 'path';
+import { join } from 'path';
 
 export function showVersion() {
   // Try to find package.json in various locations
@@ -29,23 +29,23 @@ export function showVersion() {
 export function showHelp(command?: string) {
   if (command) {
     switch (command) {
-      case 'parse':
-        showParseHelp();
-        break;
-      case 'deparse':
-        showDeparseHelp();
-        break;
-      case 'proto-gen':
-        showProtoGenHelp();
-        break;
-      case 'proto-fetch':
-        showProtoFetchHelp();
-        break;
-      case 'runtime-schema':
-        showRuntimeSchemaHelp();
-        break;
-      default:
-        showGeneralHelp();
+    case 'parse':
+      showParseHelp();
+      break;
+    case 'deparse':
+      showDeparseHelp();
+      break;
+    case 'proto-gen':
+      showProtoGenHelp();
+      break;
+    case 'proto-fetch':
+      showProtoFetchHelp();
+      break;
+    case 'runtime-schema':
+      showRuntimeSchemaHelp();
+      break;
+    default:
+      showGeneralHelp();
     }
   } else {
     showGeneralHelp();

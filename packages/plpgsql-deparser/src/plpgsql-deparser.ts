@@ -11,52 +11,51 @@
  * CREATE FUNCTION statement.
  */
 
-import { Deparser as SqlDeparser, QuoteUtils } from 'pgsql-deparser';
+import { QuoteUtils } from 'pgsql-deparser';
+
 import {
-  PLpgSQLParseResult,
-  PLpgSQLFunctionNode,
+  DiagItemKind,
+  ElogLevel,
+  FetchDirection,
   PLpgSQL_function,
-  PLpgSQLDatum,
-  PLpgSQLAliasNode,
-  PLpgSQL_var,
   PLpgSQL_rec,
   PLpgSQL_row,
-  PLpgSQLStmtNode,
-  PLpgSQL_stmt_block,
+  PLpgSQL_stmt_assert,
   PLpgSQL_stmt_assign,
-  PLpgSQL_stmt_if,
+  PLpgSQL_stmt_block,
+  PLpgSQL_stmt_call,
   PLpgSQL_stmt_case,
-  PLpgSQL_stmt_loop,
-  PLpgSQL_stmt_while,
-  PLpgSQL_stmt_fori,
-  PLpgSQL_stmt_fors,
+  PLpgSQL_stmt_close,
+  PLpgSQL_stmt_commit,
+  PLpgSQL_stmt_dynexecute,
+  PLpgSQL_stmt_dynfors,
+  PLpgSQL_stmt_execsql,
+  PLpgSQL_stmt_exit,
+  PLpgSQL_stmt_fetch,
   PLpgSQL_stmt_forc,
   PLpgSQL_stmt_foreach_a,
-  PLpgSQL_stmt_exit,
+  PLpgSQL_stmt_fori,
+  PLpgSQL_stmt_fors,
+  PLpgSQL_stmt_getdiag,
+  PLpgSQL_stmt_if,
+  PLpgSQL_stmt_loop,
+  PLpgSQL_stmt_open,
+  PLpgSQL_stmt_perform,
+  PLpgSQL_stmt_raise,
   PLpgSQL_stmt_return,
   PLpgSQL_stmt_return_next,
   PLpgSQL_stmt_return_query,
-  PLpgSQL_stmt_raise,
-  PLpgSQL_stmt_assert,
-  PLpgSQL_stmt_execsql,
-  PLpgSQL_stmt_dynexecute,
-  PLpgSQL_stmt_dynfors,
-  PLpgSQL_stmt_getdiag,
-  PLpgSQL_stmt_open,
-  PLpgSQL_stmt_fetch,
-  PLpgSQL_stmt_close,
-  PLpgSQL_stmt_perform,
-  PLpgSQL_stmt_call,
-  PLpgSQL_stmt_commit,
   PLpgSQL_stmt_rollback,
   PLpgSQL_stmt_set,
+  PLpgSQL_stmt_while,
+  PLpgSQL_var,
+  PLpgSQLAliasNode,
+  PLpgSQLDatum,
   PLpgSQLExprNode,
+  PLpgSQLFunctionNode,
+  PLpgSQLParseResult,
+  PLpgSQLStmtNode,
   PLpgSQLTypeNode,
-  PLpgSQLCaseWhenNode,
-  PLpgSQLElsifNode,
-  ElogLevel,
-  FetchDirection,
-  DiagItemKind,
   RaiseOptionType,
 } from './types';
 
@@ -979,64 +978,64 @@ export class PLpgSQLDeparser {
     const nodeData = (stmt as any)[nodeType];
 
     switch (nodeType) {
-      case 'PLpgSQL_stmt_block':
-        return this.deparseBlock(nodeData, context, skipLabel);
-      case 'PLpgSQL_stmt_assign':
-        return this.deparseAssign(nodeData, context);
-      case 'PLpgSQL_stmt_if':
-        return this.deparseIf(nodeData, context);
-      case 'PLpgSQL_stmt_case':
-        return this.deparseCase(nodeData, context);
-      case 'PLpgSQL_stmt_loop':
-        return this.deparseLoop(nodeData, context);
-      case 'PLpgSQL_stmt_while':
-        return this.deparseWhile(nodeData, context);
-      case 'PLpgSQL_stmt_fori':
-        return this.deparseFori(nodeData, context);
-      case 'PLpgSQL_stmt_fors':
-        return this.deparseFors(nodeData, context);
-      case 'PLpgSQL_stmt_forc':
-        return this.deparseForc(nodeData, context);
-      case 'PLpgSQL_stmt_foreach_a':
-        return this.deparseForeach(nodeData, context);
-      case 'PLpgSQL_stmt_exit':
-        return this.deparseExit(nodeData, context);
-      case 'PLpgSQL_stmt_return':
-        return this.deparseReturn(nodeData, context);
-      case 'PLpgSQL_stmt_return_next':
-        return this.deparseReturnNext(nodeData, context);
-      case 'PLpgSQL_stmt_return_query':
-        return this.deparseReturnQuery(nodeData, context);
-      case 'PLpgSQL_stmt_raise':
-        return this.deparseRaise(nodeData, context);
-      case 'PLpgSQL_stmt_assert':
-        return this.deparseAssert(nodeData, context);
-      case 'PLpgSQL_stmt_execsql':
-        return this.deparseExecSql(nodeData, context);
-      case 'PLpgSQL_stmt_dynexecute':
-        return this.deparseDynExecute(nodeData, context);
-      case 'PLpgSQL_stmt_dynfors':
-        return this.deparseDynFors(nodeData, context);
-      case 'PLpgSQL_stmt_getdiag':
-        return this.deparseGetDiag(nodeData, context);
-      case 'PLpgSQL_stmt_open':
-        return this.deparseOpen(nodeData, context);
-      case 'PLpgSQL_stmt_fetch':
-        return this.deparseFetch(nodeData, context);
-      case 'PLpgSQL_stmt_close':
-        return this.deparseClose(nodeData, context);
-      case 'PLpgSQL_stmt_perform':
-        return this.deparsePerform(nodeData, context);
-      case 'PLpgSQL_stmt_call':
-        return this.deparseCall(nodeData, context);
-      case 'PLpgSQL_stmt_commit':
-        return this.deparseCommit(nodeData, context);
-      case 'PLpgSQL_stmt_rollback':
-        return this.deparseRollback(nodeData, context);
-      case 'PLpgSQL_stmt_set':
-        return this.deparseSet(nodeData, context);
-      default:
-        throw new Error(`Unknown PL/pgSQL statement type: ${nodeType}`);
+    case 'PLpgSQL_stmt_block':
+      return this.deparseBlock(nodeData, context, skipLabel);
+    case 'PLpgSQL_stmt_assign':
+      return this.deparseAssign(nodeData, context);
+    case 'PLpgSQL_stmt_if':
+      return this.deparseIf(nodeData, context);
+    case 'PLpgSQL_stmt_case':
+      return this.deparseCase(nodeData, context);
+    case 'PLpgSQL_stmt_loop':
+      return this.deparseLoop(nodeData, context);
+    case 'PLpgSQL_stmt_while':
+      return this.deparseWhile(nodeData, context);
+    case 'PLpgSQL_stmt_fori':
+      return this.deparseFori(nodeData, context);
+    case 'PLpgSQL_stmt_fors':
+      return this.deparseFors(nodeData, context);
+    case 'PLpgSQL_stmt_forc':
+      return this.deparseForc(nodeData, context);
+    case 'PLpgSQL_stmt_foreach_a':
+      return this.deparseForeach(nodeData, context);
+    case 'PLpgSQL_stmt_exit':
+      return this.deparseExit(nodeData, context);
+    case 'PLpgSQL_stmt_return':
+      return this.deparseReturn(nodeData, context);
+    case 'PLpgSQL_stmt_return_next':
+      return this.deparseReturnNext(nodeData, context);
+    case 'PLpgSQL_stmt_return_query':
+      return this.deparseReturnQuery(nodeData, context);
+    case 'PLpgSQL_stmt_raise':
+      return this.deparseRaise(nodeData, context);
+    case 'PLpgSQL_stmt_assert':
+      return this.deparseAssert(nodeData, context);
+    case 'PLpgSQL_stmt_execsql':
+      return this.deparseExecSql(nodeData, context);
+    case 'PLpgSQL_stmt_dynexecute':
+      return this.deparseDynExecute(nodeData, context);
+    case 'PLpgSQL_stmt_dynfors':
+      return this.deparseDynFors(nodeData, context);
+    case 'PLpgSQL_stmt_getdiag':
+      return this.deparseGetDiag(nodeData, context);
+    case 'PLpgSQL_stmt_open':
+      return this.deparseOpen(nodeData, context);
+    case 'PLpgSQL_stmt_fetch':
+      return this.deparseFetch(nodeData, context);
+    case 'PLpgSQL_stmt_close':
+      return this.deparseClose(nodeData, context);
+    case 'PLpgSQL_stmt_perform':
+      return this.deparsePerform(nodeData, context);
+    case 'PLpgSQL_stmt_call':
+      return this.deparseCall(nodeData, context);
+    case 'PLpgSQL_stmt_commit':
+      return this.deparseCommit(nodeData, context);
+    case 'PLpgSQL_stmt_rollback':
+      return this.deparseRollback(nodeData, context);
+    case 'PLpgSQL_stmt_set':
+      return this.deparseSet(nodeData, context);
+    default:
+      throw new Error(`Unknown PL/pgSQL statement type: ${nodeType}`);
     }
   }
 
@@ -2214,29 +2213,29 @@ export class PLpgSQLDeparser {
     if (level === undefined) return '';
     
     switch (level) {
-      case ElogLevel.DEBUG5:
-      case ElogLevel.DEBUG4:
-      case ElogLevel.DEBUG3:
-      case ElogLevel.DEBUG2:
-      case ElogLevel.DEBUG1:
-        return this.keyword('DEBUG');
-      case ElogLevel.LOG:
-      case ElogLevel.LOG_SERVER_ONLY:
-        return this.keyword('LOG');
-      case ElogLevel.INFO:
-        return this.keyword('INFO');
-      case ElogLevel.NOTICE:
-        return this.keyword('NOTICE');
-      case ElogLevel.WARNING:
-      case ElogLevel.WARNING_CLIENT_ONLY:
-        return this.keyword('WARNING');
-      case ElogLevel.ERROR:
-        return this.keyword('EXCEPTION');
-      case ElogLevel.FATAL:
-      case ElogLevel.PANIC:
-        return this.keyword('EXCEPTION');
-      default:
-        return '';
+    case ElogLevel.DEBUG5:
+    case ElogLevel.DEBUG4:
+    case ElogLevel.DEBUG3:
+    case ElogLevel.DEBUG2:
+    case ElogLevel.DEBUG1:
+      return this.keyword('DEBUG');
+    case ElogLevel.LOG:
+    case ElogLevel.LOG_SERVER_ONLY:
+      return this.keyword('LOG');
+    case ElogLevel.INFO:
+      return this.keyword('INFO');
+    case ElogLevel.NOTICE:
+      return this.keyword('NOTICE');
+    case ElogLevel.WARNING:
+    case ElogLevel.WARNING_CLIENT_ONLY:
+      return this.keyword('WARNING');
+    case ElogLevel.ERROR:
+      return this.keyword('EXCEPTION');
+    case ElogLevel.FATAL:
+    case ElogLevel.PANIC:
+      return this.keyword('EXCEPTION');
+    default:
+      return '';
     }
   }
 
@@ -2247,26 +2246,26 @@ export class PLpgSQLDeparser {
     if (optType === undefined) return '';
     
     switch (optType) {
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_ERRCODE:
-        return this.keyword('ERRCODE');
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_MESSAGE:
-        return this.keyword('MESSAGE');
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_DETAIL:
-        return this.keyword('DETAIL');
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_HINT:
-        return this.keyword('HINT');
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_COLUMN:
-        return this.keyword('COLUMN');
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_CONSTRAINT:
-        return this.keyword('CONSTRAINT');
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_DATATYPE:
-        return this.keyword('DATATYPE');
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_TABLE:
-        return this.keyword('TABLE');
-      case RaiseOptionType.PLPGSQL_RAISEOPTION_SCHEMA:
-        return this.keyword('SCHEMA');
-      default:
-        return '';
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_ERRCODE:
+      return this.keyword('ERRCODE');
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_MESSAGE:
+      return this.keyword('MESSAGE');
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_DETAIL:
+      return this.keyword('DETAIL');
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_HINT:
+      return this.keyword('HINT');
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_COLUMN:
+      return this.keyword('COLUMN');
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_CONSTRAINT:
+      return this.keyword('CONSTRAINT');
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_DATATYPE:
+      return this.keyword('DATATYPE');
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_TABLE:
+      return this.keyword('TABLE');
+    case RaiseOptionType.PLPGSQL_RAISEOPTION_SCHEMA:
+      return this.keyword('SCHEMA');
+    default:
+      return '';
     }
   }
 
@@ -2281,50 +2280,50 @@ export class PLpgSQLDeparser {
     if (typeof kind === 'string') {
       // Map string names to their SQL keyword equivalents
       const stringMap: Record<string, string> = {
-        'ROW_COUNT': 'ROW_COUNT',
-        'PG_CONTEXT': 'PG_CONTEXT',
-        'PG_EXCEPTION_CONTEXT': 'PG_EXCEPTION_CONTEXT',
-        'PG_EXCEPTION_DETAIL': 'PG_EXCEPTION_DETAIL',
-        'PG_EXCEPTION_HINT': 'PG_EXCEPTION_HINT',
-        'RETURNED_SQLSTATE': 'RETURNED_SQLSTATE',
-        'COLUMN_NAME': 'COLUMN_NAME',
-        'CONSTRAINT_NAME': 'CONSTRAINT_NAME',
-        'PG_DATATYPE_NAME': 'PG_DATATYPE_NAME',
-        'MESSAGE_TEXT': 'MESSAGE_TEXT',
-        'TABLE_NAME': 'TABLE_NAME',
-        'SCHEMA_NAME': 'SCHEMA_NAME',
+        ROW_COUNT: 'ROW_COUNT',
+        PG_CONTEXT: 'PG_CONTEXT',
+        PG_EXCEPTION_CONTEXT: 'PG_EXCEPTION_CONTEXT',
+        PG_EXCEPTION_DETAIL: 'PG_EXCEPTION_DETAIL',
+        PG_EXCEPTION_HINT: 'PG_EXCEPTION_HINT',
+        RETURNED_SQLSTATE: 'RETURNED_SQLSTATE',
+        COLUMN_NAME: 'COLUMN_NAME',
+        CONSTRAINT_NAME: 'CONSTRAINT_NAME',
+        PG_DATATYPE_NAME: 'PG_DATATYPE_NAME',
+        MESSAGE_TEXT: 'MESSAGE_TEXT',
+        TABLE_NAME: 'TABLE_NAME',
+        SCHEMA_NAME: 'SCHEMA_NAME',
       };
       const mapped = stringMap[kind];
       return mapped ? this.keyword(mapped) : '';
     }
     
     switch (kind) {
-      case DiagItemKind.PLPGSQL_GETDIAG_ROW_COUNT:
-        return this.keyword('ROW_COUNT');
-      case DiagItemKind.PLPGSQL_GETDIAG_CONTEXT:
-        return this.keyword('PG_CONTEXT');
-      case DiagItemKind.PLPGSQL_GETDIAG_ERROR_CONTEXT:
-        return this.keyword('PG_EXCEPTION_CONTEXT');
-      case DiagItemKind.PLPGSQL_GETDIAG_ERROR_DETAIL:
-        return this.keyword('PG_EXCEPTION_DETAIL');
-      case DiagItemKind.PLPGSQL_GETDIAG_ERROR_HINT:
-        return this.keyword('PG_EXCEPTION_HINT');
-      case DiagItemKind.PLPGSQL_GETDIAG_RETURNED_SQLSTATE:
-        return this.keyword('RETURNED_SQLSTATE');
-      case DiagItemKind.PLPGSQL_GETDIAG_COLUMN_NAME:
-        return this.keyword('COLUMN_NAME');
-      case DiagItemKind.PLPGSQL_GETDIAG_CONSTRAINT_NAME:
-        return this.keyword('CONSTRAINT_NAME');
-      case DiagItemKind.PLPGSQL_GETDIAG_DATATYPE_NAME:
-        return this.keyword('PG_DATATYPE_NAME');
-      case DiagItemKind.PLPGSQL_GETDIAG_MESSAGE_TEXT:
-        return this.keyword('MESSAGE_TEXT');
-      case DiagItemKind.PLPGSQL_GETDIAG_TABLE_NAME:
-        return this.keyword('TABLE_NAME');
-      case DiagItemKind.PLPGSQL_GETDIAG_SCHEMA_NAME:
-        return this.keyword('SCHEMA_NAME');
-      default:
-        return '';
+    case DiagItemKind.PLPGSQL_GETDIAG_ROW_COUNT:
+      return this.keyword('ROW_COUNT');
+    case DiagItemKind.PLPGSQL_GETDIAG_CONTEXT:
+      return this.keyword('PG_CONTEXT');
+    case DiagItemKind.PLPGSQL_GETDIAG_ERROR_CONTEXT:
+      return this.keyword('PG_EXCEPTION_CONTEXT');
+    case DiagItemKind.PLPGSQL_GETDIAG_ERROR_DETAIL:
+      return this.keyword('PG_EXCEPTION_DETAIL');
+    case DiagItemKind.PLPGSQL_GETDIAG_ERROR_HINT:
+      return this.keyword('PG_EXCEPTION_HINT');
+    case DiagItemKind.PLPGSQL_GETDIAG_RETURNED_SQLSTATE:
+      return this.keyword('RETURNED_SQLSTATE');
+    case DiagItemKind.PLPGSQL_GETDIAG_COLUMN_NAME:
+      return this.keyword('COLUMN_NAME');
+    case DiagItemKind.PLPGSQL_GETDIAG_CONSTRAINT_NAME:
+      return this.keyword('CONSTRAINT_NAME');
+    case DiagItemKind.PLPGSQL_GETDIAG_DATATYPE_NAME:
+      return this.keyword('PG_DATATYPE_NAME');
+    case DiagItemKind.PLPGSQL_GETDIAG_MESSAGE_TEXT:
+      return this.keyword('MESSAGE_TEXT');
+    case DiagItemKind.PLPGSQL_GETDIAG_TABLE_NAME:
+      return this.keyword('TABLE_NAME');
+    case DiagItemKind.PLPGSQL_GETDIAG_SCHEMA_NAME:
+      return this.keyword('SCHEMA_NAME');
+    default:
+      return '';
     }
   }
 
@@ -2339,36 +2338,36 @@ export class PLpgSQLDeparser {
     if (direction === undefined) return '';
     
     switch (direction) {
-      case FetchDirection.FETCH_FORWARD:
-        if (expr) {
-          return `${this.keyword('FORWARD')} ${this.deparseExpr(expr)}`;
-        }
-        if (howMany === 1) return '';
-        if (howMany === 2147483647) return this.keyword('ALL'); // FETCH_ALL
-        return `${this.keyword('FORWARD')} ${howMany}`;
-      case FetchDirection.FETCH_BACKWARD:
-        if (expr) {
-          return `${this.keyword('BACKWARD')} ${this.deparseExpr(expr)}`;
-        }
-        if (howMany === 1) return this.keyword('PRIOR');
-        if (howMany === 2147483647) return `${this.keyword('BACKWARD')} ${this.keyword('ALL')}`; // FETCH_ALL
-        return `${this.keyword('BACKWARD')} ${howMany}`;
-      case FetchDirection.FETCH_ABSOLUTE:
-        if (expr) {
-          return `${this.keyword('ABSOLUTE')} ${this.deparseExpr(expr)}`;
-        }
-        // FIRST/LAST are stored as ABSOLUTE 1 / ABSOLUTE -1 with no expr;
-        // an explicit ABSOLUTE n always carries an expr.
-        if (howMany === 1) return this.keyword('FIRST');
-        if (howMany === -1) return this.keyword('LAST');
-        return `${this.keyword('ABSOLUTE')} ${howMany}`;
-      case FetchDirection.FETCH_RELATIVE:
-        if (expr) {
-          return `${this.keyword('RELATIVE')} ${this.deparseExpr(expr)}`;
-        }
-        return `${this.keyword('RELATIVE')} ${howMany}`;
-      default:
-        return '';
+    case FetchDirection.FETCH_FORWARD:
+      if (expr) {
+        return `${this.keyword('FORWARD')} ${this.deparseExpr(expr)}`;
+      }
+      if (howMany === 1) return '';
+      if (howMany === 2147483647) return this.keyword('ALL'); // FETCH_ALL
+      return `${this.keyword('FORWARD')} ${howMany}`;
+    case FetchDirection.FETCH_BACKWARD:
+      if (expr) {
+        return `${this.keyword('BACKWARD')} ${this.deparseExpr(expr)}`;
+      }
+      if (howMany === 1) return this.keyword('PRIOR');
+      if (howMany === 2147483647) return `${this.keyword('BACKWARD')} ${this.keyword('ALL')}`; // FETCH_ALL
+      return `${this.keyword('BACKWARD')} ${howMany}`;
+    case FetchDirection.FETCH_ABSOLUTE:
+      if (expr) {
+        return `${this.keyword('ABSOLUTE')} ${this.deparseExpr(expr)}`;
+      }
+      // FIRST/LAST are stored as ABSOLUTE 1 / ABSOLUTE -1 with no expr;
+      // an explicit ABSOLUTE n always carries an expr.
+      if (howMany === 1) return this.keyword('FIRST');
+      if (howMany === -1) return this.keyword('LAST');
+      return `${this.keyword('ABSOLUTE')} ${howMany}`;
+    case FetchDirection.FETCH_RELATIVE:
+      if (expr) {
+        return `${this.keyword('RELATIVE')} ${this.deparseExpr(expr)}`;
+      }
+      return `${this.keyword('RELATIVE')} ${howMany}`;
+    default:
+      return '';
     }
   }
 

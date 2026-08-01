@@ -1,4 +1,4 @@
-import { Deparser, DeparserOptions } from "./deparser";
+import { Deparser, DeparserOptions } from './deparser';
 
 const deparseMethod = Deparser.deparse;
 
@@ -7,7 +7,7 @@ export const deparseSync = deparseMethod;
 
 // Create an async wrapper for deparse
 export const deparse = async (...args: Parameters<typeof deparseMethod>): Promise<ReturnType<typeof deparseMethod>> => {
-    return deparseMethod(...args);
+  return deparseMethod(...args);
 };
 
 export { Deparser, DeparserOptions };

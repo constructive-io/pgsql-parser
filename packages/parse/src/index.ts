@@ -27,14 +27,14 @@ export { loadModule } from 'libpg-query';
 
 // Types
 export {
+  EnhancedParseResult,
+  EnhancedStmt,
+  isRawComment,
+  isRawStmt,
+  isRawWhitespace,
   RawComment,
   RawWhitespace,
-  EnhancedStmt,
-  EnhancedParseResult,
-  isRawComment,
-  isRawWhitespace,
-  isRawStmt,
 } from './types';
 
 // Scanner (for advanced use)
-export { scanComments, ScannedComment, ScannedWhitespace, ScannedElement } from './scanner';
+export { scanComments, ScannedComment, ScannedElement,ScannedWhitespace } from './scanner';

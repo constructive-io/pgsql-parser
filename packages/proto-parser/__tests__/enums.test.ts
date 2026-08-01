@@ -9,7 +9,7 @@ describe('pure', () => {
         removeUndefinedAt0: false
       }
     });
-  })
+  });
 
   it('removeAt0', () => {
     parseAndSnap('enums/pure/removeUndef', {
@@ -19,8 +19,8 @@ describe('pure', () => {
         removeUndefinedAt0: true
       }
     });
-  })
-})
+  });
+});
 
 describe('typeUnion', () => {
   it('enums', () => {
@@ -31,7 +31,7 @@ describe('typeUnion', () => {
         removeUndefinedAt0: false
       }
     });
-  })
+  });
   it('removeAt0', () => {
     parseAndSnap('enums/typeUnion/removeUndef', {
       enums: {
@@ -40,7 +40,7 @@ describe('typeUnion', () => {
         removeUndefinedAt0: true
       }
     });
-  })
-})
+  });
+});
 
 

@@ -1,12 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
+
 import {
-  parseSync,
   deparseEnhanced,
   isRawComment,
-  isRawWhitespace,
   isRawStmt,
+  isRawWhitespace,
   loadModule,
+  parseSync,
 } from '../src';
 
 const FIXTURES_DIR = path.join(__dirname, 'fixtures');

@@ -1,6 +1,6 @@
-import https from 'https';
-import fs from 'fs';
 import { exec } from 'child_process';
+import fs from 'fs';
+import https from 'https';
 import { sync as mkdirp } from 'mkdirp';
 import { dirname } from 'path';
 
@@ -30,7 +30,7 @@ export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<v
       reject(err);
     });
   });
-}
+};
 
 // Generate JavaScript from proto file using pbjs
 export const generateProtoJS = (inFile: string, outFile: string): Promise<void> => new Promise((resolve, reject) => {

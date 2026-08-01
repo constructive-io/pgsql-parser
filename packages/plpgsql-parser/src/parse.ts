@@ -1,18 +1,18 @@
-import {
-  parseSync as parseSqlSync,
-  parsePlPgSQLSync,
-  loadModule
-} from 'libpg-query';
 import type { ParseResult } from 'libpg-query';
+import {
+  loadModule,
+  parsePlPgSQLSync,
+  parseSync as parseSqlSync} from 'libpg-query';
 import {
   hydratePlpgsqlAst,
   PLpgSQLParseResult
 } from 'plpgsql-deparser';
+
 import type {
-  ParsedScript,
   ParsedFunction,
-  ParsedStatement,
   ParsedItem,
+  ParsedScript,
+  ParsedStatement,
   ParseOptions
 } from './types';
 

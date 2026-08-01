@@ -1,9 +1,10 @@
 import { Parser } from '@pgsql/parser';
-import { parse as parse18 } from 'libpg-query';
-import { cleanTree } from './clean-tree';
 import { readFileSync } from 'fs';
-import * as path from 'path';
 import { diff } from 'jest-diff';
+import { parse as parse18 } from 'libpg-query';
+import * as path from 'path';
+
+import { cleanTree } from './clean-tree';
 import { skipTests } from './skip-tests';
 const parser13 = new Parser({ version: 13 });
 const parser14 = new Parser({ version: 14 });
@@ -27,28 +28,28 @@ export function getParsersForVersions(versionPrevious: number, versionNext: numb
   let parserNext;
   
   switch (versionPrevious) {
-    case 13:
-      parserPrevious = parser13;
-      parserNext = parser14;
-      break;
-    case 14:
-      parserPrevious = parser14;
-      parserNext = parser15;
-      break;
-    case 15:
-      parserPrevious = parser15;
-      parserNext = parser16;
-      break;
-    case 16:
-      parserPrevious = parser16;
-      parserNext = parser17;
-      break;
-    case 17:
-      parserPrevious = parser17;
-      parserNext = parser18;
-      break;
-    default:
-      throw new Error('Unsupported version');
+  case 13:
+    parserPrevious = parser13;
+    parserNext = parser14;
+    break;
+  case 14:
+    parserPrevious = parser14;
+    parserNext = parser15;
+    break;
+  case 15:
+    parserPrevious = parser15;
+    parserNext = parser16;
+    break;
+  case 16:
+    parserPrevious = parser16;
+    parserNext = parser17;
+    break;
+  case 17:
+    parserPrevious = parser17;
+    parserNext = parser18;
+    break;
+  default:
+    throw new Error('Unsupported version');
   }
 
   return { parserPrevious, parserNext };

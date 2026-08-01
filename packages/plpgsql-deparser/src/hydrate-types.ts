@@ -1,4 +1,4 @@
-import { ParseResult, Node } from '@pgsql/types';
+import { Node,ParseResult } from '@pgsql/types';
 
 export enum ParseMode {
   RAW_PARSE_DEFAULT = 0,
