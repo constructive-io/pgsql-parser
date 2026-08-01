@@ -94,6 +94,15 @@ function generateVersionPackages(): void {
   console.log('Generating package.json files for each version...\n');
   
   const { rootConfig, localConfig } = loadConfigs();
+
+  // The generated tree is gitignored, so it is its own pnpm workspace rather than
+  // a member of the root one: root membership would depend on whether this script
+  // has been run, and pnpm would rewrite the root lockfile accordingly.
+  fs.mkdirSync(VERSIONS_DIR, { recursive: true });
+  fs.writeFileSync(
+    path.join(VERSIONS_DIR, 'pnpm-workspace.yaml'),
+    "packages:\n  - '*'\n"
+  );
   
   for (const [pgVersion, versionInfo] of Object.entries(rootConfig.versions)) {
     // Skip versions that don't have pgsql-deparser
