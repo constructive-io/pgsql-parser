@@ -20,5 +20,22 @@ export default [
       // generated kitchen-sink test files
       '**/__tests__/kitchen-sink/**'
     ]
+  },
+  {
+    // template literals holding code that is emitted verbatim; changing the
+    // escaping here would change the generated output
+    files: ['packages/proto-parser/src/inline-helpers/**'],
+    rules: {
+      'no-useless-escape': 'off'
+    }
+  },
+  {
+    // per-version transformers mirror the AST shape field for field, including
+    // identity assignments and empty node payloads such as `{ Null: {} }`
+    files: ['packages/transform-ast/src/transformers/**'],
+    rules: {
+      'no-self-assign': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off'
+    }
   }
 ];
