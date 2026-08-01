@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@18.3.0...pgsql-deparser@18.3.1) (2026-08-01)
+
+### Bug Fixes
+
+- **workspace:** keep generated versions/\* out of the root pnpm workspace ([90ac460](https://github.com/constructive-io/pgsql-parser/commit/90ac460c2d9a1b18ed6db3e22eb90bdeb720bf94))
+
 # [18.3.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@18.2.0...pgsql-deparser@18.3.0) (2026-08-01)
 
 ### Bug Fixes

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.32.1](https://github.com/constructive-io/pgsql-parser/compare/pg-proto-parser@1.32.0...pg-proto-parser@1.32.1) (2026-08-01)
+
+### Bug Fixes
+
+- **proto-parser:** guard the inlined nested-obj helper against prototype pollution ([1c955ed](https://github.com/constructive-io/pgsql-parser/commit/1c955ed1c546bbfd06ee49ecd367607699fff0c0))
+
 # [1.32.0](https://github.com/constructive-io/pgsql-parser/compare/pg-proto-parser@1.31.0...pg-proto-parser@1.32.0) (2026-08-01)
 
 **Note:** Version bump only for package pg-proto-parser
