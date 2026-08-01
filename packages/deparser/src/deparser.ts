@@ -2808,7 +2808,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     // Handle constraint name if present
-    if (node.conname && (node.contype === 'CONSTR_CHECK' || node.contype === 'CONSTR_UNIQUE' || node.contype === 'CONSTR_PRIMARY' || node.contype === 'CONSTR_FOREIGN' || node.contype === 'CONSTR_NOTNULL')) {
+    if (node.conname && (node.contype === 'CONSTR_CHECK' || node.contype === 'CONSTR_UNIQUE' || node.contype === 'CONSTR_PRIMARY' || node.contype === 'CONSTR_FOREIGN' || node.contype === 'CONSTR_NOTNULL' || node.contype === 'CONSTR_EXCLUSION')) {
       output.push('CONSTRAINT');
       output.push(QuoteUtils.quoteIdentifier(node.conname));
     }
