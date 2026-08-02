@@ -3808,9 +3808,8 @@ export class Deparser implements DeparserVisitor {
       output.push(context.parens(includeStrs.join(', ')));
     }
 
-    if (node.whereClause) {
-      output.push('WHERE');
-      output.push(this.visit(node.whereClause, context));
+    if (node.nulls_not_distinct) {
+      output.push('NULLS NOT DISTINCT');
     }
 
     if (node.options && node.options.length > 0) {
@@ -3820,13 +3819,14 @@ export class Deparser implements DeparserVisitor {
       output.push(context.parens(optionStrs.join(', ')));
     }
 
-    if (node.nulls_not_distinct) {
-      output.push('NULLS NOT DISTINCT');
-    }
-
     if (node.tableSpace) {
       output.push('TABLESPACE');
       output.push(QuoteUtils.quoteIdentifier(node.tableSpace));
+    }
+
+    if (node.whereClause) {
+      output.push('WHERE');
+      output.push(this.visit(node.whereClause, context));
     }
 
     return output.join(' ');
