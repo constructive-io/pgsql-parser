@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.15.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.14.1...@pgsql/transform@18.15.0) (2026-08-02)
+
+### Features
+
+- **semantics:** extract statement-classification facts into @pgsql/semantics ([ec6c1ce](https://github.com/constructive-io/pgsql-parser/commit/ec6c1ce793fa836f15bead2e21f40e5dd4b18d03))
+
 ## [18.14.1](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.14.0...@pgsql/transform@18.14.1) (2026-08-01)
 
 **Note:** Version bump only for package @pgsql/transform

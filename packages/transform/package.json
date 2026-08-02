@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/transform",
-  "version": "18.14.1",
+  "version": "18.15.0",
   "author": "Constructive <developers@constructive.io>",
   "description": "AST-based SQL transformation, qualification, classification and closure analysis for PostgreSQL",
   "main": "index.js",
