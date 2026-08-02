@@ -1,8 +1,8 @@
 {
-  "name": "@pgsql/transform",
-  "version": "18.14.1",
+  "name": "@pgsql/semantics",
+  "version": "18.0.0",
   "author": "Constructive <developers@constructive.io>",
-  "description": "AST-based SQL transformation, qualification, classification and closure analysis for PostgreSQL",
+  "description": "AST-derived semantic facts for PostgreSQL statements: what each statement creates, references, and touches",
   "main": "index.js",
   "module": "esm/index.js",
   "types": "index.d.ts",
@@ -27,13 +27,9 @@
     "build:dev": "npm run clean && tsc --declarationMap && tsc -p tsconfig.esm.json && npm run copy",
     "lint": "eslint . --fix",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "fixtures": "ts-node scripts/make-fixtures.ts",
-    "scan-corpus": "node scripts/scan-corpus.js"
+    "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@pgsql/quotes": "workspace:*",
-    "@pgsql/semantics": "workspace:*",
     "@pgsql/traverse": "workspace:*",
     "plpgsql-parser": "workspace:*"
   },
@@ -46,7 +42,8 @@
     "postgresql",
     "pg",
     "ast",
-    "transform",
+    "semantics",
+    "facts",
     "classify",
     "plpgsql"
   ]
