@@ -1,10 +1,28 @@
 # @pgsql/lint
 
+<p align="center" width="100%">
+  <img height="250" src="https://raw.githubusercontent.com/constructive-io/constructive/refs/heads/main/assets/outline-logo.svg" />
+</p>
+
+<p align="center" width="100%">
+  <a href="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml">
+    <img height="20" src="https://github.com/constructive-io/pgsql-parser/actions/workflows/run-tests.yaml/badge.svg" />
+  </a>
+   <a href="https://github.com/constructive-io/pgsql-parser/blob/main/LICENSE-MIT"><img height="20" src="https://img.shields.io/badge/license-MIT-blue.svg"/></a>
+   <a href="https://www.npmjs.com/package/@pgsql/lint"><img height="20" src="https://img.shields.io/github/package-json/v/constructive-io/pgsql-parser?filename=packages%2Flint%2Fpackage.json"/></a>
+</p>
+
 A source-level SQL / PL/pgSQL **convention linter**. It reasons about the *text*
 of a `CREATE FUNCTION` definition — from its AST — and carries **no `pg` /
 catalog dependency**, so the exact same engine runs over a definition in a
 migration, an editor buffer, a pre-commit hook, or one read from a live catalog
 via `pg_get_functiondef`.
+
+## Installation
+
+```bash
+npm install @pgsql/lint
+```
 
 ## Rules
 
