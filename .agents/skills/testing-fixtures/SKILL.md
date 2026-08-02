@@ -168,6 +168,12 @@ npm run kitchen-sink   # generate transform-specific kitchen-sink tests
 npm run test:ast       # run AST round-trip validation
 ```
 
+`make-kitchen-sink.ts` writes `__tests__/kitchen-sink/fixtures.json` (fixture file
+-> statement keys, shared by every version pair) plus one test file per adjacent
+version pair (`13-14.test.ts` … `17-18.test.ts`), each iterating the manifest with
+`it.each`. Keep it that way: a suite per fixture file meant every fixture paid for
+its own Jest module registry, `generated.json` parse, and six WASM parser inits.
+
 ## Changing a Walker
 
 `@pgsql/transform` drives its whole pipeline (schema mapping, routing, qualify,
