@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.2](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@18.3.1...pgsql-deparser@18.3.2) (2026-08-02)
+
+### Bug Fixes
+
+- **deparser:** emit CREATE INDEX trailing clauses in grammar order ([b2f57d9](https://github.com/constructive-io/pgsql-parser/commit/b2f57d9d2dfa40e5f2c669c7ab0b4c8e38d94486))
+
 ## [18.3.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser@18.3.0...pgsql-deparser@18.3.1) (2026-08-01)
 
 ### Bug Fixes
