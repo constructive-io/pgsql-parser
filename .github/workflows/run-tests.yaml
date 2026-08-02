@@ -24,6 +24,7 @@ jobs:
           - '@pgsql/quotes'
           - '@pgsql/transform-ast'
           - '@pgsql/traverse'
+          - '@pgsql/semantics'
           - '@pgsql/transform'
           - '@pgsql/scripts'
     steps:
