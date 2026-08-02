@@ -1,0 +1,59 @@
+{
+  "name": "@pgsql/lint",
+  "version": "18.0.0",
+  "author": "Constructive <developers@constructive.io>",
+  "description": "Source-level SQL/PL/pgSQL convention linter: fully-qualified references, no search_path, no dynamic SQL, with ESLint-style inline waivers. Pure AST, no database.",
+  "main": "index.js",
+  "module": "esm/index.js",
+  "types": "index.d.ts",
+  "homepage": "https://github.com/constructive-io/pgsql-parser/tree/main/packages/lint#readme",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/constructive-io/pgsql-parser"
+  },
+  "bugs": {
+    "url": "https://github.com/constructive-io/pgsql-parser/issues"
+  },
+  "bin": {
+    "pgsql-lint": "cli.js"
+  },
+  "scripts": {
+    "copy": "makage assets",
+    "clean": "makage clean dist",
+    "prepublishOnly": "npm run build",
+    "build": "npm run clean && tsc && tsc -p tsconfig.esm.json && npm run copy",
+    "build:dev": "npm run clean && tsc --declarationMap && tsc -p tsconfig.esm.json && npm run copy",
+    "dev": "ts-node src/cli",
+    "lint": "eslint . --fix",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@pgsql/traverse": "workspace:*",
+    "chalk": "^4.1.0",
+    "libpg-query": "18.1.2",
+    "minimist": "1.2.8",
+    "pgsql-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/minimist": "^1.2.5",
+    "makage": "^0.1.8"
+  },
+  "keywords": [
+    "sql",
+    "postgres",
+    "postgresql",
+    "pg",
+    "ast",
+    "lint",
+    "linter",
+    "plpgsql",
+    "search_path",
+    "dynamic-sql"
+  ]
+}

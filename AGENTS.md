@@ -40,6 +40,7 @@ Detailed workflow documentation lives in `.agents/skills/`:
 | **AST Traversal** | `.agents/skills/ast-traversal/SKILL.md` | Walking SQL and PL/pgSQL ASTs: choosing `walk` / `walkSql` / `walkSqlAst` / `walkPlpgsqlAst` / `traverse`, statement context, visitor composition, abort, mutation |
 | **Testing & Fixtures** | `.agents/skills/testing-fixtures/SKILL.md` | Fixture-based testing pipeline, adding new test fixtures, kitchen-sink workflow, PL/pgSQL fixtures, transform tests |
 | **Code Generation** | `.agents/skills/code-generation/SKILL.md` | Protobuf codegen (`build:proto`), type inference/generation (`pgsql-types`), keyword generation (`@pgsql/quotes`), version-specific deparsers |
+| **pgsql-lint** | `.agents/skills/pgsql-lint/SKILL.md` | Source-level SQL/PL-pgSQL convention linting (`@pgsql/lint`): running the CLI, authoring rules with `defineRule`/`createLinter`, severity config, source adapters, suppressions |
 
 ## Root Scripts
 
