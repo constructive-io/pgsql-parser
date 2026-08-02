@@ -1,8 +1,11 @@
-import { LINT_RULES, lintDefinition } from '../src';
+import { createLinter, defineRule, LINT_RULES, lintDefinition } from '../src';
 
 function ruleIds(problems: { ruleId: string }[]): string[] {
   return [...new Set(problems.map((p) => p.ruleId))].sort();
 }
+
+const UNQUALIFIED = `CREATE FUNCTION app.f() RETURNS int LANGUAGE sql
+AS $$ SELECT * FROM users $$;`;
 
 describe('rule metadata', () => {
   it('exposes stable codes C1–C4', () => {
@@ -193,5 +196,54 @@ describe('unparseable definitions', () => {
     const { problems, suppressed } = await lintDefinition('this is not sql at all', 'sql');
     expect(problems).toHaveLength(0);
     expect(suppressed).toHaveLength(0);
+  });
+});
+
+describe('severity (config, ESLint-style)', () => {
+  it('defaults every finding to error', async () => {
+    const { problems } = await lintDefinition(UNQUALIFIED, 'sql');
+    expect(problems.every((p) => p.severity === 'error')).toBe(true);
+  });
+
+  it('off (by id or code) drops the rule entirely', async () => {
+    const byId = await lintDefinition(UNQUALIFIED, 'sql', undefined, {
+      severity: { 'require-qualified-refs': 'off' }
+    });
+    expect(byId.problems.some((p) => p.ruleId === 'require-qualified-refs')).toBe(false);
+    const byCode = await lintDefinition(UNQUALIFIED, 'sql', undefined, {
+      severity: { C3: 'off' }
+    });
+    expect(byCode.problems.some((p) => p.ruleId === 'require-qualified-refs')).toBe(false);
+  });
+
+  it('warn keeps the finding but marks it as a warning', async () => {
+    const { problems } = await lintDefinition(UNQUALIFIED, 'sql', undefined, {
+      severity: { 'require-qualified-refs': 'warn' }
+    });
+    const c3 = problems.find((p) => p.ruleId === 'require-qualified-refs');
+    expect(c3?.severity).toBe('warn');
+  });
+});
+
+describe('createLinter (injectable rules)', () => {
+  it('runs a custom rule passed in as a value — no name resolution', async () => {
+    const noAppRelation = defineRule({
+      id: 'no-app-relation',
+      code: 'X1',
+      title: 'ban references to the app schema in this test',
+      reasonRequired: false,
+      run: (unit) => (unit.text.includes('users') ? [{ ruleId: 'no-app-relation', line: 1, message: 'nope' }] : [])
+    });
+    const linter = createLinter({ rules: [...LINT_RULES, noAppRelation] });
+    const { problems } = await linter.lintDefinition(UNQUALIFIED, 'sql');
+    expect(ruleIds(problems)).toContain('no-app-relation');
+    // built-ins still run
+    expect(ruleIds(problems)).toContain('require-qualified-refs');
+  });
+
+  it('binds severity so a linter can silence a rule for a whole project', async () => {
+    const linter = createLinter({ severity: { 'require-qualified-refs': 'off' } });
+    const { problems } = await linter.lintDefinition(UNQUALIFIED, 'sql');
+    expect(problems.some((p) => p.ruleId === 'require-qualified-refs')).toBe(false);
   });
 });

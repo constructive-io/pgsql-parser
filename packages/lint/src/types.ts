@@ -44,6 +44,19 @@ export interface DynamicSqlSite {
   form: string;
 }
 
+/**
+ * How loud a rule is, per project. Severity is *configuration*, not a property
+ * of the rule (same model as ESLint): a rule declares only its identity, and
+ * the linter config decides `off` / `warn` / `error` per rule id or code.
+ *   - `off`   — the rule is not run.
+ *   - `warn`  — reported, but does not fail the run.
+ *   - `error` — reported and fails the run (drives a non-zero exit code).
+ */
+export type Severity = 'off' | 'warn' | 'error';
+
+/** A severity per rule, keyed by rule id (`no-dynamic-sql`) or code (`C4`). */
+export type SeverityMap = Record<string, Severity>;
+
 /** A single lint finding, before suppressions are applied. */
 export interface LintProblem {
   ruleId: string;
@@ -51,6 +64,8 @@ export interface LintProblem {
   line: number;
   message: string;
   hint?: string;
+  /** Configured severity for the rule (`error` by default). */
+  severity?: Severity;
   context?: Record<string, unknown>;
 }
 
@@ -91,4 +106,53 @@ export interface LintRuleMeta {
 /** A lint rule: pure `unit → problems`. */
 export interface LintRule extends LintRuleMeta {
   run: (unit: LintUnit) => LintProblem[];
+}
+
+/**
+ * Authoring helper for third-party rules. A no-op at runtime (identity), it
+ * exists only to pin the `LintRule` shape at the call site so a rule package
+ * gets full type-checking without importing internals.
+ *
+ * @example
+ * export const noWritesInView = defineRule({
+ *   id: 'no-writes-in-view', code: 'X1', title: '…', reasonRequired: false,
+ *   run(unit) { return []; }
+ * });
+ */
+export function defineRule(rule: LintRule): LintRule {
+  return rule;
+}
+
+/**
+ * A definition to lint, as produced by a {@link SourceAdapter}. This is the
+ * unit of work the engine consumes regardless of where it came from — a file,
+ * a live catalog (`pg_get_functiondef`), a git diff, an editor buffer.
+ */
+export interface LintDefinitionInput {
+  /** The full `CREATE FUNCTION …` text. */
+  text: string;
+  /** `sql`, `plpgsql`, … (lower-cased). */
+  language: string;
+  /** Display name for messages, e.g. `app.grant_role`. */
+  name?: string;
+  /** Origin file, when the definition came from disk. */
+  file?: string;
+  /**
+   * Absolute 0-based line the definition begins on within `file`. Findings
+   * are re-anchored by this so they point at the real file location.
+   */
+  startLine?: number;
+}
+
+/**
+ * A source of definitions to lint. Adapters are a *different* seam from rules:
+ * a rule is pure `unit → problems`, while an adapter decides *where* the
+ * definitions come from. `@pgsql/lint` ships file/source adapters; safegres is
+ * "the catalog adapter" over the same engine.
+ */
+export interface SourceAdapter {
+  /** A short id for diagnostics, e.g. `files`, `sql-text`, `catalog`. */
+  id: string;
+  /** Yield every definition this adapter can see. */
+  definitions: () => Promise<LintDefinitionInput[]> | LintDefinitionInput[];
 }

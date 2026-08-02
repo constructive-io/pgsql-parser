@@ -43,6 +43,36 @@ describeIfBuilt('pgsql-lint CLI', () => {
     expect(code).toBe(0);
   });
 
+  it('exits 0 when the only finding is downgraded to a warning', async () => {
+    const { code } = await runCli([
+      path.join(FIXTURES, 'migration.sql'),
+      '--warn',
+      'require-qualified-refs'
+    ]);
+    expect(code).toBe(0);
+  });
+
+  it('reports the finding as a warning in JSON when downgraded', async () => {
+    const { stdout } = await runCli([
+      path.join(FIXTURES, 'migration.sql'),
+      '--warn',
+      'C3',
+      '--json'
+    ]);
+    const reports = JSON.parse(stdout);
+    const findings = reports.flatMap((r: { findings: { severity: string }[] }) => r.findings);
+    expect(findings[0].severity).toBe('warn');
+  });
+
+  it('exits 0 when the rule is turned off', async () => {
+    const { code } = await runCli([
+      path.join(FIXTURES, 'migration.sql'),
+      '--off',
+      'require-qualified-refs'
+    ]);
+    expect(code).toBe(0);
+  });
+
   it('prints help and exits 0 with --help', async () => {
     const { code, stdout } = await runCli(['--help']);
     expect(code).toBe(0);

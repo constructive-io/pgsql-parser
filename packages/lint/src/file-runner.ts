@@ -15,7 +15,13 @@ import * as path from 'path';
 import { parse } from 'pgsql-parser';
 
 import { lintDefinition, LintOptions } from './engine';
-import type { LintProblem, SuppressionScope } from './types';
+import type {
+  LintDefinitionInput,
+  LintProblem,
+  Severity,
+  SourceAdapter,
+  SuppressionScope
+} from './types';
 import { findAll } from './walk';
 
 /** A finding re-anchored to a source file. */
@@ -27,6 +33,8 @@ export interface FileFinding {
   line: number;
   message: string;
   hint?: string;
+  /** Configured severity (`error` by default; `warn` does not fail a run). */
+  severity: Severity;
   /** The function it was found in, e.g. `app.grant_role`. */
   subject: string;
   /** True when a suppression comment acknowledged it (accepted risk, kept visible). */
@@ -85,43 +93,73 @@ function funcLanguage(createFnStmt: Record<string, unknown>): string {
 }
 
 /**
- * Lint a SQL source string that may contain many statements. Each
- * `CREATE FUNCTION` is sliced back out of the source and linted on its own;
- * findings are re-anchored to absolute lines within `source`.
+ * Split a SQL source string into the function definitions it contains. Each
+ * `CREATE FUNCTION` is sliced back out with its absolute start line, so a
+ * mixed migration (schema + tables + functions) yields one input per function
+ * rather than being treated as a single malformed definition.
  */
-export async function lintSqlText(source: string, options: LintOptions = {}): Promise<FileReport> {
-  let parsed: { stmts?: Array<{ stmt?: unknown; stmt_location?: number; stmt_len?: number }> };
-  try {
-    parsed = (await parse(source)) as typeof parsed;
-  } catch (err) {
-    return { file: '<source>', findings: [], parseError: (err as Error).message };
-  }
-
-  const findings: FileFinding[] = [];
+export async function sqlTextDefinitions(
+  source: string,
+  file?: string
+): Promise<LintDefinitionInput[]> {
+  const parsed = (await parse(source)) as {
+    stmts?: Array<{ stmt?: unknown; stmt_location?: number; stmt_len?: number }>;
+  };
+  const out: LintDefinitionInput[] = [];
   for (const entry of parsed.stmts ?? []) {
     const createFnStmt = entry.stmt ? findAll(entry.stmt, 'CreateFunctionStmt')[0] : undefined;
     if (!createFnStmt) continue;
-
     const start = entry.stmt_location ?? 0;
     const len = entry.stmt_len ?? source.length - start;
-    const defText = source.slice(start, start + len);
-    const startLine = lineAtOffset(source, start); // 0-based line the definition begins on
-    const subject = funcName(createFnStmt);
-    const language = funcLanguage(createFnStmt);
+    out.push({
+      text: source.slice(start, start + len),
+      language: funcLanguage(createFnStmt),
+      name: funcName(createFnStmt),
+      file,
+      startLine: lineAtOffset(source, start) // 0-based line the definition begins on
+    });
+  }
+  return out;
+}
 
-    const { problems, suppressed } = await lintDefinition(defText, language, subject, options);
+/**
+ * Lint a SQL source string that may contain many statements. Findings are
+ * re-anchored to absolute lines within `source`.
+ */
+export async function lintSqlText(source: string, options: LintOptions = {}): Promise<FileReport> {
+  let inputs: LintDefinitionInput[];
+  try {
+    inputs = await sqlTextDefinitions(source);
+  } catch (err) {
+    return { file: '<source>', findings: [], parseError: (err as Error).message };
+  }
+  const findings = await lintInputs(inputs, options);
+  return { file: '<source>', findings };
+}
 
-    const absLine = (p: LintProblem): number => startLine + p.line; // p.line is 1-based within defText
-    for (const p of problems) {
-      findings.push(toFinding(p, subject, absLine(p), false));
-    }
+/** Lint a set of adapter-produced definitions, re-anchored to file lines. */
+async function lintInputs(
+  inputs: LintDefinitionInput[],
+  options: LintOptions
+): Promise<FileFinding[]> {
+  const findings: FileFinding[] = [];
+  for (const input of inputs) {
+    const subject = input.name ?? '<anonymous>';
+    const startLine = input.startLine ?? 0;
+    const { problems, suppressed } = await lintDefinition(
+      input.text,
+      input.language,
+      subject,
+      options
+    );
+    const absLine = (p: LintProblem): number => startLine + p.line; // p.line is 1-based within input.text
+    for (const p of problems) findings.push(toFinding(p, subject, absLine(p), false));
     for (const s of suppressed) {
       findings.push(toFinding(s, subject, absLine(s), true, s.reason, s.scope));
     }
   }
-
   findings.sort((a, b) => a.line - b.line || a.ruleId.localeCompare(b.ruleId));
-  return { file: '<source>', findings };
+  return findings;
 }
 
 function toFinding(
@@ -137,6 +175,7 @@ function toFinding(
     code: codeFor(p.ruleId),
     line,
     message: p.message,
+    severity: p.severity ?? 'error',
     subject,
     acknowledged,
     context: p.context
@@ -198,5 +237,51 @@ export async function lintFiles(paths: string[], options: LintOptions = {}): Pro
     const report = await lintSqlText(source, options);
     reports.push({ ...report, file });
   }
+  return reports;
+}
+
+/** A {@link SourceAdapter} over an in-memory SQL string. */
+export function sqlTextAdapter(source: string, file?: string): SourceAdapter {
+  return { id: 'sql-text', definitions: () => sqlTextDefinitions(source, file) };
+}
+
+/** A {@link SourceAdapter} over `.sql` files/directories on disk. */
+export function filesAdapter(paths: string[]): SourceAdapter {
+  return {
+    id: 'files',
+    definitions: async () => {
+      const files = await resolveSqlFiles(paths);
+      const out: LintDefinitionInput[] = [];
+      for (const file of files) {
+        out.push(...(await sqlTextDefinitions(await fs.readFile(file, 'utf8'), file)));
+      }
+      return out;
+    }
+  };
+}
+
+/**
+ * Lint every definition an adapter yields, grouped into one {@link FileReport}
+ * per origin file. This is the generic entry point: `@pgsql/lint` ships file
+ * and sql-text adapters; a consumer (e.g. safegres over a live catalog) can
+ * pass its own.
+ */
+export async function lintSource(
+  adapter: SourceAdapter,
+  options: LintOptions = {}
+): Promise<FileReport[]> {
+  const inputs = await adapter.definitions();
+  const byFile = new Map<string, LintDefinitionInput[]>();
+  for (const input of inputs) {
+    const file = input.file ?? `<${adapter.id}>`;
+    const arr = byFile.get(file) ?? [];
+    arr.push(input);
+    byFile.set(file, arr);
+  }
+  const reports: FileReport[] = [];
+  for (const [file, group] of byFile) {
+    reports.push({ file, findings: await lintInputs(group, options) });
+  }
+  reports.sort((a, b) => a.file.localeCompare(b.file));
   return reports;
 }

@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import { lintFiles, lintSqlText } from '../src';
+import { filesAdapter, lintFiles, lintSource, lintSqlText, sqlTextAdapter } from '../src';
 
 const FIXTURES = path.join(__dirname, '__fixtures__');
 
@@ -52,6 +52,24 @@ describe('lintFiles', () => {
 
   it('scans a directory recursively for .sql files', async () => {
     const reports = await lintFiles([FIXTURES]);
+    expect(reports.some((r) => r.file.endsWith('migration.sql'))).toBe(true);
+  });
+});
+
+describe('lintSource (adapters)', () => {
+  it('lints definitions from a sql-text adapter, grouped by file', async () => {
+    const adapter = sqlTextAdapter(
+      `CREATE FUNCTION app.f() RETURNS int LANGUAGE sql AS $$ SELECT * FROM users $$;`,
+      'virtual.sql'
+    );
+    const reports = await lintSource(adapter);
+    expect(reports).toHaveLength(1);
+    expect(reports[0].file).toBe('virtual.sql');
+    expect(reports[0].findings[0].ruleId).toBe('require-qualified-refs');
+  });
+
+  it('lints definitions from a files adapter', async () => {
+    const reports = await lintSource(filesAdapter([path.join(FIXTURES, 'migration.sql')]));
     expect(reports.some((r) => r.file.endsWith('migration.sql'))).toBe(true);
   });
 });
