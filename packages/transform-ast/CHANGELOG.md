@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.4.4](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform-ast@18.4.3...@pgsql/transform-ast@18.4.4) (2026-08-03)
+
+### Performance Improvements
+
+- **transform-ast:** one kitchen-sink suite per version pair ([f94de0d](https://github.com/constructive-io/pgsql-parser/commit/f94de0d4444a3fca367663ebc881df92fa08cd94))
+
 ## [18.4.3](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform-ast@18.4.2...@pgsql/transform-ast@18.4.3) (2026-08-02)
 
 **Note:** Version bump only for package @pgsql/transform-ast

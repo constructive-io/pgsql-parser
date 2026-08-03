@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/lint",
-  "version": "18.1.1",
+  "version": "18.1.2",
   "author": "Constructive <developers@constructive.io>",
   "description": "Source-level SQL/PL/pgSQL convention linter: fully-qualified references, no search_path, no dynamic SQL, with ESLint-style inline waivers. Pure AST, no database.",
   "main": "index.js",
