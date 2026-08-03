@@ -52,8 +52,9 @@ targets, so a CI step is just `pgsql-lint --changed`.
 `--changed` diffs against `git merge-base HEAD <base>` (base: explicit →
 `$GITHUB_BASE_REF` → the repository's default branch), unions in working-tree and
 untracked changes, drops paths that no longer exist, and falls back to
-`git diff HEAD` on a shallow/detached checkout. Modelled on pgpm's bundle-drift
-check. Nothing changed → exit 0.
+working-tree changes only on a shallow/detached checkout. All of that is the
+`git-changed` package — `src/changed.ts` is just the `.sql` filter over it, and
+pgpm's bundle-drift check uses the same package. Nothing changed → exit 0.
 
 Programmatic entry points (all pure, DB-free):
 

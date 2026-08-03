@@ -99,6 +99,9 @@ importers:
       chalk:
         specifier: ^4.1.0
         version: 4.1.2
+      git-changed:
+        specifier: ^0.3.0
+        version: 0.3.0
       libpg-query:
         specifier: 18.1.4
         version: 18.1.4
@@ -3611,6 +3614,13 @@ packages:
         integrity: sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==,
       }
     engines: { node: ">=10" }
+
+  git-changed@0.3.0:
+    resolution:
+      {
+        integrity: sha512-tNAKg96UMf8YBlyr7nZFulqS/yEhSQ+Q/1QVFnQ4mUe4f5eIwhK+Oie11x4IixWD+SB4AmSaLR84S3qj2DTkKA==,
+      }
+    hasBin: true
 
   git-raw-commits@3.0.0:
     resolution:
@@ -9013,6 +9023,8 @@ snapshots:
   get-stream@6.0.0: {}
 
   get-stream@6.0.1: {}
+
+  git-changed@0.3.0: {}
 
   git-raw-commits@3.0.0:
     dependencies:

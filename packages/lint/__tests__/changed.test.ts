@@ -124,9 +124,13 @@ describe('resolveChangedBase', () => {
     expect(resolveChangedBase('release/1.0', repo())).toBe('release/1.0');
   });
 
-  it('uses the PR base branch in CI, unprefixed when no remote has it', () => {
+  it('ignores a PR base branch that names no ref, rather than returning a broken one', () => {
+    // Neither `origin/develop` nor `develop` exists in this fixture. Handing back
+    // `develop` anyway would make every later git call fail and quietly reduce the
+    // gate to working-tree changes — nothing at all in CI, where the work is
+    // already committed. The default branch is a real ref, so the gate still runs.
     process.env.GITHUB_BASE_REF = 'develop';
-    expect(resolveChangedBase(undefined, repo())).toBe('develop');
+    expect(resolveChangedBase(undefined, repo())).toBe('main');
   });
 
   it('falls back to the repository default branch', () => {
