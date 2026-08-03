@@ -36,7 +36,7 @@
     "plpgsql-deparser": "workspace:*"
   },
   "devDependencies": {
-    "makage": "^0.1.8"
+    "makage": "^0.5.1"
   },
   "keywords": [
     "sql",
