@@ -11,10 +11,15 @@
  * with `createLinter({ rules, severity })` and pass your own rules in.
  */
 
+export type { ChangedFilesResult } from './changed';
+export { changedFiles, changedSqlFiles, resolveChangedBase } from './changed';
+export type { LintConfigFile, LoadedLintConfig } from './config';
+export { CONFIG_FILENAMES, configDir, findConfigFile, loadLintConfig } from './config';
 export type { LintOptions } from './engine';
 export { lintDefinition, severityOf } from './engine';
 export {
   FileFinding,
+  FileLintOptions,
   FileReport,
   filesAdapter,
   lintFiles,
@@ -24,6 +29,7 @@ export {
   sqlTextAdapter,
   sqlTextDefinitions
 } from './file-runner';
+export { applyIgnore, makeIgnoreFilter } from './ignore';
 export type { CallOptions, Linter, LinterConfig } from './linter';
 export { createLinter } from './linter';
 export { parseUnit } from './parse-unit';

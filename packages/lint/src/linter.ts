@@ -30,6 +30,10 @@ export interface LinterConfig {
   severity?: SeverityMap;
   /** Suppression directive keyword(s). Defaults to `['pgsql-lint', 'safegres']`. */
   keyword?: string | string[];
+  /** Glob patterns excluded by the file entry points (`lintFiles`). */
+  ignore?: string[];
+  /** Directory the `ignore` patterns are relative to (default `process.cwd()`). */
+  cwd?: string;
 }
 
 /** Narrow a single call to a subset of the linter's rules. */
@@ -70,6 +74,7 @@ export function createLinter(config: LinterConfig = {}): Linter {
   const rules = config.rules ?? LINT_RULES;
   const severity = config.severity ?? {};
   const keyword = config.keyword ?? DEFAULT_KEYWORDS;
+  const { ignore, cwd } = config;
   const bind = (options: CallOptions = {}): LintOptions => ({
     ruleSet: rules,
     severity,
@@ -83,7 +88,7 @@ export function createLinter(config: LinterConfig = {}): Linter {
     lintDefinition: (text, language, name, options) =>
       lintDefinition(text, language, name, bind(options)),
     lintSqlText: (source, options) => lintSqlText(source, bind(options)),
-    lintFiles: (paths, options) => lintFiles(paths, bind(options)),
+    lintFiles: (paths, options) => lintFiles(paths, { ...bind(options), ignore, cwd }),
     lintSource: (adapter, options) => lintSource(adapter, bind(options))
   };
 }

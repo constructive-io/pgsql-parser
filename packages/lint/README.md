@@ -46,10 +46,48 @@ pgsql-lint . --rules no-dynamic-sql     # only some rules
 pgsql-lint . --warn require-qualified-refs   # downgrade to a warning (won't fail)
 pgsql-lint . --off C2                        # disable a rule (by id or code)
 pgsql-lint . --json                     # machine-readable
+pgsql-lint . --ignore 'sql/,**/generated/**' # exclude generated trees
+pgsql-lint --changed                    # only .sql that this branch touched
+pgsql-lint --changed origin/main        # …against an explicit base
 ```
 
 Exit code is `1` when any **error**-severity (and non-waived) finding remains,
 `0` otherwise — drop it straight into CI. `--warn` findings print but don't fail.
+
+### Changed files only
+
+`--changed[=<base>]` lints just the `.sql` files a branch touched, so a CI gate
+costs a second instead of scanning the whole tree. The base defaults to the pull
+request's base branch (`$GITHUB_BASE_REF`) and otherwise to the repository's
+default branch; the diff is taken against `git merge-base HEAD <base>`, so
+commits landed on the base branch afterwards don't widen the set. Uncommitted and
+untracked changes are included, deleted/renamed-away paths are dropped, and a
+shallow clone or detached checkout (no resolvable merge base) falls back to the
+working-tree diff against `HEAD`. Nothing changed is an exit-0 pass.
+
+### Config file
+
+`.pgsqllintrc.json`, discovered by walking up from the working directory (or
+passed with `--config <file>`; `--no-config` skips discovery). The keys mirror the
+flags, and any flag overrides the file:
+
+```json
+{
+  "extends": "./ci/lint-base.json",
+  "paths": ["packages", "application/app"],
+  "ignore": ["sql/", "application/constructive/", "**/generated/**"],
+  "warn": ["require-qualified-refs"],
+  "off": ["C2"]
+}
+```
+
+`paths` supplies the default targets when none are given on the command line, so
+`pgsql-lint` and `pgsql-lint --changed` need no arguments. `extends` names another
+config *file* — a path relative to the file that declared it, or an npm module —
+and the inheriting file wins key by key. Ignore patterns are gitignore-flavoured
+globs relative to the config file's directory: `*` within a segment, `**` across
+segments, a plain path excludes the whole subtree, and an unanchored pattern
+matches at any segment boundary (`/` anchors it to the root).
 
 ## Suppressions
 

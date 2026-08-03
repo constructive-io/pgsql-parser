@@ -36,10 +36,24 @@ pgsql-lint schema.sql --json                  # machine-readable
 pgsql-lint . --rules no-dynamic-sql           # subset
 pgsql-lint . --warn require-qualified-refs    # downgrade (won't fail)
 pgsql-lint . --off C2                          # disable (id or code)
+pgsql-lint . --ignore 'sql/,**/generated/**'   # exclude generated trees
+pgsql-lint --changed [base]                    # only .sql this branch touched
 ```
 
 Exit code is `1` when any **error**-severity, non-waived finding remains, `0`
 otherwise. `--warn` findings print but don't fail the run.
+
+A repo states its policy once in `.pgsqllintrc.json` (discovered upward from cwd;
+`--config <file>` / `--no-config` override discovery) with the same keys as the
+flags — `rules`, `warn`, `off`, `ignore`, `keyword`, `paths`, plus `extends`
+naming another config file. Flags override the file. `paths` gives the default
+targets, so a CI step is just `pgsql-lint --changed`.
+
+`--changed` diffs against `git merge-base HEAD <base>` (base: explicit →
+`$GITHUB_BASE_REF` → the repository's default branch), unions in working-tree and
+untracked changes, drops paths that no longer exist, and falls back to
+`git diff HEAD` on a shallow/detached checkout. Modelled on pgpm's bundle-drift
+check. Nothing changed → exit 0.
 
 Programmatic entry points (all pure, DB-free):
 
@@ -139,5 +153,8 @@ Suppressed findings are reported as *acknowledged* accepted-risk, never dropped.
 | `src/rules/*` | the built-in C1–C4 rules |
 | `src/suppressions.ts` | the ESLint/Prettier-style directive parser |
 | `src/parse-unit.ts` | `CREATE FUNCTION` → `LintUnit` (SQL + PL/pgSQL bodies) |
+| `src/changed.ts` | `--changed` — merge-base + working-tree changed-file detection |
+| `src/config.ts` | `.pgsqllintrc.json` discovery, `extends`, key validation |
+| `src/ignore.ts` | `--ignore` gitignore-flavoured glob matching |
 | `src/cli.ts` | the `pgsql-lint` CLI |
 | `src/types.ts` | public types + `defineRule` |
