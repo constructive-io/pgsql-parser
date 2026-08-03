@@ -33,10 +33,10 @@
     "test:ast": "ts-node scripts/test-ast.ts"
   },
   "devDependencies": {
-    "@pgsql/parser": "^1.2.1",
+    "@pgsql/parser": "^1.5.0",
     "@pgsql/types": "^18.0.0",
-    "libpg-query": "18.1.2",
-    "makage": "^0.1.8",
+    "libpg-query": "18.1.4",
+    "makage": "^0.5.1",
     "pg-proto-parser": "workspace:*",
     "pgsql-deparser": "workspace:*"
   },

@@ -31,13 +31,13 @@
     "test:watch": "jest --watch"
   },
   "devDependencies": {
-    "makage": "^0.1.8",
+    "makage": "^0.5.1",
     "pg-proto-parser": "workspace:*",
     "pgsql-deparser": "workspace:*"
   },
   "dependencies": {
     "@pgsql/types": "^18.0.0",
-    "nested-obj": "0.2.2"
+    "nested-obj": "0.2.3"
   },
   "keywords": []
 }

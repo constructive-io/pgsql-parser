@@ -36,13 +36,13 @@
   "dependencies": {
     "@pgsql/traverse": "workspace:*",
     "chalk": "^4.1.0",
-    "libpg-query": "18.1.2",
+    "libpg-query": "18.1.4",
     "minimist": "1.2.8",
     "pgsql-parser": "workspace:*"
   },
   "devDependencies": {
     "@types/minimist": "^1.2.5",
-    "makage": "^0.1.8"
+    "makage": "^0.5.1"
   },
   "keywords": [
     "sql",

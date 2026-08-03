@@ -55,7 +55,7 @@
   "devDependencies": {
     "@pgsql/types": "^17.6.2",
     "@types/babel__generator": "^7.27.0",
-    "makage": "^0.1.8",
+    "makage": "^0.5.1",
     "recast": "0.23.11"
   }
 }

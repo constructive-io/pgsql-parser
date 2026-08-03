@@ -32,8 +32,8 @@
     "test:watch": "jest --watch"
   },
   "devDependencies": {
-    "libpg-query": "18.1.2",
-    "makage": "^0.1.8"
+    "libpg-query": "18.1.4",
+    "makage": "^0.5.1"
   },
   "dependencies": {
     "@pgsql/enums": "^18.0.0",

@@ -43,12 +43,12 @@
     "database"
   ],
   "devDependencies": {
-    "makage": "^0.1.8"
+    "makage": "^0.5.1"
   },
   "dependencies": {
     "@pgsql/traverse": "workspace:*",
     "@pgsql/types": "^18.0.0",
-    "libpg-query": "18.1.2",
+    "libpg-query": "18.1.4",
     "pgsql-deparser": "workspace:*",
     "plpgsql-deparser": "workspace:*"
   }
