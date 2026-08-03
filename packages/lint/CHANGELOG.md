@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.2.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/lint@18.1.2...@pgsql/lint@18.2.0) (2026-08-03)
+
+### Bug Fixes
+
+- **lint:** resolve own version in the published package layout ([bcdb1cc](https://github.com/constructive-io/pgsql-parser/commit/bcdb1cc2dcdd0e35b89e5b7aa1d466e40ff4ad5b))
+
+### Features
+
+- **lint:** --changed, --ignore, and .pgsqllintrc.json config ([7141509](https://github.com/constructive-io/pgsql-parser/commit/7141509a853e2f7f5c7ad55d9874e2d7ceb0a9cd))
+
 ## [18.1.2](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/lint@18.1.1...@pgsql/lint@18.1.2) (2026-08-03)
 
 **Note:** Version bump only for package @pgsql/lint
