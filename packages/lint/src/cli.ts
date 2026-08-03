@@ -85,6 +85,22 @@ function csv(v: string | string[] | undefined): string[] | undefined {
 }
 
 /**
+ * Own version. In the repo the compiled CLI sits in `dist/`, but the published
+ * package flattens `dist/` to its root, so `../package.json` only resolves in
+ * one of the two layouts — try both rather than crashing on `--version`.
+ */
+function packageVersion(): string {
+  for (const candidate of ['../package.json', './package.json']) {
+    try {
+      return (require(candidate) as { version: string }).version;
+    } catch {
+      // Wrong layout; try the next candidate.
+    }
+  }
+  return 'unknown';
+}
+
+/**
  * `--changed` takes an *optional* value, which minimist cannot express: with
  * `string: ['changed']` it would swallow a following path. Bind the next token
  * only when it is not a flag and not an existing path — i.e. when it reads as a
@@ -119,8 +135,7 @@ async function main(): Promise<void> {
   }) as unknown as Argv;
 
   if (argv.version) {
-     
-    console.log(require('../package.json').version);
+    console.log(packageVersion());
     return;
   }
 
