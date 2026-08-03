@@ -62,8 +62,11 @@ request's base branch (`$GITHUB_BASE_REF`) and otherwise to the repository's
 default branch; the diff is taken against `git merge-base HEAD <base>`, so
 commits landed on the base branch afterwards don't widen the set. Uncommitted and
 untracked changes are included, deleted/renamed-away paths are dropped, and a
-shallow clone or detached checkout (no resolvable merge base) falls back to the
-working-tree diff against `HEAD`. Nothing changed is an exit-0 pass.
+shallow clone or detached checkout (no resolvable base) falls back to working-tree
+changes only. Nothing changed is an exit-0 pass.
+
+Detection is [`git-changed`](https://npmjs.com/package/git-changed), shared with
+`pgpm package --check`, so the two agree on what "changed" means.
 
 ### Config file
 
