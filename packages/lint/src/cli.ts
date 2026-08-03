@@ -2,27 +2,36 @@
 /**
  * `pgsql-lint` — lint SQL source files for the convention rules.
  *
- *   pgsql-lint <path…> [--rules a,b] [--warn a,b] [--off a,b] [--json] [--quiet]
+ *   pgsql-lint <path…> [--changed[=<base>]] [--ignore <globs>] [--rules a,b]
+ *              [--warn a,b] [--off a,b] [--config <file>] [--json] [--quiet]
  *
  * Paths may be files or directories (directories are scanned recursively for
- * `.sql`). Exit code is 1 when any *error*-severity finding remains, 0
- * otherwise — so it drops straight into a pre-commit hook or CI step. Findings
- * downgraded with `--warn` print but never fail the run.
+ * `.sql`), and default to `paths` from the config file. Exit code is 1 when any
+ * *error*-severity finding remains, 0 otherwise — so it drops straight into a
+ * pre-commit hook or CI step. Findings downgraded with `--warn` print but never
+ * fail the run.
  */
 
 import chalk from 'chalk';
+import { existsSync } from 'fs';
 import minimist from 'minimist';
+import * as path from 'path';
 
+import { changedSqlFiles } from './changed';
+import { configDir, loadLintConfig } from './config';
 import { FileFinding, lintFiles } from './file-runner';
 import { LINT_RULES } from './rules';
 import type { SeverityMap } from './types';
 
 interface Argv {
   _: string[];
+  changed?: string;
+  ignore?: string | string[];
   rules?: string;
   warn?: string;
   off?: string;
   keyword?: string;
+  config?: string;
   json?: boolean;
   quiet?: boolean;
   help?: boolean;
@@ -36,16 +45,28 @@ Usage:
 
 Arguments:
   path                 One or more .sql files or directories (scanned recursively).
+                       Defaults to "paths" from the config file.
 
 Options:
+  --changed[=<base>]   Lint only .sql files that differ from <base> (default: the
+                       PR base branch, else the repository default branch), using
+                       the merge base, plus working-tree changes. Exits 0 when
+                       nothing changed.
+  --ignore <globs>     Exclude paths (comma-separated, repeatable).
   --rules <ids>        Comma-separated rule ids/codes to run (default: all).
   --warn <ids>         Report these rules as warnings (do not fail the run).
   --off <ids>          Disable these rules entirely.
   --keyword <kw>       Suppression directive keyword (default: pgsql-lint,safegres).
+  --config <file>      Config file to use (default: nearest .pgsqllintrc.json).
+  --no-config          Ignore any config file.
   --json               Emit findings as JSON.
   --quiet              Only print active findings (hide acknowledged waivers).
   -h, --help           Show this help.
   -v, --version        Show version.
+
+Config file (.pgsqllintrc.json, discovered upward from cwd; flags override it):
+  { "extends": "./base.json", "rules": [], "warn": [], "off": [],
+    "ignore": ["sql/", "**/generated/**"], "keyword": [], "paths": ["packages"] }
 
 Rules:
 ${LINT_RULES.map((r) => `  ${r.code}  ${r.id}  —  ${r.title}`).join('\n')}
@@ -54,16 +75,46 @@ Suppress inline (in the function body):
   -- pgsql-lint-disable-next-line no-dynamic-sql -- lookup-only: <why>
 `;
 
-function csv(v: string | undefined): string[] | undefined {
-  if (!v) return undefined;
-  const parts = v.split(',').map((s) => s.trim()).filter(Boolean);
+function csv(v: string | string[] | undefined): string[] | undefined {
+  if (v === undefined) return undefined;
+  const parts = (Array.isArray(v) ? v : [v])
+    .flatMap((s) => s.split(','))
+    .map((s) => s.trim())
+    .filter(Boolean);
   return parts.length > 0 ? parts : undefined;
 }
 
+/**
+ * `--changed` takes an *optional* value, which minimist cannot express: with
+ * `string: ['changed']` it would swallow a following path. Bind the next token
+ * only when it is not a flag and not an existing path — i.e. when it reads as a
+ * git ref — and otherwise rewrite the flag to an empty value.
+ */
+function normalizeChanged(args: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] !== '--changed') {
+      out.push(args[i]);
+      continue;
+    }
+    const next = args[i + 1];
+    if (next && !next.startsWith('-') && !existsSync(next)) {
+      out.push(`--changed=${next}`);
+      i++;
+    } else {
+      out.push('--changed=');
+    }
+  }
+  return out;
+}
+
 async function main(): Promise<void> {
-  const argv = minimist(process.argv.slice(2), {
+  const raw = process.argv.slice(2);
+  // Handled here rather than as a minimist boolean: `config` also takes a value.
+  const noConfig = raw.includes('--no-config');
+  const argv = minimist(normalizeChanged(raw.filter((a) => a !== '--no-config')), {
     boolean: ['json', 'quiet', 'help', 'version'],
-    string: ['rules', 'warn', 'off', 'keyword'],
+    string: ['rules', 'warn', 'off', 'keyword', 'changed', 'ignore', 'config'],
     alias: { h: 'help', v: 'version' }
   }) as unknown as Argv;
 
@@ -72,18 +123,53 @@ async function main(): Promise<void> {
     console.log(require('../package.json').version);
     return;
   }
-  if (argv.help || argv._.length === 0) {
+
+  const cwd = process.cwd();
+  const loaded = noConfig
+    ? { config: {} }
+    : loadLintConfig({ cwd, configFile: argv.config || undefined });
+  const fileConfig = loaded.config;
+  const baseDir = configDir(loaded, cwd);
+
+  const useChanged = argv.changed !== undefined;
+  const paths =
+    argv._.length > 0
+      ? argv._
+      : (fileConfig.paths ?? []).map((p) => path.resolve(baseDir, p));
+
+  if (argv.help || (!useChanged && paths.length === 0)) {
     console.log(HELP);
-    process.exit(argv._.length === 0 && !argv.help ? 1 : 0);
+    process.exit(argv.help ? 0 : 1);
   }
 
-  const rules = csv(argv.rules);
-  const keyword = csv(argv.keyword);
+  const rules = csv(argv.rules) ?? fileConfig.rules;
+  const keyword = csv(argv.keyword) ?? (fileConfig.keyword ? csv(fileConfig.keyword) : undefined);
+  const ignore = csv(argv.ignore) ?? fileConfig.ignore;
   const severity: SeverityMap = {};
-  for (const id of csv(argv.warn) ?? []) severity[id] = 'warn';
-  for (const id of csv(argv.off) ?? []) severity[id] = 'off';
+  for (const id of csv(argv.warn) ?? fileConfig.warn ?? []) severity[id] = 'warn';
+  for (const id of csv(argv.off) ?? fileConfig.off ?? []) severity[id] = 'off';
 
-  const reports = await lintFiles(argv._, { rules, keyword, severity });
+  let targets: string[];
+  if (useChanged) {
+    const changed = changedSqlFiles({ cwd, base: argv.changed || undefined });
+    // Nothing to lint is a pass, not an error — the common case on a branch
+    // that touched no SQL at all.
+    if (changed.files.length === 0) {
+      if (argv.json) console.log('[]');
+      else console.log(chalk.green('0 errors'), chalk.gray('(no changed .sql files)'));
+      process.exit(0);
+    }
+    targets = paths.length > 0 ? withinPaths(changed.files, paths) : changed.files;
+    if (targets.length === 0) {
+      if (argv.json) console.log('[]');
+      else console.log(chalk.green('0 errors'), chalk.gray('(no changed .sql files under the given paths)'));
+      process.exit(0);
+    }
+  } else {
+    targets = paths;
+  }
+
+  const reports = await lintFiles(targets, { rules, keyword, severity, ignore, cwd: baseDir });
 
   if (argv.json) {
     console.log(JSON.stringify(reports, null, 2));
@@ -119,6 +205,18 @@ async function main(): Promise<void> {
   }
 
   process.exit(errors > 0 ? 1 : 0);
+}
+
+/** Keep only changed files that sit inside one of the requested paths. */
+function withinPaths(files: string[], paths: string[]): string[] {
+  const roots = paths.map((p) => path.resolve(p));
+  return files.filter((file) =>
+    roots.some((root) => {
+      if (file === root) return true;
+      const rel = path.relative(root, file);
+      return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+    })
+  );
 }
 
 function formatFinding(f: FileFinding): string {

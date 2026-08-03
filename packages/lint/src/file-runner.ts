@@ -15,6 +15,7 @@ import * as path from 'path';
 import { parse } from 'pgsql-parser';
 
 import { lintDefinition, LintOptions } from './engine';
+import { applyIgnore } from './ignore';
 import type {
   LintDefinitionInput,
   LintProblem,
@@ -214,8 +215,19 @@ async function sqlFilesUnder(dir: string): Promise<string[]> {
   return out;
 }
 
+/** File-selection options layered on top of the lint options. */
+export interface FileLintOptions extends LintOptions {
+  /** Glob patterns to exclude (see `makeIgnoreFilter`). */
+  ignore?: string[];
+  /** Directory the `ignore` patterns are relative to (default `process.cwd()`). */
+  cwd?: string;
+}
+
 /** Resolve a mix of file and directory paths to a sorted list of `.sql` files. */
-export async function resolveSqlFiles(paths: string[]): Promise<string[]> {
+export async function resolveSqlFiles(
+  paths: string[],
+  options: { ignore?: string[]; cwd?: string } = {}
+): Promise<string[]> {
   const files = new Set<string>();
   for (const p of paths) {
     const st = await fs.stat(p);
@@ -225,12 +237,15 @@ export async function resolveSqlFiles(paths: string[]): Promise<string[]> {
       files.add(p);
     }
   }
-  return [...files].sort();
+  return applyIgnore([...files].sort(), options.ignore, options.cwd);
 }
 
 /** Lint every `.sql` file reachable from `paths` (files or directories). */
-export async function lintFiles(paths: string[], options: LintOptions = {}): Promise<FileReport[]> {
-  const files = await resolveSqlFiles(paths);
+export async function lintFiles(
+  paths: string[],
+  options: FileLintOptions = {}
+): Promise<FileReport[]> {
+  const files = await resolveSqlFiles(paths, { ignore: options.ignore, cwd: options.cwd });
   const reports: FileReport[] = [];
   for (const file of files) {
     const source = await fs.readFile(file, 'utf8');
@@ -246,11 +261,14 @@ export function sqlTextAdapter(source: string, file?: string): SourceAdapter {
 }
 
 /** A {@link SourceAdapter} over `.sql` files/directories on disk. */
-export function filesAdapter(paths: string[]): SourceAdapter {
+export function filesAdapter(
+  paths: string[],
+  options: { ignore?: string[]; cwd?: string } = {}
+): SourceAdapter {
   return {
     id: 'files',
     definitions: async () => {
-      const files = await resolveSqlFiles(paths);
+      const files = await resolveSqlFiles(paths, options);
       const out: LintDefinitionInput[] = [];
       for (const file of files) {
         out.push(...(await sqlTextDefinitions(await fs.readFile(file, 'utf8'), file)));
