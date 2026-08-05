@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.15.3](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.15.2...@pgsql/transform@18.15.3) (2026-08-05)
+
+### Performance Improvements
+
+- **transform:** reuse compiled schema regexes and skip absent schemas ([50fdb2f](https://github.com/constructive-io/pgsql-parser/commit/50fdb2f55d9061900336e94c94f14798ccdf69c1))
+
 ## [18.15.2](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.15.1...@pgsql/transform@18.15.2) (2026-08-03)
 
 **Note:** Version bump only for package @pgsql/transform
