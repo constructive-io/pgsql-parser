@@ -292,7 +292,8 @@ export function transformSchemaRefsInString(
   // References embedded in opaque strings carry no object identity, so only
   // whole-schema (schema-level default) routes can be applied here.
   for (const [oldSchema, newSchema] of schemaLevelMap(schemaMapping)) {
-    const pattern = new RegExp(`(?<![\\w-])("?)${escapeRegexp(oldSchema)}\\1(?=\\.)`, 'g');
+    if (!out.includes(oldSchema)) continue;
+    const pattern = cachedRegExp(`(?<![\\w-])("?)${cachedEscapeRegexp(oldSchema)}\\1(?=\\.)`, 'g');
     const before = out;
     out = out.replace(pattern, `$1${newSchema}$1`);
     if (out !== before) {
@@ -745,16 +746,22 @@ export function validateNoUntransformedSchemas(
     return;
   }
   
+  // Every pattern below requires a literal occurrence of the schema name, so a
+  // single case-insensitive substring scan rules out most schemas up front.
+  const lowerContent = content.toLowerCase();
+
   for (const [oldSchema, newSchema] of moved) {
-    const escapedSchema = escapeRegexp(oldSchema);
+    if (!lowerContent.includes(oldSchema.toLowerCase())) continue;
+
+    const escapedSchema = cachedEscapeRegexp(oldSchema);
     
     // Pattern 1: quoted or unquoted schema name followed by dot (schema-qualified)
-    const dotPattern = new RegExp(`(?:"${escapedSchema}"|\\b${escapedSchema})(?=\\.)`, 'g');
+    const dotPattern = cachedRegExp(`(?:"${escapedSchema}"|\\b${escapedSchema})(?=\\.)`, 'g');
     
     // Pattern 2: standalone schema name in known SQL contexts
     // Note: We don't use trailing \b because it fails after closing quotes
     // (both '"' and whitespace are non-word characters, so no boundary exists).
-    const standalonePattern = new RegExp(
+    const standalonePattern = cachedRegExp(
       `(?:ON\\s+SCHEMA\\s+|IN\\s+SCHEMA\\s+|CREATE\\s+SCHEMA\\s+|DROP\\s+SCHEMA\\s+(?:IF\\s+EXISTS\\s+)?|SET\\s+SCHEMA\\s+)` +
       `(?:"${escapedSchema}"|\\b${escapedSchema}\\b)`,
       'gi'
@@ -768,7 +775,7 @@ export function validateNoUntransformedSchemas(
       const lines = content.split('\n');
       const locations: string[] = [];
       
-      const combinedPattern = new RegExp(
+      const combinedPattern = cachedRegExp(
         `(?:"${escapedSchema}"|\\b${escapedSchema})(?=\\.)|` +
         `(?:ON\\s+SCHEMA\\s+|IN\\s+SCHEMA\\s+|CREATE\\s+SCHEMA\\s+|DROP\\s+SCHEMA\\s+(?:IF\\s+EXISTS\\s+)?|SET\\s+SCHEMA\\s+)` +
         `(?:"${escapedSchema}"|\\b${escapedSchema}\\b)`,
@@ -1073,6 +1080,38 @@ export function escapeRegexp(str: string): string {
 }
 
 /**
+ * Compiling a pattern costs far more than running it, and the string-level
+ * passes below rebuild the same handful of per-schema patterns for every file
+ * they touch — on a large corpus that is hundreds of thousands of identical
+ * compiles. Patterns are keyed by source + flags and reused; each returned
+ * RegExp is stateful (`g`/`y` carry `lastIndex`), so callers must only use it
+ * with `String#replace`/`String#match`, which reset it, or reset it
+ * themselves, exactly as the throwaway instances required.
+ */
+const regExpCache = new Map<string, RegExp>();
+
+function cachedRegExp(source: string, flags: string): RegExp {
+  const key = `${flags}\u0000${source}`;
+  let re = regExpCache.get(key);
+  if (!re) {
+    re = new RegExp(source, flags);
+    regExpCache.set(key, re);
+  }
+  return re;
+}
+
+const escapeRegexpCache = new Map<string, string>();
+
+function cachedEscapeRegexp(str: string): string {
+  let escaped = escapeRegexpCache.get(str);
+  if (escaped === undefined) {
+    escaped = escapeRegexp(str);
+    escapeRegexpCache.set(str, escaped);
+  }
+  return escaped;
+}
+
+/**
  * Extract pgpm header comments from the beginning of SQL content.
  */
 export function extractPgpmHeader(content: string): { header: string; body: string } {
@@ -1148,7 +1187,7 @@ export function transformComments(
       
       result.schemasFound.add(schema);
       
-      const pathPattern = new RegExp(`(schemas/)${escapeRegexp(schema)}(/|$)`, 'g');
+      const pathPattern = cachedRegExp(`(schemas/)${cachedEscapeRegexp(schema)}(/|$)`, 'g');
       const before = newPath;
       newPath = newPath.replace(pathPattern, `$1${newName}$2`);
       
@@ -1173,14 +1212,17 @@ export function transformVerifyCalls(
   const schemas = Array.from(schemaMapping.keys()).sort((a, b) => b.length - a.length);
   
   let newContent = content;
+  // The pattern needs the schema name spelled out, case-insensitively.
+  let lowerContent = content.toLowerCase();
   
   for (const schema of schemas) {
     const newName = schemaMapping.get(schema);
     if (!newName) continue;
+    if (!lowerContent.includes(schema.toLowerCase())) continue;
     
-    const escapedSchema = escapeRegexp(schema);
+    const escapedSchema = cachedEscapeRegexp(schema);
     
-    const verifyPattern = new RegExp(
+    const verifyPattern = cachedRegExp(
       `(verify_(?:function|table|trigger|type|domain|view|index|constraint|schema|policy|table_grant|function_grant|sequence_grant|type_grant)\\s*\\(\\s*')${escapedSchema}(\\.|'\\s*\\))`,
       'gi'
     );
@@ -1189,6 +1231,7 @@ export function transformVerifyCalls(
     newContent = newContent.replace(verifyPattern, `$1${newName}$2`);
     
     if (newContent !== before) {
+      lowerContent = newContent.toLowerCase();
       result.schemasFound.add(schema);
       result.schemasTransformed.set(schema, newName);
     }
@@ -1212,10 +1255,11 @@ export function transformJsonStringValues(
   for (const schema of schemas) {
     const newName = schemaMapping.get(schema);
     if (!newName) continue;
+    if (!newContent.includes(schema)) continue;
     
-    const escapedSchema = escapeRegexp(schema);
+    const escapedSchema = cachedEscapeRegexp(schema);
     
-    const jsonValuePattern = new RegExp(
+    const jsonValuePattern = cachedRegExp(
       `(:")${escapedSchema}(")`,
       'g'
     );
