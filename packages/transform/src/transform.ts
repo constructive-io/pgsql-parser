@@ -375,20 +375,24 @@ export function transformIdentityCastLiteral(
     return QuoteUtils.quoteIdentifier(newName);
   }
 
-  const qualified = QUALIFIED_IDENTITY_RE.exec(sval);
-  if (!qualified) return sval;
+  // `regprocedure` and `regoperator` carry an argument list after the name, and
+  // an argument type can itself be schema-qualified
+  // (`fn("my-schema".row_type)`), so the list is routed as ordinary schema refs.
+  const argsAt = sval.indexOf('(');
+  const head = argsAt === -1 ? sval : sval.slice(0, argsAt);
+  const args =
+    argsAt === -1 ? '' : transformSchemaRefsInString(sval.slice(argsAt), router, result);
+
+  const qualified = QUALIFIED_IDENTITY_RE.exec(head);
+  if (!qualified) return `${head}${args}`;
   const schemaName = unquoteIdentifier(qualified[1]);
-  const remainder = qualified[2];
-  // `regprocedure` and `regoperator` carry an argument list after the name.
-  const argsAt = remainder.indexOf('(');
-  const objName = unquoteIdentifier((argsAt === -1 ? remainder : remainder.slice(0, argsAt)).trim());
-  const args = argsAt === -1 ? '' : remainder.slice(argsAt);
+  const objName = unquoteIdentifier(qualified[2].trim());
 
   const target = router.resolveObject(schemaName, objName, ns);
-  if (!target) return sval;
+  if (!target) return `${head}${args}`;
   const rebound = target.name !== undefined && target.name !== objName;
   const requalified = target.schema === null || (!!target.schema && target.schema !== schemaName);
-  if (!rebound && !requalified) return sval;
+  if (!rebound && !requalified) return `${head}${args}`;
 
   result.schemasFound.add(schemaName);
   const nameToken = QuoteUtils.quoteIdentifier(rebound ? target.name! : objName);

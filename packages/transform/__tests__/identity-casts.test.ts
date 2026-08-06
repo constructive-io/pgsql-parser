@@ -31,6 +31,18 @@ describe('object-identity casts', () => {
       .toContain(`CAST('my_schema.fn(uuid, text)' AS regprocedure)`);
   });
 
+  it('routes a schema-qualified argument type', () => {
+    expect(
+      run(`SELECT assert_function('my-schema.fn("other-schema".row_t)'::regprocedure);`)
+    ).toContain(`CAST('my_schema.fn("other_schema".row_t)' AS regprocedure)`);
+  });
+
+  it('routes an argument type under an unqualified function name', () => {
+    expect(
+      run(`SELECT assert_function('fn("other-schema".row_t)'::regprocedure);`)
+    ).toContain(`CAST('fn("other_schema".row_t)' AS regprocedure)`);
+  });
+
   it('routes ::regproc', () => {
     expect(run(`SELECT assert_trigger('my-schema.users'::regclass, 'stamps', 'other-schema.tg'::regproc);`))
       .toContain(`CAST('other_schema.tg' AS regproc)`);
