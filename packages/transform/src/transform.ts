@@ -305,6 +305,101 @@ export function transformSchemaRefsInString(
 }
 
 /**
+ * Cast types whose string operand is an object reference rather than opaque
+ * text. `'sch.tbl'::regclass` is a relation the parser resolves, and the cast
+ * names the namespace it resolves in — so the reference can be routed from the
+ * cast, semantically, instead of pattern-matched. This reaches what the string
+ * passes cannot: a bare `'sch'::regnamespace` has no dot to match on.
+ */
+const IDENTITY_CAST_NAMESPACES: Record<string, RouteNamespace> = {
+  regclass: 'relation',
+  regcollation: 'unknown',
+  regconfig: 'unknown',
+  regdictionary: 'unknown',
+  regnamespace: 'schema',
+  regoper: 'unknown',
+  regoperator: 'unknown',
+  regproc: 'function',
+  regprocedure: 'function',
+  regtype: 'type'
+};
+
+/**
+ * The namespace a cast resolves its operand in, or `undefined` when the target
+ * type is not an object-identity type.
+ */
+export function identityCastNamespace(typeName: any): RouteNamespace | undefined {
+  const names = typeName?.names;
+  if (!Array.isArray(names) || names.length === 0) return undefined;
+  // Only `pg_catalog`-qualified (or unqualified) reg* types are the built-ins.
+  if (names.length > 1 && names[0]?.String?.sval !== 'pg_catalog') return undefined;
+  const typeIdent = names[names.length - 1]?.String?.sval;
+  if (typeof typeIdent !== 'string') return undefined;
+  return IDENTITY_CAST_NAMESPACES[typeIdent.toLowerCase()];
+}
+
+const IDENTITY_TOKEN = String.raw`(?:"(?:[^"]|"")*"|[^\s".,()[\]]+)`;
+const BARE_IDENTITY_RE = new RegExp(`^\\s*(${IDENTITY_TOKEN})\\s*$`);
+const QUALIFIED_IDENTITY_RE = new RegExp(`^\\s*(${IDENTITY_TOKEN})\\.([\\s\\S]+)$`);
+
+function unquoteIdentifier(token: string): string {
+  if (token.length > 1 && token.startsWith('"') && token.endsWith('"')) {
+    return token.slice(1, -1).replace(/""/g, '"');
+  }
+  return token;
+}
+
+/**
+ * Route the object reference carried in the string operand of an identity
+ * cast. `ns` comes from the cast's target type.
+ *
+ * Unqualified operands (`'tbl'::regclass`) name no schema — they resolve
+ * through `search_path` — so they are returned unchanged.
+ */
+export function transformIdentityCastLiteral(
+  sval: string,
+  ns: RouteNamespace,
+  schemaMapping: SchemaMappingInput,
+  result: SchemaTransformResult
+): string {
+  const router = asRouter(schemaMapping);
+
+  if (ns === 'schema') {
+    const bare = BARE_IDENTITY_RE.exec(sval);
+    if (!bare) return sval;
+    const schemaName = unquoteIdentifier(bare[1]);
+    const newName = router.resolve(schemaName, undefined, 'schema');
+    if (!newName || newName === schemaName) return sval;
+    result.schemasFound.add(schemaName);
+    result.schemasTransformed.set(schemaName, newName);
+    return QuoteUtils.quoteIdentifier(newName);
+  }
+
+  const qualified = QUALIFIED_IDENTITY_RE.exec(sval);
+  if (!qualified) return sval;
+  const schemaName = unquoteIdentifier(qualified[1]);
+  const remainder = qualified[2];
+  // `regprocedure` and `regoperator` carry an argument list after the name.
+  const argsAt = remainder.indexOf('(');
+  const objName = unquoteIdentifier((argsAt === -1 ? remainder : remainder.slice(0, argsAt)).trim());
+  const args = argsAt === -1 ? '' : remainder.slice(argsAt);
+
+  const target = router.resolveObject(schemaName, objName, ns);
+  if (!target) return sval;
+  const rebound = target.name !== undefined && target.name !== objName;
+  const requalified = target.schema === null || (!!target.schema && target.schema !== schemaName);
+  if (!rebound && !requalified) return sval;
+
+  result.schemasFound.add(schemaName);
+  const nameToken = QuoteUtils.quoteIdentifier(rebound ? target.name! : objName);
+  if (target.schema === null) return `${nameToken}${args}`;
+  if (target.schema && target.schema !== schemaName) {
+    result.schemasTransformed.set(schemaName, target.schema);
+  }
+  return `${QuoteUtils.quoteIdentifier(target.schema ?? schemaName)}.${nameToken}${args}`;
+}
+
+/**
  * Create a SQL AST visitor that transforms schema names.
  * 
  * The walker from @pgsql/traverse auto-recurses into child nodes, so visitors
@@ -569,8 +664,24 @@ export function createSqlVisitor(
     A_Const: (path: any) => {
       const node = path.node;
       if (typeof node.sval?.sval === 'string' && node.sval.sval.includes('.')) {
+        if (!claimSite(result, node.sval, 'sval')) return;
         node.sval.sval = transformSchemaRefsInString(node.sval.sval, schemaMapping, result);
       }
+    },
+
+    // Object identities carried as the operand of an identity cast
+    // ('sch.tbl'::regclass, 'sch.fn(uuid)'::regprocedure, 'sch'::regnamespace).
+    // The cast names the namespace, so these route through the same object
+    // routes as a RangeVar rather than through a string pattern — and the bare
+    // schema form, invisible to every string pass, routes here.
+    TypeCast: (path: any) => {
+      const node = path.node;
+      const sval = node?.arg?.A_Const?.sval;
+      if (typeof sval?.sval !== 'string') return;
+      const ns = identityCastNamespace(node.typeName);
+      if (!ns) return;
+      if (!claimSite(result, sval, 'sval')) return;
+      sval.sval = transformIdentityCastLiteral(sval.sval, ns, router, result);
     },
 
     // Transform DefineStmt (CREATE TYPE schema.name, CREATE AGGREGATE schema.agg)
