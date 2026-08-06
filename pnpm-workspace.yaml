@@ -5,3 +5,35 @@
 # Each generated tree carries its own pnpm-workspace.yaml instead — see PUBLISH.md.
 packages:
   - 'packages/*'
+
+# Exempt from the wait: 6 scope glob(s), 7 first-party package(s).
+# First-party membership comes from what pyramation publishes on npm — waiting on your own release protects nothing.
+minimumReleaseAgeExclude:
+  - "@constructive-db/*"
+  - "@constructive-io/*"
+  - "@launchql/*"
+  - "@pgpm/*"
+  - "@pgpmjs/*"
+  - "@pgsql/*"
+  - git-changed
+  - libpg-query
+  - makage
+  - nested-obj
+  - pnpm-policy
+  - strfy-js
+  - yamlize
+
+# Managed by pnpm-policy — run `pnpm-policy generate` after editing pnpm-policy.yaml.
+
+# A third-party release must be 2d old before it can be installed.
+# Most malicious releases are found and yanked well inside that window.
+minimumReleaseAge: 2880
+
+# Transitive dependencies must come from the registry, not from git or a URL.
+blockExoticSubdeps: true
+
+# The only dependencies permitted to run install scripts.
+allowBuilds:
+  "@launchql/protobufjs": true # protobufjs postinstall script (environment/feature detection for the protobuf.js runtime, no native compile).
+  nx: true # Nx CLI native postinstall step (downloads/links its native project-graph daemon binary).
+  unrs-resolver: true # unrs-resolver ships a native (Rust/N-API) module resolver binary that must be built/linked on install.

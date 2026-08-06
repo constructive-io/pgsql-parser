@@ -46,6 +46,9 @@ jobs:
       - name: install dependencies
         run: pnpm install
 
+      - name: policy check
+        run: pnpm run policy:check
+
       - name: build
         run: pnpm build
 
