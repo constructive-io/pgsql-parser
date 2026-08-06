@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.16.0](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.15.3...@pgsql/transform@18.16.0) (2026-08-06)
+
+### Bug Fixes
+
+- **transform:** route schema-qualified argument types in identity casts ([1bbd895](https://github.com/constructive-io/pgsql-parser/commit/1bbd8958100ca10438237fc990074208f9dd4aa0))
+
+### Features
+
+- **transform:** route object identities by cast type ([c02bc96](https://github.com/constructive-io/pgsql-parser/commit/c02bc96f7ca98036f374ac2f7fcd643588554505))
+
 ## [18.15.3](https://github.com/constructive-io/pgsql-parser/compare/@pgsql/transform@18.15.2...@pgsql/transform@18.15.3) (2026-08-05)
 
 ### Performance Improvements
