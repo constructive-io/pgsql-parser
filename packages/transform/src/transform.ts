@@ -1316,46 +1316,6 @@ export function transformComments(
 }
 
 /**
- * Transform verify function calls that use string literals.
- * These are inside SQL strings and not part of the main AST.
- */
-export function transformVerifyCalls(
-  content: string,
-  schemaMapping: Map<string, string>,
-  result: SchemaTransformResult
-): string {
-  const schemas = Array.from(schemaMapping.keys()).sort((a, b) => b.length - a.length);
-  
-  let newContent = content;
-  // The pattern needs the schema name spelled out, case-insensitively.
-  let lowerContent = content.toLowerCase();
-  
-  for (const schema of schemas) {
-    const newName = schemaMapping.get(schema);
-    if (!newName) continue;
-    if (!lowerContent.includes(schema.toLowerCase())) continue;
-    
-    const escapedSchema = cachedEscapeRegexp(schema);
-    
-    const verifyPattern = cachedRegExp(
-      `(verify_(?:function|table|trigger|type|domain|view|index|constraint|schema|policy|table_grant|function_grant|sequence_grant|type_grant)\\s*\\(\\s*')${escapedSchema}(\\.|'\\s*\\))`,
-      'gi'
-    );
-    
-    const before = newContent;
-    newContent = newContent.replace(verifyPattern, `$1${newName}$2`);
-    
-    if (newContent !== before) {
-      lowerContent = newContent.toLowerCase();
-      result.schemasFound.add(schema);
-      result.schemasTransformed.set(schema, newName);
-    }
-  }
-  
-  return newContent;
-}
-
-/**
  * Transform schema names inside JSON/JSONB string values.
  */
 export function transformJsonStringValues(

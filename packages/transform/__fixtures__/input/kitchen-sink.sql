@@ -284,12 +284,12 @@ ANALYZE "other-schema".audit_log;
 -- =============================================================================
 -- 25. Verify function calls (string literal patterns)
 -- =============================================================================
-SELECT verify_schema('my-schema');
-SELECT verify_table('my-schema.users');
-SELECT verify_function('my-schema.get_user_by_id');
-SELECT verify_trigger('my-schema.trg_audit_insert');
-SELECT verify_type('my-schema.user_status_type');
-SELECT verify_domain('my-schema.positive_int');
+SELECT assert_schema('my-schema'::regnamespace);
+SELECT assert_table('my-schema.users'::regclass);
+SELECT assert_function('my-schema.get_user_by_id(uuid)'::regprocedure);
+SELECT assert_trigger('my-schema.users'::regclass, 'trg_audit_insert', 'my-schema.tg_audit'::regproc, 5);
+SELECT assert_type('my-schema.user_status_type'::regtype);
+SELECT assert_domain('my-schema.positive_int'::regtype, 'int4'::regtype);
 
 -- =============================================================================
 -- 26. JSON string values with schema names

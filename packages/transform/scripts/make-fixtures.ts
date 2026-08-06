@@ -19,7 +19,6 @@ import {
   transformJsonStringValues,
   transformSql,
   TransformSqlOptions,
-  transformVerifyCalls,
 } from '../src';
 
 const FIXTURES_DIR = path.resolve(__dirname, '..', '__fixtures__');
@@ -35,7 +34,7 @@ async function main() {
   await loadModule();
 
   const opts: TransformSqlOptions = {
-    prePasses: [transformVerifyCalls, transformJsonStringValues],
+    prePasses: [transformJsonStringValues],
   };
 
   for (const file of fs.readdirSync(INPUT_DIR)) {

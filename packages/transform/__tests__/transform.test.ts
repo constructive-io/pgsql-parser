@@ -16,7 +16,6 @@ import {
   transformSql,
   TransformSqlOptions,
   transformSqlStatement,
-  transformVerifyCalls,
   validateNoUntransformedSchemas,
   validateRoundTrip,
 } from '../src';
@@ -136,29 +135,6 @@ describe('transform_comments', () => {
     const result = freshResult();
     const out = transformComments(content, DEFAULT_MAPPING, result);
     expect(out).toBe(content);
-  });
-});
-
-describe('transform_verify_calls', () => {
-  it('transforms schema names inside verify_function calls', () => {
-    const content = "SELECT verify_function('my-schema.do_something');";
-    const result = freshResult();
-    const out = transformVerifyCalls(content, DEFAULT_MAPPING, result);
-    expect(out).toContain("verify_function('my_schema.do_something')");
-  });
-
-  it('transforms verify_table, verify_trigger, etc.', () => {
-    const content = "SELECT verify_table('my-schema.users');";
-    const result = freshResult();
-    const out = transformVerifyCalls(content, DEFAULT_MAPPING, result);
-    expect(out).toContain("verify_table('my_schema.users')");
-  });
-
-  it('transforms verify_schema with just the schema name', () => {
-    const content = "SELECT verify_schema('my-schema');";
-    const result = freshResult();
-    const out = transformVerifyCalls(content, DEFAULT_MAPPING, result);
-    expect(out).toContain("verify_schema('my_schema')");
   });
 });
 
@@ -753,7 +729,6 @@ describe('transform_sql (full pipeline)', () => {
     ].join('\n');
 
     const opts: TransformSqlOptions = {
-      prePasses: [transformVerifyCalls],
     };
     const { content } = transformSql(input, DEFAULT_MAPPING, opts);
     expect(content).toContain("verify_table('my_schema.users')");
@@ -817,7 +792,7 @@ describe('transform_sql (full pipeline)', () => {
     ].join('\n');
 
     const opts: TransformSqlOptions = {
-      prePasses: [transformVerifyCalls, transformJsonStringValues],
+      prePasses: [transformJsonStringValues],
     };
     const { content } = transformSql(input, DEFAULT_MAPPING, opts);
     expect(content).toContain("verify_table('my_schema.config')");
@@ -883,7 +858,7 @@ const FIXTURE_FILES = fs
 
 describe.each(FIXTURE_FILES)('fixture: %s', (file) => {
   const FIXTURE_OPTS: TransformSqlOptions = {
-    prePasses: [transformVerifyCalls, transformJsonStringValues],
+    prePasses: [transformJsonStringValues],
   };
   const input = fs.readFileSync(path.join(FIXTURE_INPUT_DIR, file), 'utf8');
 
@@ -941,7 +916,7 @@ describe('kitchen-sink fixture', () => {
       'utf8'
     );
     const { result } = transformSql(input, DEFAULT_MAPPING, {
-      prePasses: [transformVerifyCalls, transformJsonStringValues],
+      prePasses: [transformJsonStringValues],
     });
     expect(result.schemasFound).toContain('my-schema');
     expect(result.schemasFound).toContain('other-schema');
