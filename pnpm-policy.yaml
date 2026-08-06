@@ -1,0 +1,42 @@
+# Supply-chain policy for this workspace. The pnpm settings it produces live in
+# pnpm-workspace.yaml under the `Managed by pnpm-policy` marker — edit this file,
+# then run `pnpm run policy`. `pnpm run policy:check` fails CI when they drift.
+
+# Third-party releases wait two days. A compromised release is normally reported
+# and yanked within hours, so the short wait catches it without stalling upgrades.
+minimumReleaseAge: 2d
+
+# Transitive dependencies must resolve from the registry, not from git or a URL.
+blockExoticSubdeps: true
+
+# The npm accounts WE publish under. Everything they publish skips the wait, so
+# this lists accounts we control — nobody else's.
+maintainers:
+  - pyramation
+
+# Scopes we own outright, emitted as `@scope/*` globs so they also cover packages
+# published there tomorrow.
+scopes:
+  - "@constructive-io"
+  - "@constructive-db"
+  - "@launchql"
+  - "@pgpm"
+  - "@pgpmjs"
+  - "@pgsql"
+
+# Resolved from the pinned data package rather than regenerated per repo.
+inventory: "@constructive-io/pnpm-policy/inventory.json"
+
+# Only emit the first-party names this lockfile actually resolves, instead of all
+# ~1100 we publish.
+intersect: true
+
+# Dependencies allowed to run install scripts. The value is the reason.
+allowBuilds:
+  nx: "Nx CLI native postinstall step (downloads/links its native project-graph daemon binary)."
+  unrs-resolver: "unrs-resolver ships a native (Rust/N-API) module resolver binary that must be built/linked on install."
+  "@launchql/protobufjs": "protobufjs postinstall script (environment/feature detection for the protobuf.js runtime, no native compile)."
+
+# Third-party escape hatches. A reason is required; `until` expires the waiver so
+# `check` makes you re-justify it instead of letting it live forever.
+exceptions: []

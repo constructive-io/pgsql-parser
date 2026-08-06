@@ -21,10 +21,13 @@
     "lint": "pnpm -r run lint",
     "deps": "pnpm up -r -i -L",
     "bump-versions": "ts-node scripts/bump-versions.ts",
-    "update-workspace": "makage update-workspace"
+    "update-workspace": "makage update-workspace",
+    "policy": "pnpm-policy generate",
+    "policy:check": "pnpm-policy check"
   },
   "devDependencies": {
     "@constructive-io/eslint-config": "^0.2.0",
+    "@constructive-io/pnpm-policy": "0.2.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.12.7",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
@@ -39,6 +42,7 @@
     "jest-diff": "30.2.0",
     "lerna": "^8.2.4",
     "makage": "^0.5.1",
+    "pnpm-policy": "^0.2.2",
     "prettier": "^3.0.2",
     "rimraf": "^6.0.1",
     "semver": "^7.7.2",
