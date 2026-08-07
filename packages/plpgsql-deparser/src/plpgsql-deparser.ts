@@ -13,6 +13,7 @@
 
 import { QuoteUtils } from 'pgsql-deparser';
 
+import { ParseMode } from './hydrate-types';
 import {
   DiagItemKind,
   ElogLevel,
@@ -58,6 +59,18 @@ import {
   PLpgSQLTypeNode,
   RaiseOptionType,
 } from './types';
+
+/**
+ * PostgreSQL parses the right-hand side of an assignment in a dedicated raw
+ * parse mode per target shape — RAW_PARSE_PLPGSQL_ASSIGN1 (3), ASSIGN2 (4) and
+ * ASSIGN3 (5) for `var`, `var.field` and `var.field[...]` targets — and that
+ * mode is preserved on `PLpgSQL_expr.parseMode`. In those modes the stored
+ * query text is the entire assignment, target included (`cnt := cnt + 1`);
+ * every lower mode (RAW_PARSE_DEFAULT, RAW_PARSE_TYPE_NAME,
+ * RAW_PARSE_PLPGSQL_EXPR) is a plain expression/statement parse whose text is
+ * only the value.
+ */
+const LOWEST_ASSIGN_PARSE_MODE = ParseMode.RAW_PARSE_PLPGSQL_ASSIGN1;
 
 export interface PLpgSQLDeparserOptions {
   indent?: string;
@@ -1129,17 +1142,33 @@ export class PLpgSQLDeparser {
   private deparseAssign(assign: PLpgSQL_stmt_assign, context: PLpgSQLDeparserContext): string {
     const varName = this.getVarName(assign.varno, context);
     const expr = assign.expr ? this.deparseExpr(assign.expr) : '';
-    
-    // The expression already contains the assignment in the query
-    // e.g., "sum := sum + n"
-    if (expr.includes(':=')) {
+    const parseMode = assign.expr?.PLpgSQL_expr?.parseMode;
+
+    if (this.exprCarriesAssignmentTarget(parseMode)) {
       // The SQL deparser parenthesizes subscripted targets like '(a)[2]',
       // but the PL/pgSQL assignment grammar requires a bare identifier
       // before subscripts/field selections.
       return expr.replace(/^\((\w+(?:\.\w+)*)\)(?=\[|\.)/, '$1');
     }
-    
+
     return `${varName} := ${expr}`;
+  }
+
+  /**
+   * Whether the stored query text of an assignment already spells out the
+   * assignment target, so that prefixing the target again would emit it twice.
+   *
+   * The parse mode answers this exactly. A substring test for ':=' cannot: ':='
+   * is also PostgreSQL's named-argument operator, so a value like `f(a := 1)`
+   * reads as self-contained and the target gets silently dropped.
+   *
+   * An absent parseMode — hand-built nodes, or output from a PostgreSQL older
+   * than the assignment parse modes — means the same as mode 0: the text is the
+   * value only and the target comes from `varno`. A hand-built node that does
+   * embed its target in the text must say so with `parseMode`.
+   */
+  private exprCarriesAssignmentTarget(parseMode?: number): boolean {
+    return (parseMode ?? ParseMode.RAW_PARSE_DEFAULT) >= LOWEST_ASSIGN_PARSE_MODE;
   }
 
   /**

@@ -815,3 +815,25 @@ BEGIN
   updated.updated_at := now();
   RETURN updated;
 END$$;
+
+-- Test 66: assignment whose value is a call using named arguments
+CREATE FUNCTION test_assign_named_args() RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_body text;
+BEGIN
+  v_body := ast_helpers.create_function(v_schema_name := 'app_public', v_function_name := 'f');
+  RETURN v_body;
+END$$;
+
+-- Test 67: field and subscript assignment targets with named-argument values
+CREATE FUNCTION test_assign_targets() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  a int[] := ARRAY[1, 2];
+  r record;
+BEGIN
+  SELECT 1 AS f INTO r;
+  a[2] := coalesce(nullif(3, 0), 4);
+  r.f := greatest(1, 2);
+END$$;

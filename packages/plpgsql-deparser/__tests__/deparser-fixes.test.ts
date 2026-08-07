@@ -1,6 +1,6 @@
 import { loadModule, parsePlPgSQLSync } from 'libpg-query';
 
-import { deparseSync, PLpgSQLParseResult } from '../src';
+import { deparseSync, ParseMode, PLpgSQLParseResult } from '../src';
 import { PLpgSQLTestUtils } from '../test-utils';
 
 describe('plpgsql-deparser bug fixes', () => {
@@ -1213,6 +1213,112 @@ END$$`;
       expect(deparsed).toContain('m[1][2] := 42');
       expect(deparsed).not.toMatch(/\(a\)\[/);
       expect(deparsed).not.toMatch(/\(m\)\[/);
+    });
+  });
+
+  describe('assignment targets vs named arguments', () => {
+    it('should keep the target when the value uses named arguments', async () => {
+      const sql = `CREATE FUNCTION test_assign_named_args() RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_body text;
+BEGIN
+  v_body := ast_helpers.create_function(v_schema_name := 'app_public', v_function_name := 'f');
+  RETURN v_body;
+END$$`;
+
+      await testUtils.expectAstMatch('assignment with named arguments', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain(
+        `v_body := ast_helpers.create_function(v_schema_name := 'app_public', v_function_name := 'f');`
+      );
+    });
+
+    it('should emit a self-contained assignment exactly once', async () => {
+      const sql = `CREATE FUNCTION test_assign_self_contained(n int) RETURNS int
+LANGUAGE plpgsql AS $$
+DECLARE
+  sum int := 0;
+BEGIN
+  sum := sum + n;
+  RETURN sum;
+END$$`;
+
+      await testUtils.expectAstMatch('self-contained assignment', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toContain('sum := sum + n;');
+      expect(deparsed).not.toContain('sum := sum := ');
+    });
+
+    it('should keep field and subscript targets', async () => {
+      const sql = `CREATE FUNCTION test_assign_targets() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  a int[] := ARRAY[1, 2];
+  r record;
+BEGIN
+  SELECT 1 AS f INTO r;
+  a[2] := coalesce(nullif(3, 0), 4);
+  r.f := greatest(1, 2);
+END$$`;
+
+      await testUtils.expectAstMatch('field and subscript assignment targets', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toContain('a[2] := coalesce(nullif(3, 0), 4);');
+      expect(deparsed).toContain('r.f := greatest(1, 2);');
+    });
+
+    const buildAssign = (query: string, parseMode?: number): PLpgSQLParseResult => ({
+      plpgsql_funcs: [
+        {
+          PLpgSQL_function: {
+            datums: [{ PLpgSQL_var: { refname: 'v_x' } }],
+            action: {
+              PLpgSQL_stmt_block: {
+                body: [
+                  {
+                    PLpgSQL_stmt_assign: {
+                      varno: 0,
+                      expr: { PLpgSQL_expr: { query, parseMode } },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    });
+
+    it('should keep the target of a hand-built assignment whose value uses named arguments', () => {
+      const deparsed = deparseSync(
+        buildAssign(`ast_helpers.create_function(v_schema_name := 'app_public', v_function_name := 'f')`)
+      );
+
+      expect(deparsed).toContain(
+        `v_x := ast_helpers.create_function(v_schema_name := 'app_public', v_function_name := 'f');`
+      );
+    });
+
+    // A missing parseMode is treated as "not an assignment parse mode": the query
+    // text is the value only, and the target comes from varno.
+    it('should treat an absent parseMode as a value-only expression', () => {
+      expect(deparseSync(buildAssign('1 + 1'))).toContain('v_x := 1 + 1;');
+      expect(deparseSync(buildAssign('v_x := 1'))).toContain('v_x := v_x := 1;');
+      expect(deparseSync(buildAssign('v_x := 1', ParseMode.RAW_PARSE_PLPGSQL_ASSIGN1))).toContain('v_x := 1;');
+    });
+
+    it('should un-parenthesize a subscripted target carried in the query text', () => {
+      const deparsed = deparseSync(buildAssign('(v_x)[2] := 5', ParseMode.RAW_PARSE_PLPGSQL_ASSIGN3));
+
+      expect(deparsed).toContain('v_x[2] := 5;');
     });
   });
 
