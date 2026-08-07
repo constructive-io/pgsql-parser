@@ -276,6 +276,15 @@ EXCEPTION
 END"
 `;
 
+exports[`plpgsql-deparser bug fixes assignment targets vs named arguments should keep the target when the value uses named arguments 1`] = `
+"DECLARE
+  v_body text;
+BEGIN
+  v_body := ast_helpers.create_function(v_schema_name := 'app_public', v_function_name := 'f');
+  RETURN v_body;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes bare RAISE re-throw should keep a bare RAISE bare (not RAISE EXCEPTION;) 1`] = `
 "BEGIN
   PERFORM 1;
