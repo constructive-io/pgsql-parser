@@ -1,6 +1,6 @@
 {
   "name": "@pgsql/semantics",
-  "version": "18.1.4",
+  "version": "18.1.5",
   "author": "Constructive <developers@constructive.io>",
   "description": "AST-derived semantic facts for PostgreSQL statements: what each statement creates, references, and touches",
   "main": "index.js",

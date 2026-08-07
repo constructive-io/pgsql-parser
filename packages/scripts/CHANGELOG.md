@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.4.4](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Fscripts%4018.4.3...%40pgsql%2Fscripts%4018.4.4) (2026-08-07)
+
+**Note:** Version bump only for package @pgsql/scripts
+
 ## [18.4.3](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Fscripts%4018.4.2...%40pgsql%2Fscripts%4018.4.3) (2026-08-07)
 
 **Note:** Version bump only for package @pgsql/scripts
