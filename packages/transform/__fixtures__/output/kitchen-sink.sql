@@ -225,17 +225,17 @@ VACUUM my_schema.users;
 
 ANALYZE other_schema.audit_log;
 
-SELECT verify_schema('my_schema');
+SELECT assert_schema(CAST('my_schema' AS regnamespace));
 
-SELECT verify_table('my_schema.users');
+SELECT assert_table(CAST('my_schema.users' AS regclass));
 
-SELECT verify_function('my_schema.get_user_by_id');
+SELECT assert_function(CAST('my_schema.get_user_by_id(uuid)' AS regprocedure));
 
-SELECT verify_trigger('my_schema.trg_audit_insert');
+SELECT assert_trigger(CAST('my_schema.users' AS regclass), 'trg_audit_insert', CAST('my_schema.tg_audit' AS regproc), 5);
 
-SELECT verify_type('my_schema.user_status_type');
+SELECT assert_type(CAST('my_schema.user_status_type' AS regtype));
 
-SELECT verify_domain('my_schema.positive_int');
+SELECT assert_domain(CAST('my_schema.positive_int' AS regtype), CAST('int4' AS regtype));
 
 SELECT '{"schema":"my_schema"}'::jsonb;
 

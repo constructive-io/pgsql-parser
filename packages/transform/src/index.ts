@@ -108,7 +108,6 @@ export {
   transformSchemaName,
   transformSql,
   transformSqlStatement,
-  transformVerifyCalls,
   validateNoUntransformedSchemas,
   walkPlpgsqlForSchemas,
 } from './transform';
