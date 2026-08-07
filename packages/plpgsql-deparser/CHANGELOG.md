@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.2.4](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@18.2.3...plpgsql-deparser@18.2.4) (2026-08-07)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** decide assignment targets by parse mode, not a ':=' substring test ([2f7a111](https://github.com/constructive-io/pgsql-parser/commit/2f7a111b21a8359a4a7ef2d47b639eec8056acd8))
+
 ## [18.2.3](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser@18.2.2...plpgsql-deparser@18.2.3) (2026-08-03)
 
 **Note:** Version bump only for package plpgsql-deparser
