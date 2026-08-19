@@ -42,11 +42,11 @@
     "database"
   ],
   "devDependencies": {
-    "libpg-query": "18.1.4",
     "makage": "^0.5.1"
   },
   "dependencies": {
     "@pgsql/types": "^18.0.0",
+    "libpg-query": "18.1.4",
     "pgsql-deparser": "workspace:*"
   }
 }
