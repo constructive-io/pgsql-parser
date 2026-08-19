@@ -225,13 +225,13 @@ importers:
       "@pgsql/types":
         specifier: ^18.0.0
         version: 18.0.0
+      libpg-query:
+        specifier: 18.1.4
+        version: 18.1.4
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
     devDependencies:
-      libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
       makage:
         specifier: ^0.5.1
         version: 0.5.1
