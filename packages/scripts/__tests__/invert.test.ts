@@ -118,7 +118,7 @@ describe('revertFor', () => {
   });
 
   it('inverts GRANT role TO role', () => {
-    expect(revert('GRANT reader TO alice;').sql).toEqual('REVOKE READER FROM alice;');
+    expect(revert('GRANT reader TO alice;').sql).toEqual('REVOKE reader FROM alice;');
   });
 
   it('does not invert REVOKE (prior grants unknown)', () => {
