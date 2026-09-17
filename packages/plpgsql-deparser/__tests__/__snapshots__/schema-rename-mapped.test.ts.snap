@@ -220,7 +220,7 @@ CREATE FUNCTION myapp_v2.update_user_status(
   p_user_id int,
   p_status text
 ) RETURNS void LANGUAGE plpgsql AS $$BEGIN
-  UPDATE myapp_v2.users SET status = p_status,updated_at = now() WHERE id = p_user_id;
+  UPDATE myapp_v2.users SET status = p_status, updated_at = now() WHERE id = p_user_id;
   INSERT INTO myapp_v2.status_history (
     user_id,
     status,
@@ -401,6 +401,6 @@ BEGIN
         (item.id, now());
       UPDATE myapp_v2.batch_items SET status = 'processed' WHERE id = item.id;
   END LOOP;
-  UPDATE myapp_v2.batches SET status = 'completed',completed_at = now() WHERE id = p_batch_id;
+  UPDATE myapp_v2.batches SET status = 'completed', completed_at = now() WHERE id = p_batch_id;
 END$$;"
 `;

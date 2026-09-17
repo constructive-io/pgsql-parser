@@ -6,6 +6,26 @@ import { ListUtils } from './utils/list-utils';
 import { SqlFormatter } from './utils/sql-formatter';
 import { DeparserContext, DeparserVisitor } from './visitors/base';
 
+// WindowDef.frameOptions bit flags (src/include/nodes/parsenodes.h)
+const FRAMEOPTION_NONDEFAULT = 0x00001;
+const FRAMEOPTION_RANGE = 0x00002;
+const FRAMEOPTION_ROWS = 0x00004;
+const FRAMEOPTION_GROUPS = 0x00008;
+const FRAMEOPTION_BETWEEN = 0x00010;
+const FRAMEOPTION_START_UNBOUNDED_PRECEDING = 0x00020;
+const FRAMEOPTION_END_UNBOUNDED_PRECEDING = 0x00040;
+const FRAMEOPTION_START_UNBOUNDED_FOLLOWING = 0x00080;
+const FRAMEOPTION_END_UNBOUNDED_FOLLOWING = 0x00100;
+const FRAMEOPTION_START_CURRENT_ROW = 0x00200;
+const FRAMEOPTION_END_CURRENT_ROW = 0x00400;
+const FRAMEOPTION_START_OFFSET_PRECEDING = 0x00800;
+const FRAMEOPTION_END_OFFSET_PRECEDING = 0x01000;
+const FRAMEOPTION_START_OFFSET_FOLLOWING = 0x02000;
+const FRAMEOPTION_END_OFFSET_FOLLOWING = 0x04000;
+const FRAMEOPTION_EXCLUDE_CURRENT_ROW = 0x08000;
+const FRAMEOPTION_EXCLUDE_GROUP = 0x10000;
+const FRAMEOPTION_EXCLUDE_TIES = 0x20000;
+
 /**
  * List of real PostgreSQL built-in types as they appear in pg_catalog.pg_type.typname.
  * These are stored in lowercase in PostgreSQL system catalogs.
@@ -1079,6 +1099,12 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
+    if (node.override === 'OVERRIDING_USER_VALUE') {
+      output.push('OVERRIDING USER VALUE');
+    } else if (node.override === 'OVERRIDING_SYSTEM_VALUE') {
+      output.push('OVERRIDING SYSTEM VALUE');
+    }
+
     if (node.selectStmt) {
       output.push(this.visit(node.selectStmt as Node, context));
     } else if (!node.cols || (node.cols && ListUtils.unwrapList(node.cols).length === 0)) {
@@ -1163,43 +1189,8 @@ export class Deparser implements DeparserVisitor {
     }
     output.push('SET');
 
-    const targetList = ListUtils.unwrapList(node.targetList);
-    if (targetList && targetList.length) {
-      const firstTarget = targetList[0];
-
-      const processedTargets = new Set();
-      const assignmentParts = [];
-
-      for (let i = 0; i < targetList.length; i++) {
-        if (processedTargets.has(i)) continue;
-
-        const target = targetList[i];
-        const multiAssignRef = target.ResTarget?.val?.MultiAssignRef;
-
-        if (multiAssignRef) {
-          const relatedTargets = [];
-          for (let j = i; j < targetList.length; j++) {
-            const otherTarget = targetList[j];
-            const otherMultiAssignRef = otherTarget.ResTarget?.val?.MultiAssignRef;
-
-            if (otherMultiAssignRef &&
-                JSON.stringify(otherMultiAssignRef.source) === JSON.stringify(multiAssignRef.source)) {
-              relatedTargets.push(otherTarget);
-              processedTargets.add(j);
-            }
-          }
-
-          const names = relatedTargets.map(t => t.ResTarget.name);
-          const multiAssignment = `${context.parens(names.join(', '))} = ${this.visit(multiAssignRef.source, context)}`;
-          assignmentParts.push(multiAssignment);
-        } else {
-          // Handle regular single-column assignment
-          assignmentParts.push(this.visit(target, context.spawn('UpdateStmt', { update: true })));
-          processedTargets.add(i);
-        }
-      }
-
-      output.push(assignmentParts.join(','));
+    if (node.targetList && node.targetList.length > 0) {
+      output.push(this.formatUpdateAssignments(node.targetList, context));
     }
 
     if (node.fromClause) {
@@ -1219,6 +1210,41 @@ export class Deparser implements DeparserVisitor {
     }
 
     return output.join(' ');
+  }
+
+  formatUpdateAssignments(targets: Node[], context: DeparserContext): string {
+    const targetList = ListUtils.unwrapList(targets);
+    const processedTargets = new Set<number>();
+    const assignmentParts: string[] = [];
+
+    for (let i = 0; i < targetList.length; i++) {
+      if (processedTargets.has(i)) continue;
+
+      const target = targetList[i];
+      const multiAssignRef = target.ResTarget?.val?.MultiAssignRef;
+
+      if (multiAssignRef) {
+        const relatedTargets = [];
+        for (let j = i; j < targetList.length; j++) {
+          const otherTarget = targetList[j];
+          const otherMultiAssignRef = otherTarget.ResTarget?.val?.MultiAssignRef;
+
+          if (otherMultiAssignRef &&
+              JSON.stringify(otherMultiAssignRef.source) === JSON.stringify(multiAssignRef.source)) {
+            relatedTargets.push(otherTarget);
+            processedTargets.add(j);
+          }
+        }
+
+        const names = relatedTargets.map(t => QuoteUtils.quoteIdentifier(t.ResTarget.name));
+        assignmentParts.push(`${context.parens(names.join(', '))} = ${this.visit(multiAssignRef.source, context)}`);
+      } else {
+        assignmentParts.push(this.visit(target, context.spawn('UpdateStmt', { update: true })));
+        processedTargets.add(i);
+      }
+    }
+
+    return assignmentParts.join(', ');
   }
 
   DeleteStmt(node: t.DeleteStmt, context: DeparserContext): string {
@@ -1672,44 +1698,48 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.over) {
-      // Handle named window references first
-      if (node.over.name) {
-        result += ` OVER ${node.over.name}`;
-      } else {
-        const windowParts: string[] = [];
-
-        if (node.over.partitionClause) {
-          const partitions = ListUtils.unwrapList(node.over.partitionClause);
-          const partitionStrs = partitions.map(p => this.visit(p, context));
-          windowParts.push(`PARTITION BY ${partitionStrs.join(', ')}`);
-        }
-
-        if (node.over.orderClause) {
-          const orders = ListUtils.unwrapList(node.over.orderClause);
-          const orderStrs = orders.map(o => this.visit(o, context));
-          windowParts.push(`ORDER BY ${orderStrs.join(', ')}`);
-        }
-
-        // Handle window frame specifications using the dedicated formatWindowFrame method
-        const frameClause = this.formatWindowFrame(node.over, context.spawn('FuncCall'));
-        if (frameClause) {
-          windowParts.push(frameClause);
-        }
-
-        if (windowParts.length > 0) {
-          if (context.isPretty() && windowParts.length > 1) {
-            const formattedParts = windowParts.map(part => context.indent(part));
-            result += ` OVER (${context.newline()}${formattedParts.join(context.newline())}${context.newline()})`;
-          } else {
-            result += ` OVER (${windowParts.join(' ')})`;
-          }
-        } else {
-          result += ` OVER ()`;
-        }
-      }
+      result += this.formatOverClause(node.over, context);
     }
 
     return result;
+  }
+
+  formatOverClause(over: t.WindowDef, context: DeparserContext): string {
+    if (over.name) {
+      return ` OVER ${over.name}`;
+    }
+
+    const windowParts: string[] = [];
+
+    if (over.refname) {
+      windowParts.push(over.refname);
+    }
+
+    if (over.partitionClause) {
+      const partitions = ListUtils.unwrapList(over.partitionClause);
+      const partitionStrs = partitions.map(p => this.visit(p, context));
+      windowParts.push(`PARTITION BY ${partitionStrs.join(', ')}`);
+    }
+
+    if (over.orderClause) {
+      const orders = ListUtils.unwrapList(over.orderClause);
+      const orderStrs = orders.map(o => this.visit(o, context));
+      windowParts.push(`ORDER BY ${orderStrs.join(', ')}`);
+    }
+
+    const frameClause = this.formatWindowFrame(over, context.spawn('FuncCall'));
+    if (frameClause) {
+      windowParts.push(frameClause);
+    }
+
+    if (windowParts.length === 0) {
+      return ' OVER ()';
+    }
+    if (context.isPretty() && windowParts.length > 1) {
+      const formattedParts = windowParts.map(part => context.indent(part));
+      return ` OVER (${context.newline()}${formattedParts.join(context.newline())}${context.newline()})`;
+    }
+    return ` OVER (${windowParts.join(' ')})`;
   }
 
   FuncExpr(node: t.FuncExpr, context: DeparserContext): string {
@@ -2637,7 +2667,7 @@ export class Deparser implements DeparserVisitor {
         });
         output.push(context.parens(elementStrs.join(', ')));
       }
-    } else if (node.tableElts) {
+    } else if (node.tableElts && !node.partbound) {
       const elements = ListUtils.unwrapList(node.tableElts);
       const elementStrs = elements.map(el => {
         return this.deparse(el, context.spawn('CreateStmt'));
@@ -2666,7 +2696,16 @@ export class Deparser implements DeparserVisitor {
       const inheritStrs = inherits.map(rel => this.visit(rel, context));
       output.push(inheritStrs[0]);
 
-      if (node.partbound.strategy === 'l' && node.partbound.listdatums) {
+      if (node.tableElts) {
+        const elementStrs = ListUtils.unwrapList(node.tableElts).map(el => {
+          return this.deparse(el, context.spawn('CreateStmt'));
+        });
+        output.push(context.parens(elementStrs.join(', ')));
+      }
+
+      if (node.partbound.is_default) {
+        output.push('DEFAULT');
+      } else if (node.partbound.strategy === 'l' && node.partbound.listdatums) {
         output.push('FOR VALUES IN');
         const listValues = ListUtils.unwrapList(node.partbound.listdatums)
           .map(datum => this.visit(datum, context))
@@ -2687,12 +2726,9 @@ export class Deparser implements DeparserVisitor {
             .join(', ');
           output.push(`(${upperValues})`);
         }
-      } else if (node.partbound.strategy === 'h' && node.partbound.modulus !== undefined) {
+      } else if (node.partbound.strategy === 'h') {
         output.push('FOR VALUES WITH');
-        const remainder = node.partbound.remainder !== undefined ? node.partbound.remainder : 0;
-        output.push(`(MODULUS ${node.partbound.modulus}, REMAINDER ${remainder})`);
-      } else if (node.partbound.is_default) {
-        output.push('DEFAULT');
+        output.push(`(MODULUS ${node.partbound.modulus ?? 0}, REMAINDER ${node.partbound.remainder ?? 0})`);
       }
     } else if (node.inhRelations) {
       output.push('INHERITS');
@@ -2766,6 +2802,14 @@ export class Deparser implements DeparserVisitor {
       output.push(this.TypeName(node.typeName, context));
     }
 
+    if (node.storage_name) {
+      output.push('STORAGE', node.storage_name.toUpperCase());
+    }
+
+    if (node.compression) {
+      output.push('COMPRESSION', QuoteUtils.quoteIdentifier(node.compression));
+    }
+
     if (node.fdwoptions && node.fdwoptions.length > 0) {
       output.push('OPTIONS');
       const columnContext = context.spawn('ColumnDef');
@@ -2835,7 +2879,8 @@ export class Deparser implements DeparserVisitor {
     case 'CONSTR_DEFAULT':
       output.push('DEFAULT');
       if (node.raw_expr) {
-        output.push(this.visit(node.raw_expr, context));
+        const defaultExpr = this.visit(node.raw_expr, context);
+        output.push(this.needsBExprParens(node.raw_expr) ? `(${defaultExpr})` : defaultExpr);
       }
       break;
     case 'CONSTR_CHECK':
@@ -3170,7 +3215,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     // Handle deferrable constraints for all constraint types that support it
-    if (node.contype === 'CONSTR_PRIMARY' || node.contype === 'CONSTR_UNIQUE' || node.contype === 'CONSTR_FOREIGN') {
+    if (node.contype === 'CONSTR_PRIMARY' || node.contype === 'CONSTR_UNIQUE' || node.contype === 'CONSTR_FOREIGN' || node.contype === 'CONSTR_EXCLUSION') {
       if (node.deferrable) {
         if (context.isPretty() && node.contype === 'CONSTR_FOREIGN') {
           output.push('\n' + context.indent('DEFERRABLE'));
@@ -3193,6 +3238,8 @@ export class Deparser implements DeparserVisitor {
         } else {
           output.push('NOT DEFERRABLE');
         }
+      } else if (node.initdeferred) {
+        output.push('INITIALLY DEFERRED');
       }
     }
 
@@ -3269,6 +3316,10 @@ export class Deparser implements DeparserVisitor {
 
     const windowParts: string[] = [];
 
+    if (node.refname) {
+      windowParts.push(node.refname);
+    }
+
     if (node.partitionClause) {
       const partitions = ListUtils.unwrapList(node.partitionClause);
       const partitionStrs = partitions.map(p => this.visit(p, context));
@@ -3281,12 +3332,9 @@ export class Deparser implements DeparserVisitor {
       windowParts.push(`ORDER BY ${orderStrs.join(', ')}`);
     }
 
-    // Only add frame clause if frameOptions indicates non-default framing
-    if (node.frameOptions && node.frameOptions !== 1058) {
-      const frameClause = this.formatWindowFrame(node, context.spawn('WindowDef'));
-      if (frameClause) {
-        windowParts.push(frameClause);
-      }
+    const frameClause = this.formatWindowFrame(node, context.spawn('WindowDef'));
+    if (frameClause) {
+      windowParts.push(frameClause);
     }
 
     if (windowParts.length > 0) {
@@ -3304,101 +3352,88 @@ export class Deparser implements DeparserVisitor {
     return output.join(' ');
   }
 
-  formatWindowFrame(node: any, context: DeparserContext): string | null {
-    if (!node.frameOptions) return null;
+  formatIdentityColumnOptions(def: Node, context: DeparserContext): string {
+    const seqContext = context.spawn('AlterSeqStmt');
+    return ListUtils.unwrapList(def).map(item => {
+      const el = item.DefElem;
+      if (!el) return this.visit(item, context);
+      if (el.defname === 'generated') {
+        const ival = el.arg?.Integer?.ival ?? 0;
+        return ival === 97 ? 'SET GENERATED ALWAYS' : 'SET GENERATED BY DEFAULT';
+      }
+      if (el.defname === 'restart') {
+        return el.arg ? `RESTART WITH ${this.visit(el.arg, context)}` : 'RESTART';
+      }
+      return `SET ${this.visit(item, seqContext)}`;
+    }).join(' ');
+  }
 
-    const frameOptions = node.frameOptions;
-    const EXCLUDE_MASK = 0x8000 | 0x10000 | 0x20000;
-    const baseFrameOptions = frameOptions & ~EXCLUDE_MASK;
+  // b_expr (used by DEFAULT) excludes IN/LIKE/BETWEEN and boolean operators.
+  needsBExprParens(node: Node): boolean {
+    const nodeType = this.getNodeType(node);
+    if (nodeType === 'BoolExpr') return true;
+    if (nodeType === 'A_Expr') {
+      const kind = this.getNodeData(node).kind;
+      return kind !== 'AEXPR_OP' && kind !== 'AEXPR_DISTINCT' && kind !== 'AEXPR_NOT_DISTINCT';
+    }
+    return false;
+  }
+
+  formatWindowFrame(node: any, context: DeparserContext): string | null {
+    if (!node.frameOptions || !(node.frameOptions & FRAMEOPTION_NONDEFAULT)) return null;
+
+    const frameOptions: number = node.frameOptions;
     const frameParts: string[] = [];
 
-    if (frameOptions & 0x01) { // FRAMEOPTION_NONDEFAULT
-      if (frameOptions & 0x02) { // FRAMEOPTION_RANGE
-        frameParts.push('RANGE');
-      } else if (frameOptions & 0x04) { // FRAMEOPTION_ROWS
-        frameParts.push('ROWS');
-      } else if (frameOptions & 0x08) { // FRAMEOPTION_GROUPS
-        frameParts.push('GROUPS');
-      }
+    if (frameOptions & FRAMEOPTION_RANGE) {
+      frameParts.push('RANGE');
+    } else if (frameOptions & FRAMEOPTION_ROWS) {
+      frameParts.push('ROWS');
+    } else if (frameOptions & FRAMEOPTION_GROUPS) {
+      frameParts.push('GROUPS');
     }
 
     if (frameParts.length === 0) return null;
 
-    const boundsParts: string[] = [];
+    let start: string | null = null;
+    if (frameOptions & FRAMEOPTION_START_UNBOUNDED_PRECEDING) {
+      start = 'UNBOUNDED PRECEDING';
+    } else if (frameOptions & FRAMEOPTION_START_UNBOUNDED_FOLLOWING) {
+      start = 'UNBOUNDED FOLLOWING';
+    } else if (frameOptions & FRAMEOPTION_START_CURRENT_ROW) {
+      start = 'CURRENT ROW';
+    } else if (frameOptions & FRAMEOPTION_START_OFFSET_PRECEDING && node.startOffset) {
+      start = `${this.visit(node.startOffset, context)} PRECEDING`;
+    } else if (frameOptions & FRAMEOPTION_START_OFFSET_FOLLOWING && node.startOffset) {
+      start = `${this.visit(node.startOffset, context)} FOLLOWING`;
+    }
 
-    // Handle specific frameOptions values that have known mappings
-    if (baseFrameOptions === 789) {
-      boundsParts.push('CURRENT ROW');
-      boundsParts.push('AND UNBOUNDED FOLLOWING');
-    } else if (baseFrameOptions === 1077) {
-      boundsParts.push('UNBOUNDED PRECEDING');
-      boundsParts.push('AND CURRENT ROW');
-    } else if (baseFrameOptions === 18453) {
-      if (node.startOffset && node.endOffset) {
-        boundsParts.push(`${this.visit(node.startOffset, context)} PRECEDING`);
-        boundsParts.push(`AND ${this.visit(node.endOffset, context)} FOLLOWING`);
-      }
-    } else if (baseFrameOptions === 1557) {
-      boundsParts.push('CURRENT ROW');
-      boundsParts.push('AND CURRENT ROW');
-    } else if (baseFrameOptions === 16917) {
-      boundsParts.push('CURRENT ROW');
-      if (node.endOffset) {
-        boundsParts.push(`AND ${this.visit(node.endOffset, context)} FOLLOWING`);
-      }
-    } else if (baseFrameOptions === 1058) {
-      return null;
-    } else {
-      // Handle start bound - prioritize explicit offset values over bit flags
-      if (node.startOffset) {
-        if (frameOptions & 0x400) { // FRAMEOPTION_START_VALUE_PRECEDING
-          boundsParts.push(`${this.visit(node.startOffset, context)} PRECEDING`);
-        } else if (frameOptions & 0x800) { // FRAMEOPTION_START_VALUE_FOLLOWING
-          boundsParts.push(`${this.visit(node.startOffset, context)} FOLLOWING`);
-        } else {
-          boundsParts.push(`${this.visit(node.startOffset, context)} PRECEDING`);
-        }
-      } else if (frameOptions & 0x10) { // FRAMEOPTION_START_UNBOUNDED_PRECEDING
-        boundsParts.push('UNBOUNDED PRECEDING');
-      } else if (frameOptions & 0x20) { // FRAMEOPTION_START_CURRENT_ROW
-        boundsParts.push('CURRENT ROW');
-      }
+    let end: string | null = null;
+    if (frameOptions & FRAMEOPTION_END_UNBOUNDED_PRECEDING) {
+      end = 'UNBOUNDED PRECEDING';
+    } else if (frameOptions & FRAMEOPTION_END_UNBOUNDED_FOLLOWING) {
+      end = 'UNBOUNDED FOLLOWING';
+    } else if (frameOptions & FRAMEOPTION_END_CURRENT_ROW) {
+      end = 'CURRENT ROW';
+    } else if (frameOptions & FRAMEOPTION_END_OFFSET_PRECEDING && node.endOffset) {
+      end = `${this.visit(node.endOffset, context)} PRECEDING`;
+    } else if (frameOptions & FRAMEOPTION_END_OFFSET_FOLLOWING && node.endOffset) {
+      end = `${this.visit(node.endOffset, context)} FOLLOWING`;
+    }
 
-      // Handle end bound - prioritize explicit offset values over bit flags
-      if (node.endOffset) {
-        if (boundsParts.length > 0) {
-          if (frameOptions & 0x1000) { // FRAMEOPTION_END_VALUE_PRECEDING
-            boundsParts.push(`AND ${this.visit(node.endOffset, context)} PRECEDING`);
-          } else if (frameOptions & 0x2000) { // FRAMEOPTION_END_VALUE_FOLLOWING
-            boundsParts.push(`AND ${this.visit(node.endOffset, context)} FOLLOWING`);
-          } else {
-            boundsParts.push(`AND ${this.visit(node.endOffset, context)} FOLLOWING`);
-          }
-        }
-      } else if (frameOptions & 0x80) { // FRAMEOPTION_END_UNBOUNDED_FOLLOWING
-        if (boundsParts.length > 0) {
-          boundsParts.push('AND UNBOUNDED FOLLOWING');
-        }
-      } else if (frameOptions & 0x100) { // FRAMEOPTION_END_CURRENT_ROW
-        if (boundsParts.length > 0) {
-          boundsParts.push('AND CURRENT ROW');
-        }
-      } else if (boundsParts.length > 0) {
-        boundsParts.push('AND CURRENT ROW');
+    if (start) {
+      if (frameOptions & FRAMEOPTION_BETWEEN) {
+        frameParts.push(`BETWEEN ${start} AND ${end ?? 'CURRENT ROW'}`);
+      } else {
+        frameParts.push(start);
       }
     }
 
-    if (boundsParts.length > 0) {
-      frameParts.push('BETWEEN');
-      frameParts.push(boundsParts.join(' '));
-    }
-
-    // EXCLUDE clause
-    if (frameOptions & 0x8000) { // FRAMEOPTION_EXCLUDE_CURRENT_ROW
+    if (frameOptions & FRAMEOPTION_EXCLUDE_CURRENT_ROW) {
       frameParts.push('EXCLUDE CURRENT ROW');
-    } else if (frameOptions & 0x10000) { // FRAMEOPTION_EXCLUDE_GROUP
+    } else if (frameOptions & FRAMEOPTION_EXCLUDE_GROUP) {
       frameParts.push('EXCLUDE GROUP');
-    } else if (frameOptions & 0x20000) { // FRAMEOPTION_EXCLUDE_TIES
+    } else if (frameOptions & FRAMEOPTION_EXCLUDE_TIES) {
       frameParts.push('EXCLUDE TIES');
     }
 
@@ -3487,7 +3522,37 @@ export class Deparser implements DeparserVisitor {
       output.push(context.parens(this.visit(node.ctequery, context)));
     }
 
+    if (node.search_clause) {
+      const sc = node.search_clause;
+      const cols = ListUtils.unwrapList(sc.search_col_list).map(c => this.visit(c, context));
+      output.push('SEARCH', sc.search_breadth_first ? 'BREADTH' : 'DEPTH', 'FIRST BY');
+      output.push(cols.join(', '));
+      output.push('SET', QuoteUtils.quoteIdentifier(sc.search_seq_column));
+    }
+
+    if (node.cycle_clause) {
+      const cc = node.cycle_clause;
+      const cols = ListUtils.unwrapList(cc.cycle_col_list).map(c => this.visit(c, context));
+      output.push('CYCLE', cols.join(', '));
+      output.push('SET', QuoteUtils.quoteIdentifier(cc.cycle_mark_column));
+      if (cc.cycle_mark_value && cc.cycle_mark_default) {
+        output.push('TO', this.formatAexprConst(cc.cycle_mark_value, context));
+        output.push('DEFAULT', this.formatAexprConst(cc.cycle_mark_default, context));
+      }
+      output.push('USING', QuoteUtils.quoteIdentifier(cc.cycle_path_column));
+    }
+
     return output.join(' ');
+  }
+
+  // Renders a constant in the restricted AexprConst grammar (e.g. `point '(1,1)'`
+  // rather than `CAST('(1,1)' AS point)`).
+  formatAexprConst(node: Node, context: DeparserContext): string {
+    const cast = (node as any).TypeCast;
+    if (cast?.arg?.A_Const?.sval && cast.typeName) {
+      return `${this.TypeName(cast.typeName, context)} ${this.visit(cast.arg, context)}`;
+    }
+    return this.visit(node, context);
   }
 
   ParamRef(node: t.ParamRef, context: DeparserContext): string {
@@ -3956,9 +4021,9 @@ export class Deparser implements DeparserVisitor {
             .join(', ');
           output.push(`(${upperValues})`);
         }
-      } else if (node.bound.strategy === 'h' && node.bound.modulus !== undefined) {
+      } else if (node.bound.strategy === 'h') {
         output.push('FOR VALUES WITH');
-        output.push(`(MODULUS ${node.bound.modulus}, REMAINDER ${node.bound.remainder ?? 0})`);
+        output.push(`(MODULUS ${node.bound.modulus ?? 0}, REMAINDER ${node.bound.remainder ?? 0})`);
       } else if (node.bound.is_default) {
         output.push('DEFAULT');
       }
@@ -4859,9 +4924,9 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.filename) {
-      output.push(`'${node.filename}'`);
+      output.push(QuoteUtils.escape(node.filename));
     } else {
-      output.push('STDIN');
+      output.push(node.is_from ? 'STDIN' : 'STDOUT');
     }
 
     if (node.options && node.options.length > 0) {
@@ -5112,6 +5177,9 @@ export class Deparser implements DeparserVisitor {
           const nodeData = this.getNodeData(node.def);
           if (nodeData && nodeData.typeName) {
             output.push(this.TypeName(nodeData.typeName, context));
+            if (nodeData.collClause) {
+              output.push(this.CollateClause(nodeData.collClause, context));
+            }
             // Handle USING clause (stored in raw_default for ALTER COLUMN TYPE)
             if (nodeData.raw_default) {
               output.push('USING');
@@ -5578,9 +5646,8 @@ export class Deparser implements DeparserVisitor {
         if (node.name) {
           output.push(QuoteUtils.quoteIdentifier(node.name));
         }
-        output.push('SET');
         if (node.def) {
-          output.push(this.visit(node.def, context));
+          output.push(this.formatIdentityColumnOptions(node.def, context));
         }
         break;
       case 'AT_DropIdentity':
@@ -5589,10 +5656,8 @@ export class Deparser implements DeparserVisitor {
           output.push(QuoteUtils.quoteIdentifier(node.name));
         }
         output.push('DROP IDENTITY');
-        if (node.behavior === 'DROP_CASCADE') {
-          output.push('CASCADE');
-        } else if (node.behavior === 'DROP_RESTRICT') {
-          output.push('RESTRICT');
+        if (node.missing_ok) {
+          output.push('IF EXISTS');
         }
         break;
       case 'AT_ReAddStatistics':
@@ -6073,6 +6138,9 @@ export class Deparser implements DeparserVisitor {
           if (node.arg && this.getNodeType(node.arg) === 'List') {
             const listData = this.getNodeData(node.arg);
             const listItems = ListUtils.unwrapList(listData.items);
+            if (listItems.length === 1 && listItems[0].String?.sval === 'none') {
+              return 'OWNED BY NONE';
+            }
             const parts = listItems.map(item => {
               const itemData = this.getNodeData(item);
               if (this.getNodeType(item) === 'String') {
@@ -6263,12 +6331,15 @@ export class Deparser implements DeparserVisitor {
 
       // Handle CreateStmt table options - no quotes, compact formatting
       if (context.parentNodeTypes.includes('CreateStmt')) {
+        const relOptName = node.defnamespace
+          ? `${QuoteUtils.quoteIdentifier(node.defnamespace)}.${QuoteUtils.quoteIdentifier(node.defname)}`
+          : QuoteUtils.quoteIdentifier(node.defname);
         // For numeric values, use the raw value without quotes
         if (node.arg && this.getNodeType(node.arg) === 'Integer') {
           const integerData = this.getNodeData(node.arg);
-          return `${node.defname}=${integerData.ival}`;
+          return `${relOptName}=${integerData.ival}`;
         }
-        return `${node.defname}=${argValue}`;
+        return `${relOptName}=${argValue}`;
       }
 
       // Handle CreateEventTrigStmt WHEN clause - use IN syntax for List arguments
@@ -6311,15 +6382,27 @@ export class Deparser implements DeparserVisitor {
 
       // Handle CopyStmt WITH clause options - uppercase format without quotes
       if (context.parentNodeTypes.includes('CopyStmt')) {
-        if (node.defname === 'format' && node.arg && this.getNodeType(node.arg) === 'String') {
-          const stringData = this.getNodeData(node.arg);
-          return `FORMAT ${stringData.sval.toUpperCase()}`;
+        const optName = node.defname.toUpperCase();
+        if (!node.arg) {
+          return optName;
         }
-        // Handle other COPY options with uppercase defname
-        if (node.arg) {
-          return `${node.defname.toUpperCase()} ${argValue}`;
+        const copyArgType = this.getNodeType(node.arg);
+        if (copyArgType === 'Boolean' && this.getNodeData(node.arg).boolval !== false) {
+          return optName;
         }
-        return node.defname.toUpperCase();
+        if (copyArgType === 'List') {
+          const items = ListUtils.unwrapList(this.getNodeData(node.arg).items)
+            .map(item => this.visit(item, context));
+          return `${optName} (${items.join(', ')})`;
+        }
+        if (copyArgType === 'String') {
+          const sval: string = this.getNodeData(node.arg).sval;
+          if (node.defname === 'format') {
+            return `${optName} ${sval}`;
+          }
+          return `${optName} ${QuoteUtils.escape(sval)}`;
+        }
+        return `${optName} ${argValue}`;
       }
 
       // Handle CREATE OPERATOR and CREATE TYPE context
@@ -6407,6 +6490,10 @@ export class Deparser implements DeparserVisitor {
         }
       }
 
+      const argType = this.getNodeType(node.arg);
+      if (argType === 'TypeName' || argType === 'Integer' || argType === 'Float' || argType === 'Boolean') {
+        return `${node.defname} = ${argValue}`;
+      }
       const quotedValue = typeof argValue === 'string'
         ? QuoteUtils.escape(argValue)
         : argValue;
@@ -6915,6 +7002,9 @@ export class Deparser implements DeparserVisitor {
       case 'OBJECT_TABCONSTRAINT':
         output.push('CONSTRAINT');
         break;
+      case 'OBJECT_DOMCONSTRAINT':
+        output.push('CONSTRAINT');
+        break;
       case 'OBJECT_TRIGGER':
         output.push('TRIGGER');
         break;
@@ -6987,6 +7077,13 @@ export class Deparser implements DeparserVisitor {
               output.push(constraint);
               output.push('ON');
               output.push(table);
+            } else {
+              output.push(objectParts.join('.'));
+            }
+          } else if (node.objtype === 'OBJECT_DOMCONSTRAINT') {
+            if (objectParts.length === 2) {
+              const [domain, constraint] = objectParts;
+              output.push(constraint, 'ON DOMAIN', domain);
             } else {
               output.push(objectParts.join('.'));
             }
@@ -7346,7 +7443,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.pubobjects && node.pubobjects.length > 0) {
-      output.push('FOR', 'TABLE');
+      output.push('FOR');
       const tables = ListUtils.unwrapList(node.pubobjects).map(table => this.visit(table, context));
       output.push(tables.join(', '));
     } else if (node.for_all_tables) {
@@ -7398,8 +7495,10 @@ export class Deparser implements DeparserVisitor {
       output.push(QuoteUtils.quoteIdentifier(node.pubname));
     }
 
-    if (node.action) {
-      switch (node.action) {
+    const hasObjects = node.pubobjects && node.pubobjects.length > 0;
+
+    if (hasObjects) {
+      switch (node.action || 'AP_AddObjects') {
       case 'AP_AddObjects':
         output.push('ADD');
         break;
@@ -7412,18 +7511,10 @@ export class Deparser implements DeparserVisitor {
       default:
         throw new Error(`Unsupported AlterPublicationStmt action: ${node.action}`);
       }
-    }
-
-    if (node.for_all_tables) {
-      output.push('FOR ALL TABLES');
-    } else if (node.pubobjects && node.pubobjects.length > 0) {
-      output.push('FOR TABLE');
       const objects = ListUtils.unwrapList(node.pubobjects).map(obj => this.visit(obj, context));
       output.push(objects.join(', '));
-    }
-
-    if (node.options && node.options.length > 0) {
-      output.push('WITH');
+    } else if (node.options && node.options.length > 0) {
+      output.push('SET');
       const options = ListUtils.unwrapList(node.options).map(opt => this.visit(opt, context));
       output.push(`(${options.join(', ')})`);
     }
@@ -7438,42 +7529,58 @@ export class Deparser implements DeparserVisitor {
       output.push(QuoteUtils.quoteIdentifier(node.subname));
     }
 
-    if (node.kind) {
-      switch (node.kind) {
+    const options = node.options && node.options.length > 0
+      ? `(${ListUtils.unwrapList(node.options).map(opt => this.visit(opt, context)).join(', ')})`
+      : null;
+    const publications = node.publication && node.publication.length > 0
+      ? ListUtils.unwrapList(node.publication).map(pub => this.visit(pub, context)).join(', ')
+      : null;
+
+    {
+      switch (node.kind || 'ALTER_SUBSCRIPTION_OPTIONS') {
       case 'ALTER_SUBSCRIPTION_OPTIONS':
         output.push('SET');
+        if (options) output.push(options);
         break;
       case 'ALTER_SUBSCRIPTION_CONNECTION':
         output.push('CONNECTION');
         if (node.conninfo) {
-          output.push(`'${node.conninfo}'`);
+          output.push(QuoteUtils.escape(node.conninfo));
         }
         break;
       case 'ALTER_SUBSCRIPTION_SET_PUBLICATION':
         output.push('SET PUBLICATION');
-        if (node.publication && node.publication.length > 0) {
-          const publications = ListUtils.unwrapList(node.publication).map(pub => this.visit(pub, context));
-          output.push(publications.join(', '));
-        }
+        if (publications) output.push(publications);
+        if (options) output.push('WITH', options);
+        break;
+      case 'ALTER_SUBSCRIPTION_ADD_PUBLICATION':
+        output.push('ADD PUBLICATION');
+        if (publications) output.push(publications);
+        if (options) output.push('WITH', options);
+        break;
+      case 'ALTER_SUBSCRIPTION_DROP_PUBLICATION':
+        output.push('DROP PUBLICATION');
+        if (publications) output.push(publications);
+        if (options) output.push('WITH', options);
         break;
       case 'ALTER_SUBSCRIPTION_REFRESH':
         output.push('REFRESH PUBLICATION');
+        if (options) output.push('WITH', options);
         break;
-      case 'ALTER_SUBSCRIPTION_ENABLED':
-        output.push('ENABLE');
+      case 'ALTER_SUBSCRIPTION_ENABLED': {
+        const enabled = ListUtils.unwrapList(node.options).find(opt => opt.DefElem?.defname === 'enabled');
+        const arg = enabled?.DefElem?.arg;
+        const isEnabled = arg?.Boolean ? arg.Boolean.boolval !== false : true;
+        output.push(isEnabled ? 'ENABLE' : 'DISABLE');
         break;
+      }
       case 'ALTER_SUBSCRIPTION_SKIP':
         output.push('SKIP');
+        if (options) output.push(options);
         break;
       default:
         throw new Error(`Unsupported AlterSubscriptionStmt kind: ${node.kind}`);
       }
-    }
-
-    if (node.options && node.options.length > 0) {
-      output.push('WITH');
-      const options = ListUtils.unwrapList(node.options).map(opt => this.visit(opt, context));
-      output.push(`(${options.join(', ')})`);
     }
 
     return output.join(' ');
@@ -8664,6 +8771,10 @@ export class Deparser implements DeparserVisitor {
       output.push('WITH GRANT OPTION');
     }
 
+    if (node.grantor) {
+      output.push('GRANTED BY', this.RoleSpec(node.grantor, context));
+    }
+
     // Only add behavior clauses for REVOKE statements, not for GRANT statements in ALTER DEFAULT PRIVILEGES
     if (!node.is_grant) {
       if (node.behavior === 'DROP_CASCADE') {
@@ -8679,71 +8790,33 @@ export class Deparser implements DeparserVisitor {
   GrantRoleStmt(node: t.GrantRoleStmt, context: DeparserContext): string {
     const output: string[] = [];
 
-    // Check for inherit, admin, and set options first to place them correctly
-    let hasInheritOption = false;
-    let hasAdminOption = false;
-    let hasSetOption = false;
-    let inheritValue: boolean | undefined;
-    let adminValue: boolean | undefined;
-    let setValue: boolean | undefined;
+    const options = ListUtils.unwrapList(node.opt)
+      .map(opt => opt.DefElem)
+      .filter((opt): opt is t.DefElem => !!opt && !!opt.defname);
 
-    if (node.opt && node.opt.length > 0) {
-      const options = ListUtils.unwrapList(node.opt);
+    const optionValue = (opt: t.DefElem): boolean => {
+      if (!opt.arg) return true;
+      const argType = this.getNodeType(opt.arg);
+      const argData = this.getNodeData(opt.arg);
+      if (argType === 'Boolean') return argData.boolval !== false;
+      if (argType === 'String') return argData.sval !== 'false';
+      return true;
+    };
 
-      const inheritOption = options.find(opt =>
-        opt.DefElem && opt.DefElem.defname === 'inherit'
-      );
-
-      const adminOption = options.find(opt =>
-        (opt.String && opt.String.sval === 'admin') ||
-        (opt.DefElem && opt.DefElem.defname === 'admin')
-      );
-
-      const setOption = options.find(opt =>
-        opt.DefElem && opt.DefElem.defname === 'set'
-      );
-
-      if (inheritOption && inheritOption.DefElem) {
-        hasInheritOption = true;
-        inheritValue = inheritOption.DefElem.arg?.Boolean?.boolval;
-      }
-
-      if (adminOption) {
-        hasAdminOption = true;
-        if (adminOption.DefElem && adminOption.DefElem.arg) {
-          adminValue = adminOption.DefElem.arg.Boolean?.boolval;
-        }
-      }
-
-      if (setOption && setOption.DefElem) {
-        hasSetOption = true;
-        setValue = setOption.DefElem.arg?.Boolean?.boolval;
-      }
-    }
+    const roles = ListUtils.unwrapList(node.granted_roles)
+      .map(role => role.AccessPriv?.priv_name
+        ? QuoteUtils.quoteIdentifier(role.AccessPriv.priv_name)
+        : this.visit(role, context))
+      .join(', ');
 
     if (node.is_grant) {
-      output.push('GRANT');
+      output.push('GRANT', roles, 'TO');
     } else {
       output.push('REVOKE');
-
-      if (hasInheritOption) {
-        output.push('INHERIT OPTION FOR');
-      } else if (hasAdminOption) {
-        output.push('ADMIN OPTION FOR');
+      if (options.length > 0) {
+        output.push(`${options[0].defname.toUpperCase()} OPTION FOR`);
       }
-    }
-
-    if (node.granted_roles && node.granted_roles.length > 0) {
-      const roles = ListUtils.unwrapList(node.granted_roles)
-        .map(role => this.visit(role, context))
-        .join(', ');
-      output.push(roles);
-    }
-
-    if (node.is_grant) {
-      output.push('TO');
-    } else {
-      output.push('FROM');
+      output.push(roles, 'FROM');
     }
 
     if (node.grantee_roles && node.grantee_roles.length > 0) {
@@ -8753,38 +8826,19 @@ export class Deparser implements DeparserVisitor {
       output.push(grantees);
     }
 
-    if (node.is_grant) {
-      const withOptions: string[] = [];
+    if (node.is_grant && options.length > 0) {
+      const withOptions = options.map(opt =>
+        `${opt.defname.toUpperCase()} ${optionValue(opt) ? 'TRUE' : 'FALSE'}`
+      );
+      output.push('WITH', withOptions.join(', '));
+    }
 
-      if (hasAdminOption) {
-        if (adminValue === true) {
-          withOptions.push('ADMIN OPTION');
-        } else if (adminValue === false) {
-          withOptions.push('ADMIN FALSE');
-        } else {
-          withOptions.push('ADMIN OPTION');
-        }
-      }
+    if (node.grantor) {
+      output.push('GRANTED BY', this.RoleSpec(node.grantor, context));
+    }
 
-      if (hasInheritOption) {
-        if (inheritValue === true) {
-          withOptions.push('INHERIT OPTION');
-        } else if (inheritValue === false) {
-          withOptions.push('INHERIT FALSE');
-        }
-      }
-
-      if (hasSetOption) {
-        if (setValue === true) {
-          withOptions.push('SET TRUE');
-        } else if (setValue === false) {
-          withOptions.push('SET FALSE');
-        }
-      }
-
-      if (withOptions.length > 0) {
-        output.push('WITH', withOptions.join(', '));
-      }
+    if (!node.is_grant && node.behavior === 'DROP_CASCADE') {
+      output.push('CASCADE');
     }
 
     return output.join(' ');
@@ -9468,10 +9522,9 @@ export class Deparser implements DeparserVisitor {
     switch (node.commandType) {
     case 'CMD_UPDATE': {
       output.push('UPDATE SET');
-      const assignments = ListUtils.unwrapList(node.targetList)
-        .map(target => this.visit(target, context.spawn('UpdateStmt', { update: true })))
-        .join(', ');
-      output.push(assignments);
+      if (node.targetList && node.targetList.length > 0) {
+        output.push(this.formatUpdateAssignments(node.targetList, context));
+      }
       break;
     }
     case 'CMD_INSERT': {
@@ -9932,6 +9985,14 @@ export class Deparser implements DeparserVisitor {
       output.push(node.into.accessMethod);
     }
 
+    if (node.into && node.into.options && node.into.options.length > 0) {
+      output.push('WITH');
+      const options = ListUtils.unwrapList(node.into.options)
+        .map(option => this.visit(option, context.spawn('CreateStmt')))
+        .join(', ');
+      output.push(`(${options})`);
+    }
+
     if (node.into && node.into.onCommit && node.into.onCommit !== 'ONCOMMIT_NOOP') {
       output.push('ON COMMIT');
       switch (node.into.onCommit) {
@@ -9947,18 +10008,14 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
+    if (node.into && node.into.tableSpaceName) {
+      output.push('TABLESPACE', QuoteUtils.quoteIdentifier(node.into.tableSpaceName));
+    }
+
     output.push('AS');
 
     if (node.query) {
       output.push(this.visit(node.query as any, context));
-    }
-
-    if (node.into && node.into.options && node.into.options.length > 0) {
-      output.push('WITH');
-      const options = ListUtils.unwrapList(node.into.options)
-        .map(option => this.visit(option, context))
-        .join(', ');
-      output.push(`(${options})`);
     }
 
     if (node.into && node.into.skipData) {
@@ -10503,7 +10560,7 @@ export class Deparser implements DeparserVisitor {
 
     if (node.whereClause) {
       output.push('WHERE');
-      output.push(this.visit(node.whereClause, context));
+      output.push(`(${this.visit(node.whereClause, context)})`);
     }
 
     return output.join(' ');
@@ -10793,28 +10850,200 @@ export class Deparser implements DeparserVisitor {
     return output.join(' ');
   }
 
+  formatJsonFormat(format: t.JsonFormat | undefined): string | null {
+    if (!format || !format.format_type || format.format_type === 'JS_FORMAT_DEFAULT') {
+      return null;
+    }
+    const parts = ['FORMAT JSON'];
+    switch (format.encoding) {
+    case 'JS_ENC_UTF8':
+      parts.push('ENCODING UTF8');
+      break;
+    case 'JS_ENC_UTF16':
+      parts.push('ENCODING UTF16');
+      break;
+    case 'JS_ENC_UTF32':
+      parts.push('ENCODING UTF32');
+      break;
+    }
+    return parts.join(' ');
+  }
+
+  formatJsonOutput(output: t.JsonOutput | undefined, context: DeparserContext): string | null {
+    if (!output || !output.typeName) return null;
+    const parts = ['RETURNING', this.TypeName(output.typeName, context)];
+    const format = this.formatJsonFormat(output.returning?.format);
+    if (format) parts.push(format);
+    return parts.join(' ');
+  }
+
+  formatJsonNullClause(absentOnNull: boolean | undefined): string {
+    return absentOnNull ? 'ABSENT ON NULL' : 'NULL ON NULL';
+  }
+
+  formatJsonUniqueClause(unique: boolean | undefined): string | null {
+    return unique ? 'WITH UNIQUE KEYS' : null;
+  }
+
+  JsonValueExpr(node: t.JsonValueExpr, context: DeparserContext): string {
+    const parts: string[] = [];
+    if (node.raw_expr) {
+      parts.push(this.visit(node.raw_expr, context));
+    }
+    const format = this.formatJsonFormat(node.format);
+    if (format) parts.push(format);
+    return parts.join(' ');
+  }
+
+  JsonKeyValue(node: t.JsonKeyValue, context: DeparserContext): string {
+    const key = node.key ? this.visit(node.key, context) : '';
+    const value = node.value ? this.JsonValueExpr(node.value, context) : '';
+    return `${key} : ${value}`;
+  }
+
+  JsonObjectConstructor(node: t.JsonObjectConstructor, context: DeparserContext): string {
+    const args: string[] = [];
+
+    if (node.exprs && node.exprs.length > 0) {
+      args.push(ListUtils.unwrapList(node.exprs).map(e => this.visit(e, context)).join(', '));
+      args.push(this.formatJsonNullClause(node.absent_on_null));
+      const unique = this.formatJsonUniqueClause(node.unique);
+      if (unique) args.push(unique);
+    }
+
+    const output = this.formatJsonOutput(node.output, context);
+    if (output) args.push(output);
+
+    return `JSON_OBJECT(${args.join(' ')})`;
+  }
+
+  JsonArrayConstructor(node: t.JsonArrayConstructor, context: DeparserContext): string {
+    const args: string[] = [];
+
+    if (node.exprs && node.exprs.length > 0) {
+      args.push(ListUtils.unwrapList(node.exprs).map(e => this.visit(e, context)).join(', '));
+      args.push(this.formatJsonNullClause(node.absent_on_null));
+    }
+
+    const output = this.formatJsonOutput(node.output, context);
+    if (output) args.push(output);
+
+    return `JSON_ARRAY(${args.join(' ')})`;
+  }
+
   JsonArrayQueryConstructor(node: t.JsonArrayQueryConstructor, context: DeparserContext): string {
-    const output: string[] = ['JSON_ARRAYAGG'];
+    const args: string[] = [];
 
     if (node.query) {
-      output.push(`(${this.visit(node.query, context)})`);
+      args.push(this.visit(node.query, context));
     }
 
-    if (node.format) {
-      output.push('FORMAT JSON');
+    const format = this.formatJsonFormat(node.format);
+    if (format) args.push(format);
+
+    const output = this.formatJsonOutput(node.output, context);
+    if (output) args.push(output);
+
+    return `JSON_ARRAY(${args.join(' ')})`;
+  }
+
+  formatJsonAggSuffix(ctor: t.JsonAggConstructor | undefined, context: DeparserContext): string {
+    if (!ctor) return '';
+    let result = '';
+    if (ctor.agg_filter) {
+      result += ` FILTER (WHERE ${this.visit(ctor.agg_filter, context)})`;
+    }
+    if (ctor.over) {
+      result += this.formatOverClause(ctor.over, context);
+    }
+    return result;
+  }
+
+  JsonObjectAgg(node: t.JsonObjectAgg, context: DeparserContext): string {
+    const args: string[] = [];
+
+    if (node.arg) {
+      args.push(this.JsonKeyValue(node.arg, context));
+    }
+    args.push(this.formatJsonNullClause(node.absent_on_null));
+    const unique = this.formatJsonUniqueClause(node.unique);
+    if (unique) args.push(unique);
+
+    const output = this.formatJsonOutput(node.constructor?.output, context);
+    if (output) args.push(output);
+
+    return `JSON_OBJECTAGG(${args.join(' ')})${this.formatJsonAggSuffix(node.constructor, context)}`;
+  }
+
+  JsonArrayAgg(node: t.JsonArrayAgg, context: DeparserContext): string {
+    const args: string[] = [];
+
+    if (node.arg) {
+      args.push(this.JsonValueExpr(node.arg, context));
     }
 
-    if (node.output) {
-      output.push('RETURNING TEXT');
+    const aggOrder = node.constructor?.agg_order;
+    if (aggOrder && aggOrder.length > 0) {
+      const orderItems = ListUtils.unwrapList(aggOrder).map(item => this.visit(item, context));
+      args.push(`ORDER BY ${orderItems.join(', ')}`);
     }
 
-    if (node.absent_on_null) {
-      output.push('ABSENT ON NULL');
-    } else {
-      output.push('NULL ON NULL');
-    }
+    args.push(this.formatJsonNullClause(node.absent_on_null));
 
-    return output.join(' ');
+    const output = this.formatJsonOutput(node.constructor?.output, context);
+    if (output) args.push(output);
+
+    return `JSON_ARRAYAGG(${args.join(' ')})${this.formatJsonAggSuffix(node.constructor, context)}`;
+  }
+
+  JsonParseExpr(node: t.JsonParseExpr, context: DeparserContext): string {
+    const args: string[] = [];
+    if (node.expr) {
+      args.push(this.JsonValueExpr(node.expr, context));
+    }
+    const unique = this.formatJsonUniqueClause(node.unique_keys);
+    if (unique) args.push(unique);
+    return `JSON(${args.join(' ')})`;
+  }
+
+  JsonScalarExpr(node: t.JsonScalarExpr, context: DeparserContext): string {
+    const expr = node.expr ? this.visit(node.expr, context) : '';
+    return `JSON_SCALAR(${expr})`;
+  }
+
+  JsonSerializeExpr(node: t.JsonSerializeExpr, context: DeparserContext): string {
+    const args: string[] = [];
+    if (node.expr) {
+      args.push(this.JsonValueExpr(node.expr, context));
+    }
+    const output = this.formatJsonOutput(node.output, context);
+    if (output) args.push(output);
+    return `JSON_SERIALIZE(${args.join(' ')})`;
+  }
+
+  JsonIsPredicate(node: t.JsonIsPredicate, context: DeparserContext): string {
+    const parts: string[] = [];
+    if (node.expr) {
+      parts.push(this.visit(node.expr, context));
+    }
+    const format = this.formatJsonFormat(node.format);
+    if (format) parts.push(format);
+    parts.push('IS JSON');
+    switch (node.item_type) {
+    case 'JS_TYPE_OBJECT':
+      parts.push('OBJECT');
+      break;
+    case 'JS_TYPE_ARRAY':
+      parts.push('ARRAY');
+      break;
+    case 'JS_TYPE_SCALAR':
+      parts.push('SCALAR');
+      break;
+    }
+    if (node.unique_keys) {
+      parts.push('WITH UNIQUE KEYS');
+    }
+    return parts.join(' ');
   }
 
   RangeFunction(node: t.RangeFunction, context: DeparserContext): string {

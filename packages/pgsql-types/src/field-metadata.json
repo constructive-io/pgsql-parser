@@ -487,6 +487,7 @@
     "args": {
       "nullable": false,
       "tags": [
+        "A_Const",
         "A_Expr",
         "BoolExpr",
         "BooleanTest",
@@ -585,6 +586,7 @@
         "BooleanTest",
         "ColumnRef",
         "FuncCall",
+        "JsonIsPredicate",
         "NullTest",
         "SubLink",
         "TypeCast"
