@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.1.8](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Fsemantics%4018.1.7...%40pgsql%2Fsemantics%4018.1.8) (2026-09-17)
+
+**Note:** Version bump only for package @pgsql/semantics
+
 ## [18.1.7](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Fsemantics%4018.1.6...%40pgsql%2Fsemantics%4018.1.7) (2026-08-19)
 
 **Note:** Version bump only for package @pgsql/semantics

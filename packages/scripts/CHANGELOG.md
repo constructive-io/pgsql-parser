@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.4.7](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Fscripts%4018.4.6...%40pgsql%2Fscripts%4018.4.7) (2026-09-17)
+
+### Bug Fixes
+
+- **scripts:** preserve partition range vars when inverting ([c887751](https://github.com/constructive-io/pgsql-parser/commit/c887751cca85656a4457f6a36e43a61005f8c559))
+
 ## [18.4.6](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Fscripts%4018.4.5...%40pgsql%2Fscripts%4018.4.6) (2026-08-19)
 
 **Note:** Version bump only for package @pgsql/scripts

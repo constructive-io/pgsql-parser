@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.7](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.3.6...pgsql-deparser%4018.3.7) (2026-09-17)
+
+### Bug Fixes
+
+- handle parser edge cases across packages ([e06699b](https://github.com/constructive-io/pgsql-parser/commit/e06699b35daad5f16da96892c76fa3be994c27dc))
+
 ## [18.3.6](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.3.5...pgsql-deparser%4018.3.6) (2026-08-07)
 
 **Note:** Version bump only for package pgsql-deparser
