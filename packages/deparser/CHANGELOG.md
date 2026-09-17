@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.8](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.3.7...pgsql-deparser%4018.3.8) (2026-09-17)
+
+### Bug Fixes
+
+- **deparser:** PG18 regress round-trip sweep fixes ([20649be](https://github.com/constructive-io/pgsql-parser/commit/20649befbf24e2d2997fd58ff13f07fb08afbd3a))
+
 ## [18.3.7](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.3.6...pgsql-deparser%4018.3.7) (2026-09-17)
 
 ### Bug Fixes
