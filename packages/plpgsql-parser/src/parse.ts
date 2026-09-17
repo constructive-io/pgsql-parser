@@ -12,6 +12,7 @@ import type {
   ParsedFunction,
   ParsedItem,
   ParsedScript,
+  ParsedScriptError,
   ParsedStatement,
   ParseOptions
 } from './types';
@@ -68,15 +69,19 @@ function getStatementSql(sqlBuffer: Buffer, rawStmt: any): string {
   return sqlBuffer.slice(start, end).toString('utf8');
 }
 
-function extractFunctionInfo(stmt: any, stmtIndex: number, stmtSql: string): ParsedFunction | null {
+function extractFunctionInfo(
+  stmt: any,
+  stmtIndex: number,
+  stmtSql: string
+): { fn: ParsedFunction | null; error?: string } {
   const createFunctionStmt = stmt?.CreateFunctionStmt;
-  if (!createFunctionStmt) return null;
+  if (!createFunctionStmt) return { fn: null };
   
   const language = getLanguageFromOptions(createFunctionStmt.options);
-  if (language !== 'plpgsql') return null;
+  if (language !== 'plpgsql') return { fn: null };
   
   const body = getBodyFromOptions(createFunctionStmt.options);
-  if (!body) return null;
+  if (!body) return { fn: null };
   
   try {
     // Parse only this statement's SQL. Parsing the full script would return
@@ -86,20 +91,25 @@ function extractFunctionInfo(stmt: any, stmtIndex: number, stmtSql: string): Par
     const { ast: hydrated, stats, errors } = hydratePlpgsqlAst(plpgsqlRaw);
     
     return {
-      kind: 'plpgsql-function',
-      stmt: createFunctionStmt,
-      stmtIndex,
-      language: language || 'plpgsql',
-      body,
-      plpgsql: {
-        raw: plpgsqlRaw,
-        hydrated,
-        stats,
-        errors
+      fn: {
+        kind: 'plpgsql-function',
+        stmt: createFunctionStmt,
+        stmtIndex,
+        language: language || 'plpgsql',
+        body,
+        plpgsql: {
+          raw: plpgsqlRaw,
+          hydrated,
+          stats,
+          errors
+        }
       }
     };
   } catch (err) {
-    return null;
+    return {
+      fn: null,
+      error: err instanceof Error ? err.message : String(err)
+    };
   }
 }
 
@@ -109,6 +119,7 @@ export function parse(sql: string, options: ParseOptions = {}): ParsedScript {
   const sqlResult: ParseResult = parseSqlSync(sql);
   const items: ParsedItem[] = [];
   const functions: ParsedFunction[] = [];
+  const errors: ParsedScriptError[] = [];
   const sqlBuffer = Buffer.from(sql, 'utf8');
   
   if (sqlResult.stmts) {
@@ -117,11 +128,14 @@ export function parse(sql: string, options: ParseOptions = {}): ParsedScript {
       const stmt = rawStmt?.stmt;
       
       if (stmt && isPlpgsqlFunction(stmt) && hydrate) {
-        const fnInfo = extractFunctionInfo(stmt, i, getStatementSql(sqlBuffer, rawStmt));
-        if (fnInfo) {
-          items.push(fnInfo);
-          functions.push(fnInfo);
+        const result = extractFunctionInfo(stmt, i, getStatementSql(sqlBuffer, rawStmt));
+        if (result.fn) {
+          items.push(result.fn);
+          functions.push(result.fn);
           continue;
+        }
+        if (result.error) {
+          errors.push({ stmtIndex: i, message: result.error });
         }
       }
       
@@ -137,7 +151,8 @@ export function parse(sql: string, options: ParseOptions = {}): ParsedScript {
   return {
     sql: sqlResult,
     items,
-    functions
+    functions,
+    errors
   };
 }
 
