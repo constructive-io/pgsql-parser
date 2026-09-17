@@ -493,7 +493,7 @@ function invertAlterTable(node: AnyNode, warnings: string[]): Emitted[] {
       }
       out.push(alterWith({
         subtype: 'AT_DetachPartition',
-        def: { PartitionCmd: { name: { RangeVar: clone(partition) } } },
+        def: { PartitionCmd: { name: clone(partition) } },
         behavior: 'DROP_RESTRICT'
       }));
       break;
