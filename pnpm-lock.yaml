@@ -90,8 +90,8 @@ importers:
         version: 18.0.0
     devDependencies:
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       makage:
         specifier: ^0.5.1
         version: 0.5.1
@@ -109,8 +109,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       minimist:
         specifier: 1.2.8
         version: 1.2.8
@@ -132,8 +132,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -149,8 +149,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -213,8 +213,8 @@ importers:
         version: link:../utils/dist
     devDependencies:
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       makage:
         specifier: ^0.5.1
         version: 0.5.1
@@ -226,8 +226,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -243,8 +243,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -269,8 +269,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -394,8 +394,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.1.4
-        version: 18.1.4
+        specifier: 18.1.5
+        version: 18.1.5
       makage:
         specifier: ^0.5.1
         version: 0.5.1
@@ -4635,10 +4635,10 @@ packages:
       }
     engines: { node: ^20.17.0 || >=22.9.0 }
 
-  libpg-query@18.1.4:
+  libpg-query@18.1.5:
     resolution:
       {
-        integrity: sha512-6jF9qn9ln4yLnmSF+bS/DBvAfNcPhGI05+pkQy+n3cRd3p9aO8LWjquEin8SLO0k7zYk745ZGBXYUiL9AUI7gA==,
+        integrity: sha512-xsksgH106LyVUylIp2bJz1MPFmVVIGKbB8belGWmh+J8/i38w8eM1twDIBnd97tzeNQFctH9MWKMthl22+fWcQ==,
       }
 
   lines-and-columns@1.2.4:
@@ -9503,7 +9503,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  libpg-query@18.1.4:
+  libpg-query@18.1.5:
     dependencies:
       "@pgsql/types": 18.0.0
 
