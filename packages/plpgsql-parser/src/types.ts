@@ -33,10 +33,16 @@ export interface ParsedStatement {
 
 export type ParsedItem = ParsedFunction | ParsedStatement;
 
+export interface ParsedScriptError {
+  stmtIndex: number;
+  message: string;
+}
+
 export interface ParsedScript {
   sql: ParseResult;
   items: ParsedItem[];
   functions: ParsedFunction[];
+  errors: ParsedScriptError[];
 }
 
 export interface ParseOptions {

@@ -3079,6 +3079,15 @@ export class Deparser implements DeparserVisitor {
           deleteClause += 'SET DEFAULT';
           break;
         }
+        if ((node.fk_del_action === 'n' || node.fk_del_action === 'd') && node.fk_del_set_cols && node.fk_del_set_cols.length > 0) {
+          const setColumns = ListUtils.unwrapList(node.fk_del_set_cols)
+            .map(column => {
+              const stringNode = (column as { String: { sval?: string; str?: string } }).String;
+              return QuoteUtils.quoteIdentifier(stringNode.sval || stringNode.str || '');
+            })
+            .join(', ');
+          deleteClause += ` (${setColumns})`;
+        }
         if (context.isPretty()) {
           output.push('\n' + context.indent(deleteClause));
         } else {
@@ -3917,12 +3926,12 @@ export class Deparser implements DeparserVisitor {
   PartitionCmd(node: t.PartitionCmd, context: DeparserContext): string {
     const output: string[] = [];
 
-    if (node.concurrent) {
-      output.push('CONCURRENTLY');
+    if (node.name) {
+      output.push(this.RangeVar(node.name, context));
     }
 
-    if (node.name) {
-      output.push(this.visit(node.name as any, context));
+    if (node.concurrent) {
+      output.push('CONCURRENTLY');
     }
 
     if (node.bound) {
@@ -3947,9 +3956,9 @@ export class Deparser implements DeparserVisitor {
             .join(', ');
           output.push(`(${upperValues})`);
         }
-      } else if (node.bound.strategy === 'h' && node.bound.modulus !== undefined && node.bound.remainder !== undefined) {
+      } else if (node.bound.strategy === 'h' && node.bound.modulus !== undefined) {
         output.push('FOR VALUES WITH');
-        output.push(`(modulus ${node.bound.modulus}, remainder ${node.bound.remainder})`);
+        output.push(`(MODULUS ${node.bound.modulus}, REMAINDER ${node.bound.remainder ?? 0})`);
       } else if (node.bound.is_default) {
         output.push('DEFAULT');
       }
@@ -11644,4 +11653,3 @@ export class Deparser implements DeparserVisitor {
     return stringLiteralRegex.test(content);
   }
 }
-

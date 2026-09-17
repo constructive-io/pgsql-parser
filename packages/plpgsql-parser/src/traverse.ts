@@ -40,8 +40,9 @@ export interface WalkSqlOptions extends WalkOptions {
  * });
  * ```
  *
- * Unparseable input is reported as an abort rather than a thrown error, so a
- * validator can treat "rejected" and "could not be understood" uniformly.
+ * Unparseable SQL or PL/pgSQL function bodies are reported as an abort rather
+ * than a thrown error, so a validator can treat "rejected" and "could not be
+ * understood" uniformly.
  */
 export function walkSql(
   sql: string,
@@ -60,6 +61,14 @@ export function walkSql(
   } catch (err) {
     const reason = err instanceof Error ? err.message : 'Unparseable SQL';
     return { aborted: true, reason, reasons: [reason] };
+  }
+
+  if (walkFunctionBodies && parsed.errors.length > 0) {
+    return {
+      aborted: true,
+      reason: parsed.errors[0].message,
+      reasons: parsed.errors.map(error => error.message)
+    };
   }
 
   return walk(parsed, visitors, { ...options, walkFunctionBodies });
