@@ -147,6 +147,17 @@ function isWrappedParseResult(obj: any): obj is { ParseResult: t.ParseResult } {
  * The deparser automatically detects bare ParseResult objects for backward
  * compatibility and wraps them internally for consistent processing.
  */
+function formatBitString(bsval: string): string {
+  const quote = (value: string) => value.replace(/'/g, "''");
+  if (/^x[0-9A-Fa-f]+$/.test(bsval)) {
+    return `x'${bsval.substring(1)}'`;
+  }
+  if (bsval.startsWith('b')) {
+    return `b'${quote(bsval.substring(1))}'`;
+  }
+  return `b'${quote(bsval)}'`;
+}
+
 export class Deparser implements DeparserVisitor {
   private tree: Node[];
   private options: DeparserOptions;
@@ -1812,15 +1823,7 @@ export class Deparser implements DeparserVisitor {
     } else if (nodeAny.bsval !== undefined) {
       if (typeof nodeAny.bsval === 'object' && nodeAny.bsval !== null) {
         if (nodeAny.bsval.bsval !== undefined) {
-          const bsval = nodeAny.bsval.bsval;
-          // Check if this is a hexadecimal bit string (starts with x and contains only hex digits)
-          if (bsval.startsWith('x') && /^x[0-9A-Fa-f]+$/.test(bsval)) {
-            return `x'${bsval.substring(1)}'`;
-          }
-          if (bsval.startsWith('b')) {
-            return `b'${bsval.substring(1)}'`;
-          }
-          return `b'${bsval}'`;
+          return formatBitString(nodeAny.bsval.bsval);
         } else if (Object.keys(nodeAny.bsval).length === 0) {
           return "''";
         } else {
@@ -1829,15 +1832,7 @@ export class Deparser implements DeparserVisitor {
       } else if (nodeAny.bsval === null) {
         return 'NULL';
       } else {
-        const bsval = nodeAny.bsval;
-        // Check if this is a hexadecimal bit string (starts with x and contains only hex digits)
-        if (bsval.startsWith('x') && /^x[0-9A-Fa-f]+$/.test(bsval)) {
-          return `x'${bsval.substring(1)}'`;
-        }
-        if (bsval.startsWith('b')) {
-          return `b'${bsval.substring(1)}'`;
-        }
-        return `b'${bsval}'`;
+        return formatBitString(nodeAny.bsval);
       }
     }
 
@@ -1851,7 +1846,7 @@ export class Deparser implements DeparserVisitor {
       } else if (nodeAny.val.Boolean?.boolval !== undefined) {
         return nodeAny.val.Boolean.boolval ? 'true' : 'false';
       } else if (nodeAny.val.BitString?.bsval !== undefined) {
-        return nodeAny.val.BitString.bsval;
+        return formatBitString(nodeAny.val.BitString.bsval);
       }
     }
 
@@ -2615,15 +2610,7 @@ export class Deparser implements DeparserVisitor {
   }
 
   BitString(node: t.BitString, context: DeparserContext): string {
-    // Check if this is a hexadecimal bit string (starts with x)
-    if (node.bsval.startsWith('x')) {
-      return `x'${node.bsval.substring(1)}'`;
-    }
-    if (node.bsval.startsWith('b')) {
-      return `b'${node.bsval.substring(1)}'`;
-    }
-    // Fallback for raw values without prefix
-    return `b'${node.bsval}'`;
+    return formatBitString(node.bsval);
   }
 
   Null(node: t.Node, context: DeparserContext): string {
