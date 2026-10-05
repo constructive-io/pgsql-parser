@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.9](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.3.8...pgsql-deparser%4018.3.9) (2026-10-05)
+
+### Bug Fixes
+
+- **deparser:** escape single quotes in bit-string literals ([#355](https://github.com/constructive-io/pgsql-parser/issues/355)) ([24b7869](https://github.com/constructive-io/pgsql-parser/commit/24b786963965b107331d4ba091bb778e3ea0a775))
+- **deparser:** keep hex validation for x-prefixed bit strings ([b5ecd89](https://github.com/constructive-io/pgsql-parser/commit/b5ecd89031e4f9450a5411f3b2c2ffd095b6ba93))
+
 ## [18.3.8](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.3.7...pgsql-deparser%4018.3.8) (2026-09-17)
 
 ### Bug Fixes

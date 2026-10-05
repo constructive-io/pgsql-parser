@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.2.11](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Futils%4018.2.10...%40pgsql%2Futils%4018.2.11) (2026-10-05)
+
+**Note:** Version bump only for package @pgsql/utils
+
 ## [18.2.10](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Futils%4018.2.9...%40pgsql%2Futils%4018.2.10) (2026-09-17)
 
 **Note:** Version bump only for package @pgsql/utils
