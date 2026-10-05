@@ -149,8 +149,8 @@ function isWrappedParseResult(obj: any): obj is { ParseResult: t.ParseResult } {
  */
 function formatBitString(bsval: string): string {
   const quote = (value: string) => value.replace(/'/g, "''");
-  if (bsval.startsWith('x')) {
-    return `x'${quote(bsval.substring(1))}'`;
+  if (/^x[0-9A-Fa-f]+$/.test(bsval)) {
+    return `x'${bsval.substring(1)}'`;
   }
   if (bsval.startsWith('b')) {
     return `b'${quote(bsval.substring(1))}'`;

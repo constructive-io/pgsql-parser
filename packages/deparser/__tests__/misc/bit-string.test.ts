@@ -18,7 +18,7 @@ describe('bit-string literals', () => {
 
   it.each([
     ['b-prefixed', { bsval: { bsval: `b${payload}` } }, `SELECT b'x'' OR ''1''=''1'`],
-    ['x-prefixed', { bsval: { bsval: `x1F' OR '1'='1` } }, `SELECT x'1F'' OR ''1''=''1'`],
+    ['x-prefixed', { bsval: { bsval: `x1F' OR '1'='1` } }, `SELECT b'x1F'' OR ''1''=''1'`],
     ['unprefixed', { bsval: { bsval: `1' OR '1'='1` } }, `SELECT b'1'' OR ''1''=''1'`],
     ['unwrapped', { bsval: `b${payload}` }, `SELECT b'x'' OR ''1''=''1'`],
     ['val.BitString', { val: { BitString: { bsval: `b${payload}` } } }, `SELECT b'x'' OR ''1''=''1'`]
