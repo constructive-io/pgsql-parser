@@ -82,7 +82,9 @@ describe('numeric literals in hand-built ASTs', () => {
     ['-2.5e-3', '-2.5e-3'],
     ['.5', '.5'],
     ['1_000.000_1', '1_000.000_1'],
-    ['0x7FFFFFFFFFFFFFFF', '0x7FFFFFFFFFFFFFFF']
+    ['0x7FFFFFFFFFFFFFFF', '0x7FFFFFFFFFFFFFFF'],
+    ['0x_FFFF_FFFF_FFFF_FFFF', '0x_FFFF_FFFF_FFFF_FFFF'],
+    ['1_000.5e1_0', '1_000.5e1_0']
   ])('emits valid fval %s', (fval, expected) => {
     expect(Deparser.deparse(selectConst({ fval: { fval } }) as any)).toBe(`SELECT ${expected}`);
   });
@@ -93,7 +95,10 @@ describe('numeric literals in hand-built ASTs', () => {
     ['val.Float', { val: { Float: { fval: '1)--' } } }],
     ['wrapped ival', { ival: { ival: '1; DROP TABLE t' } }],
     ['unwrapped ival', { ival: '1 OR 1=1' }],
-    ['val.Integer', { val: { Integer: { ival: '1)--' } } }]
+    ['val.Integer', { val: { Integer: { ival: '1)--' } } }],
+    ['doubled underscore', { fval: { fval: '1__0.5' } }],
+    ['trailing underscore', { fval: { fval: '1_.5' } }],
+    ['trailing hex underscore', { fval: { fval: '0xFF_' } }]
   ])('rejects non-numeric %s', (_label, aConst) => {
     expect(() => Deparser.deparse(selectConst(aConst) as any)).toThrow(/Invalid (numeric|integer) literal/);
   });
@@ -112,5 +117,17 @@ describe('XMLTABLE', () => {
     `SELECT * FROM t, LATERAL XMLTABLE('/r' PASSING t.doc COLUMNS a int PATH 'a') xt`
   ])('round-trips %s', async (sql) => {
     await expectParseDeparse(sql);
+  });
+});
+
+describe('TableFunc (JSON_TABLE)', () => {
+  it('does not re-quote the row path', () => {
+    const deparser = new Deparser([]);
+    const sql = deparser.TableFunc({
+      functype: 'TFT_JSON_TABLE',
+      docexpr: { ColumnRef: { fields: [{ String: { sval: 'doc' } }] } },
+      rowexpr: { A_Const: { sval: { sval: "$.a' OR '1'='1" } } }
+    } as any, {} as any);
+    expect(sql).toBe("JSON_TABLE (doc) , '$.a'' OR ''1''=''1'");
   });
 });

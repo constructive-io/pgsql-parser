@@ -158,7 +158,7 @@ function formatBitString(bsval: string): string {
   return `b'${quote(bsval)}'`;
 }
 
-const NUMERIC_LITERAL = /^[+-]?(?:0[xX][0-9A-Fa-f_]+|0[oO][0-7_]+|0[bB][01_]+|(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][+-]?\d[\d_]*)?)$/;
+const NUMERIC_LITERAL = /^[+-]?(?:0[xX](?:_?[0-9A-Fa-f])+|0[oO](?:_?[0-7])+|0[bB](?:_?[01])+|(?:\d(?:_?\d)*(?:\.(?:\d(?:_?\d)*)?)?|\.\d(?:_?\d)*)(?:[eE][+-]?\d(?:_?\d)*)?)$/;
 
 function formatInteger(ival: unknown): string {
   const value = String(ival);
@@ -10790,7 +10790,7 @@ export class Deparser implements DeparserVisitor {
 
       if (node.rowexpr) {
         output.push(',');
-        output.push(`'${this.visit(node.rowexpr, context)}'`);
+        output.push(this.visit(node.rowexpr, context));
       }
 
       if (node.colexprs && node.colexprs.length > 0) {
