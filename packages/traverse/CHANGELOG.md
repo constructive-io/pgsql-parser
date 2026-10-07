@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.7.12](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftraverse%4018.7.11...%40pgsql%2Ftraverse%4018.7.12) (2026-10-07)
+
+**Note:** Version bump only for package @pgsql/traverse
+
 ## [18.7.11](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftraverse%4018.7.10...%40pgsql%2Ftraverse%4018.7.11) (2026-10-05)
 
 **Note:** Version bump only for package @pgsql/traverse

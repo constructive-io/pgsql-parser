@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.10](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.3.9...pgsql-deparser%4018.3.10) (2026-10-07)
+
+### Bug Fixes
+
+- **deparser:** escape string literals and validate numeric literals from hand-built ASTs ([4951e3f](https://github.com/constructive-io/pgsql-parser/commit/4951e3f8ca50f0b6b981d4729bdd60361204ba85))
+- **deparser:** match PG underscore rules in numeric literals; don't re-quote JSON_TABLE row path ([5ace0bf](https://github.com/constructive-io/pgsql-parser/commit/5ace0bfc01ebd8a27498d28ebfd4c78f93cd803d))
+
 ## [18.3.9](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.3.8...pgsql-deparser%4018.3.9) (2026-10-05)
 
 ### Bug Fixes
