@@ -2236,7 +2236,8 @@
       "nullable": false,
       "tags": [
         "A_Const",
-        "ColumnRef"
+        "ColumnRef",
+        "SubLink"
       ],
       "isArray": false
     },
