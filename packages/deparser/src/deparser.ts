@@ -158,6 +158,24 @@ function formatBitString(bsval: string): string {
   return `b'${quote(bsval)}'`;
 }
 
+const NUMERIC_LITERAL = /^[+-]?(?:0[xX](?:_?[0-9A-Fa-f])+|0[oO](?:_?[0-7])+|0[bB](?:_?[01])+|(?:\d(?:_?\d)*(?:\.(?:\d(?:_?\d)*)?)?|\.\d(?:_?\d)*)(?:[eE][+-]?\d(?:_?\d)*)?)$/;
+
+function formatInteger(ival: unknown): string {
+  const value = String(ival);
+  if (!/^[+-]?\d+$/.test(value)) {
+    throw new Error(`Invalid integer literal: ${value}`);
+  }
+  return value;
+}
+
+function formatNumeric(fval: unknown): string {
+  const value = String(fval);
+  if (!NUMERIC_LITERAL.test(value)) {
+    throw new Error(`Invalid numeric literal: ${value}`);
+  }
+  return value;
+}
+
 export class Deparser implements DeparserVisitor {
   private tree: Node[];
   private options: DeparserOptions;
@@ -1765,30 +1783,30 @@ export class Deparser implements DeparserVisitor {
     if (nodeAny.ival !== undefined) {
       if (typeof nodeAny.ival === 'object' && nodeAny.ival !== null) {
         if (nodeAny.ival.ival !== undefined) {
-          return nodeAny.ival.ival.toString();
+          return formatInteger(nodeAny.ival.ival);
         } else if (Object.keys(nodeAny.ival).length === 0) {
           return '0';
         } else {
-          return nodeAny.ival.toString();
+          return formatInteger(nodeAny.ival);
         }
       } else if (nodeAny.ival === null) {
         return 'NULL';
       } else {
-        return nodeAny.ival.toString();
+        return formatInteger(nodeAny.ival);
       }
     } else if (nodeAny.fval !== undefined) {
       if (typeof nodeAny.fval === 'object' && nodeAny.fval !== null) {
         if (nodeAny.fval.fval !== undefined) {
-          return nodeAny.fval.fval.toString();
+          return formatNumeric(nodeAny.fval.fval);
         } else if (Object.keys(nodeAny.fval).length === 0) {
           return '0.0';
         } else {
-          return nodeAny.fval.toString();
+          return formatNumeric(nodeAny.fval);
         }
       } else if (nodeAny.fval === null) {
         return 'NULL';
       } else {
-        return nodeAny.fval.toString();
+        return formatNumeric(nodeAny.fval);
       }
     } else if (nodeAny.sval !== undefined) {
       if (typeof nodeAny.sval === 'object' && nodeAny.sval !== null) {
@@ -1838,9 +1856,9 @@ export class Deparser implements DeparserVisitor {
 
     if (nodeAny.val) {
       if (nodeAny.val.Integer?.ival !== undefined) {
-        return nodeAny.val.Integer.ival.toString();
+        return formatInteger(nodeAny.val.Integer.ival);
       } else if (nodeAny.val.Float?.fval !== undefined) {
-        return nodeAny.val.Float.fval.toString();
+        return formatNumeric(nodeAny.val.Float.fval);
       } else if (nodeAny.val.String?.sval !== undefined) {
         return QuoteUtils.escape(nodeAny.val.String.sval);
       } else if (nodeAny.val.Boolean?.boolval !== undefined) {
@@ -1860,15 +1878,15 @@ export class Deparser implements DeparserVisitor {
       }
       if (nodeAny.Integer !== undefined) {
         if (typeof nodeAny.Integer === 'object' && nodeAny.Integer.ival !== undefined) {
-          return nodeAny.Integer.ival.toString();
+          return formatInteger(nodeAny.Integer.ival);
         }
-        return nodeAny.Integer.toString();
+        return formatInteger(nodeAny.Integer);
       }
       if (nodeAny.Float !== undefined) {
         if (typeof nodeAny.Float === 'object' && nodeAny.Float.fval !== undefined) {
-          return nodeAny.Float.fval.toString();
+          return formatNumeric(nodeAny.Float.fval);
         }
-        return nodeAny.Float.toString();
+        return formatNumeric(nodeAny.Float);
       }
       if (nodeAny.String !== undefined) {
         if (typeof nodeAny.String === 'object' && nodeAny.String.sval !== undefined) {
@@ -2598,11 +2616,11 @@ export class Deparser implements DeparserVisitor {
   }
 
   Integer(node: t.Integer, context: DeparserContext): string {
-    return node.ival?.toString() || '0';
+    return node.ival === undefined || node.ival === null ? '0' : formatInteger(node.ival);
   }
 
   Float(node: t.Float, context: DeparserContext): string {
-    return node.fval || '0.0';
+    return node.fval ? formatNumeric(node.fval) : '0.0';
   }
 
   Boolean(node: t.Boolean, context: DeparserContext): string {
@@ -3917,7 +3935,7 @@ export class Deparser implements DeparserVisitor {
         const opclassOpts = ListUtils.unwrapList(node.opclassopts).map(opt => {
           if (opt.DefElem && opt.DefElem.arg && this.getNodeType(opt.DefElem.arg) === 'String') {
             const stringData = this.getNodeData(opt.DefElem.arg);
-            return `${opt.DefElem.defname}='${stringData.sval}'`;
+            return `${QuoteUtils.quoteIdentifierAfterDot(opt.DefElem.defname)}=${QuoteUtils.escape(stringData.sval)}`;
           }
           return this.visit(opt, context.spawn('IndexElem'));
         });
@@ -4242,19 +4260,19 @@ export class Deparser implements DeparserVisitor {
     case 'TRANS_STMT_PREPARE':
       output.push('PREPARE TRANSACTION');
       if (node.gid) {
-        output.push(`'${node.gid}'`);
+        output.push(QuoteUtils.escape(node.gid));
       }
       break;
     case 'TRANS_STMT_COMMIT_PREPARED':
       output.push('COMMIT PREPARED');
       if (node.gid) {
-        output.push(`'${node.gid}'`);
+        output.push(QuoteUtils.escape(node.gid));
       }
       break;
     case 'TRANS_STMT_ROLLBACK_PREPARED':
       output.push('ROLLBACK PREPARED');
       if (node.gid) {
-        output.push(`'${node.gid}'`);
+        output.push(QuoteUtils.escape(node.gid));
       }
       break;
     default:
@@ -4330,8 +4348,8 @@ export class Deparser implements DeparserVisitor {
         const nodeData = this.getNodeData(arg);
         if (nodeData.sval !== undefined) {
           const svalValue = typeof nodeData.sval === 'object' ? nodeData.sval.sval : nodeData.sval;
-          if (svalValue === '' || svalValue.includes(' ') || svalValue.includes('-') || /[A-Z]/.test(svalValue) || /^\d/.test(svalValue) || svalValue.includes('.') || svalValue.includes('$') || svalValue.toLowerCase() === 'all' || /^[+-]\d/.test(svalValue)) {
-            return `'${svalValue}'`;
+          if (!/^[a-z_][a-z0-9_]*$/.test(svalValue) || svalValue.includes(' ') || svalValue.includes('-') || /[A-Z]/.test(svalValue) || /^\d/.test(svalValue) || svalValue.includes('.') || svalValue.includes('$') || svalValue.toLowerCase() === 'all' || /^[+-]\d/.test(svalValue)) {
+            return QuoteUtils.escape(svalValue);
           }
           return svalValue;
         }
@@ -5922,9 +5940,9 @@ export class Deparser implements DeparserVisitor {
     if (context.parentNodeTypes.includes('IndexElem')) {
       if (node.arg && this.getNodeType(node.arg) === 'String') {
         const stringData = this.getNodeData(node.arg);
-        return `${node.defname}='${stringData.sval}'`;
+        return `${QuoteUtils.quoteIdentifierAfterDot(node.defname)}=${QuoteUtils.escape(stringData.sval)}`;
       }
-      return `${node.defname}=${this.visit(node.arg, context.spawn('DefElem'))}`;
+      return `${QuoteUtils.quoteIdentifierAfterDot(node.defname)}=${this.formatOptionValue(node.arg, this.visit(node.arg, context.spawn('DefElem')))}`;
     }
 
     // Handle CREATE OPERATOR boolean flags - MUST be first to preserve case
@@ -5952,9 +5970,7 @@ export class Deparser implements DeparserVisitor {
         const argValue = this.visit(node.arg, defElemContext);
 
         if (context.parentNodeTypes.includes('CreateFdwStmt') || context.parentNodeTypes.includes('AlterFdwStmt')) {
-          const finalValue = typeof argValue === 'string' && !argValue.startsWith("'")
-            ? `'${argValue}'`
-            : argValue;
+          const finalValue = this.quoteDefElemArg(node.arg, argValue);
 
           const quotedDefname = QuoteUtils.quoteIdentifier(node.defname);
 
@@ -5969,9 +5985,7 @@ export class Deparser implements DeparserVisitor {
           return `${quotedDefname} ${finalValue}`;
         }
 
-        const quotedValue = typeof argValue === 'string' && !argValue.startsWith("'")
-          ? `'${argValue}'`
-          : argValue;
+        const quotedValue = this.quoteDefElemArg(node.arg, argValue);
 
         if (node.defaction === 'DEFELEM_ADD') {
           return `ADD ${node.defname} ${quotedValue}`;
@@ -6004,9 +6018,7 @@ export class Deparser implements DeparserVisitor {
         }
         const defElemContext = context.spawn('DefElem');
         const argValue = this.visit(node.arg, defElemContext);
-        const quotedValue = typeof argValue === 'string' && !argValue.startsWith("'")
-          ? `'${argValue}'`
-          : argValue;
+        const quotedValue = this.quoteDefElemArg(node.arg, argValue);
         return `PASSWORD ${quotedValue}`;
       }
     }
@@ -6080,9 +6092,7 @@ export class Deparser implements DeparserVisitor {
         }
 
         if (node.defname === 'validUntil') {
-          const quotedValue = typeof argValue === 'string' && !argValue.startsWith("'")
-            ? `'${argValue}'`
-            : argValue;
+          const quotedValue = this.quoteDefElemArg(node.arg, argValue);
           return `VALID UNTIL ${quotedValue}`;
         }
 
@@ -6270,9 +6280,7 @@ export class Deparser implements DeparserVisitor {
         if (context.parentNodeTypes.includes('AlterExtensionStmt')) {
           if (node.defname === 'new_version') {
             // argValue is unquoted due to DefElem context, so we need to quote it
-            const quotedValue = typeof argValue === 'string' && !argValue.startsWith("'")
-              ? `'${argValue}'`
-              : argValue;
+            const quotedValue = this.quoteDefElemArg(node.arg, argValue);
             return `UPDATE TO ${quotedValue}`;
           }
           if (node.defname === 'schema') {
@@ -6304,16 +6312,16 @@ export class Deparser implements DeparserVisitor {
 
       // Handle IndexStmt WITH clause options - no quotes, compact formatting
       if (context.parentNodeTypes.includes('IndexStmt')) {
-        return `${node.defname}=${argValue}`;
+        return `${QuoteUtils.quoteIdentifierAfterDot(node.defname)}=${this.formatOptionValue(node.arg, argValue)}`;
       }
 
       // Handle IndexElem opclassopts - preserve string values as strings
       if (context.parentNodeTypes.includes('IndexElem')) {
         if (node.arg && this.getNodeType(node.arg) === 'String') {
           const stringData = this.getNodeData(node.arg);
-          return `${node.defname}='${stringData.sval}'`;
+          return `${QuoteUtils.quoteIdentifierAfterDot(node.defname)}=${QuoteUtils.escape(stringData.sval)}`;
         }
-        return `${node.defname}=${argValue}`;
+        return `${QuoteUtils.quoteIdentifierAfterDot(node.defname)}=${this.formatOptionValue(node.arg, argValue)}`;
       }
 
       // Handle CreateStmt table options - no quotes, compact formatting
@@ -6324,9 +6332,9 @@ export class Deparser implements DeparserVisitor {
         // For numeric values, use the raw value without quotes
         if (node.arg && this.getNodeType(node.arg) === 'Integer') {
           const integerData = this.getNodeData(node.arg);
-          return `${relOptName}=${integerData.ival}`;
+          return `${relOptName}=${formatInteger(integerData.ival)}`;
         }
-        return `${relOptName}=${argValue}`;
+        return `${relOptName}=${this.formatOptionValue(node.arg, argValue)}`;
       }
 
       // Handle CreateEventTrigStmt WHEN clause - use IN syntax for List arguments
@@ -6337,7 +6345,7 @@ export class Deparser implements DeparserVisitor {
           const values = listItems.map(item => {
             if (this.getNodeType(item) === 'String') {
               const stringData = this.getNodeData(item);
-              return `'${stringData.sval || ''}'`;
+              return QuoteUtils.escape(stringData.sval || '');
             }
             return this.visit(item, context);
           });
@@ -6353,7 +6361,7 @@ export class Deparser implements DeparserVisitor {
         if (node.arg && this.getNodeType(node.arg) === 'TypeName') {
           return `${optionName} = ${argValue}`;
         }
-        return `${optionName} = ${argValue}`;
+        return `${optionName} = ${this.formatOptionValue(node.arg, argValue)}`;
       }
 
       // Handle ViewStmt WITH options - don't quote numeric values
@@ -6432,7 +6440,7 @@ export class Deparser implements DeparserVisitor {
                 return `${quotedDefname} = ${stringData.sval}`;
               }
               // Regular string literals get single quotes
-              return `${quotedDefname} = '${stringData.sval}'`;
+              return `${quotedDefname} = ${QuoteUtils.escape(stringData.sval)}`;
             }
             return `${quotedDefname} = ${argValue}`;
           }
@@ -6455,7 +6463,7 @@ export class Deparser implements DeparserVisitor {
             return `${node.defname} = ${stringData.sval}`;
           }
           // Regular string literals get single quotes
-          return `${node.defname} = '${stringData.sval}'`;
+          return `${node.defname} = ${QuoteUtils.escape(stringData.sval)}`;
         }
         if (node.arg && this.getNodeType(node.arg) === 'Boolean') {
           const boolData = this.getNodeData(node.arg);
@@ -6512,7 +6520,7 @@ export class Deparser implements DeparserVisitor {
 
     if (node.location) {
       output.push('LOCATION');
-      output.push(`'${node.location}'`);
+      output.push(QuoteUtils.escape(node.location));
     }
 
     if (node.options && node.options.length > 0) {
@@ -6903,7 +6911,7 @@ export class Deparser implements DeparserVisitor {
 
     if (node.payload !== null && node.payload !== undefined) {
       output.push(',');
-      output.push(`'${node.payload}'`);
+      output.push(QuoteUtils.escape(node.payload));
     }
 
     return output.join(' ');
@@ -6939,7 +6947,7 @@ export class Deparser implements DeparserVisitor {
     if (!node.filename) {
       throw new Error('LoadStmt requires filename');
     }
-    return `LOAD '${node.filename}'`;
+    return `LOAD ${QuoteUtils.escape(node.filename)}`;
   }
 
   DiscardStmt(node: t.DiscardStmt, context: DeparserContext): string {
@@ -7456,7 +7464,7 @@ export class Deparser implements DeparserVisitor {
     output.push('CONNECTION');
 
     if (node.conninfo) {
-      output.push(`'${node.conninfo}'`);
+      output.push(QuoteUtils.escape(node.conninfo));
     }
 
     output.push('PUBLICATION');
@@ -8881,7 +8889,7 @@ export class Deparser implements DeparserVisitor {
     output.push('IS');
 
     if (node.label) {
-      output.push(`'${node.label}'`);
+      output.push(QuoteUtils.escape(node.label));
     } else {
       output.push('NULL');
     }
@@ -8945,11 +8953,11 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.for_encoding_name) {
-      output.push('FOR', `'${node.for_encoding_name}'`);
+      output.push('FOR', QuoteUtils.escape(node.for_encoding_name));
     }
 
     if (node.to_encoding_name) {
-      output.push('TO', `'${node.to_encoding_name}'`);
+      output.push('TO', QuoteUtils.escape(node.to_encoding_name));
     }
 
     if (node.func_name && node.func_name.length > 0) {
@@ -10257,7 +10265,7 @@ export class Deparser implements DeparserVisitor {
 
               // Handle String arguments with single quotes for string literals
               if (defValue.String) {
-                return `${preservedDefName} = '${defValue.String.sval}'`;
+                return `${preservedDefName} = ${QuoteUtils.escape(defValue.String.sval)}`;
               }
               return `${preservedDefName} = ${this.visit(defValue, context)}`;
             }
@@ -10401,7 +10409,7 @@ export class Deparser implements DeparserVisitor {
               // For CREATE COLLATION, ensure String nodes are quoted as string literals
               let valueStr;
               if (defValue.String) {
-                valueStr = `'${defValue.String.sval}'`;
+                valueStr = QuoteUtils.escape(defValue.String.sval);
               } else {
                 valueStr = this.visit(defValue, context);
               }
@@ -10719,6 +10727,23 @@ export class Deparser implements DeparserVisitor {
     return output.join(' ');
   }
 
+  private quoteDefElemArg(arg: any, argValue: any): any {
+    if (arg && this.getNodeType(arg) === 'String') {
+      return QuoteUtils.escape(this.getNodeData(arg).sval || '');
+    }
+    return typeof argValue === 'string' && !argValue.startsWith("'")
+      ? QuoteUtils.escape(argValue)
+      : argValue;
+  }
+
+  private formatOptionValue(arg: any, argValue: any): any {
+    if (arg && this.getNodeType(arg) === 'String') {
+      const sval: string = this.getNodeData(arg).sval || '';
+      return /^[A-Za-z_][A-Za-z0-9_]*$/.test(sval) ? sval : QuoteUtils.escape(sval);
+    }
+    return argValue;
+  }
+
   Var(node: t.Var, context: DeparserContext): string {
     if (node.varno && node.varattno) {
       return `$${node.varno}.${node.varattno}`;
@@ -10765,7 +10790,7 @@ export class Deparser implements DeparserVisitor {
 
       if (node.rowexpr) {
         output.push(',');
-        output.push(`'${this.visit(node.rowexpr, context)}'`);
+        output.push(this.visit(node.rowexpr, context));
       }
 
       if (node.colexprs && node.colexprs.length > 0) {
@@ -10787,28 +10812,47 @@ export class Deparser implements DeparserVisitor {
       output.push('LATERAL');
     }
 
-    if (node.docexpr) {
-      output.push(this.visit(node.docexpr, context));
+    const args: string[] = [];
+
+    if (node.namespaces && node.namespaces.length > 0) {
+      const namespaces = ListUtils.unwrapList(node.namespaces).map(ns => {
+        const target = this.getNodeData(ns);
+        const uri = this.visit(target.val, context);
+        return target.name ? `${uri} AS ${QuoteUtils.quoteIdentifier(target.name)}` : `DEFAULT ${uri}`;
+      });
+      args.push(`XMLNAMESPACES(${namespaces.join(', ')}),`);
     }
 
     if (node.rowexpr) {
-      output.push('PASSING');
-      output.push(this.visit(node.rowexpr, context));
+      args.push(this.formatXmlTableExpr(node.rowexpr, context));
+    }
+
+    if (node.docexpr) {
+      args.push('PASSING');
+      args.push(this.formatXmlTableExpr(node.docexpr, context));
     }
 
     if (node.columns && node.columns.length > 0) {
-      output.push('COLUMNS');
-      const columns = ListUtils.unwrapList(node.columns)
+      args.push('COLUMNS');
+      args.push(ListUtils.unwrapList(node.columns)
         .map(col => this.visit(col, context))
-        .join(', ');
-      output.push(`(${columns})`);
+        .join(', '));
     }
+
+    output.push(`XMLTABLE(${args.join(' ')})`);
 
     if (node.alias) {
       output.push(this.Alias(node.alias, context));
     }
 
     return output.join(' ');
+  }
+
+  private formatXmlTableExpr(expr: any, context: DeparserContext): string {
+    const value = this.visit(expr, context);
+    return ['A_Const', 'ColumnRef', 'ParamRef', 'FuncCall'].includes(this.getNodeType(expr))
+      ? value
+      : `(${value})`;
   }
 
   RangeTableFuncCol(node: t.RangeTableFuncCol, context: DeparserContext): string {
@@ -10826,12 +10870,16 @@ export class Deparser implements DeparserVisitor {
 
     if (node.colexpr) {
       output.push('PATH');
-      output.push(`'${this.visit(node.colexpr, context)}'`);
+      output.push(this.visit(node.colexpr, context));
     }
 
     if (node.coldefexpr) {
       output.push('DEFAULT');
       output.push(this.visit(node.coldefexpr, context));
+    }
+
+    if (node.is_not_null) {
+      output.push('NOT NULL');
     }
 
     return output.join(' ');
