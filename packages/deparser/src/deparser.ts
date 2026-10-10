@@ -1,4 +1,4 @@
-import { QuoteUtils } from '@pgsql/quotes';
+import { keywordKindOf, QuoteUtils } from '@pgsql/quotes';
 import { Node } from '@pgsql/types';
 import * as t from '@pgsql/types';
 
@@ -149,13 +149,19 @@ function isWrappedParseResult(obj: any): obj is { ParseResult: t.ParseResult } {
  */
 function formatBitString(bsval: string): string {
   const quote = (value: string) => value.replace(/'/g, "''");
-  if (/^x[0-9A-Fa-f]+$/.test(bsval)) {
+  if (/^x[0-9A-Fa-f]*$/.test(bsval)) {
     return `x'${bsval.substring(1)}'`;
   }
   if (bsval.startsWith('b')) {
     return `b'${quote(bsval.substring(1))}'`;
   }
   return `b'${quote(bsval)}'`;
+}
+
+// A dollar-quoted body ends at the first occurrence of its tag, including one
+// formed by the body's trailing characters plus the closing tag (`...$` + `$$`).
+function dollarTagConflicts(body: string, tag: string): boolean {
+  return (body + tag).indexOf(tag) < body.length;
 }
 
 const NUMERIC_LITERAL = /^[+-]?(?:0[xX](?:_?[0-9A-Fa-f])+|0[oO](?:_?[0-7])+|0[bB](?:_?[01])+|(?:\d(?:_?\d)*(?:\.(?:\d(?:_?\d)*)?)?|\.\d(?:_?\d)*)(?:[eE][+-]?\d(?:_?\d)*)?)$/;
@@ -239,10 +245,19 @@ export class Deparser implements DeparserVisitor {
    */
   private getFunctionDelimiter(body: string): string {
     const delimiter = this.options.functionDelimiter || '$$';
-    if (body.includes(delimiter)) {
-      return this.options.functionDelimiterFallback || '$EOFCODE$';
+    if (!dollarTagConflicts(body, delimiter)) {
+      return delimiter;
     }
-    return delimiter;
+    const fallback = this.options.functionDelimiterFallback || '$EOFCODE$';
+    if (!dollarTagConflicts(body, fallback)) {
+      return fallback;
+    }
+    const base = fallback.slice(0, -1);
+    let counter = 1;
+    while (dollarTagConflicts(body, `${base}${counter}$`)) {
+      counter++;
+    }
+    return `${base}${counter}$`;
   }
 
   /**
@@ -10739,7 +10754,9 @@ export class Deparser implements DeparserVisitor {
   private formatOptionValue(arg: any, argValue: any): any {
     if (arg && this.getNodeType(arg) === 'String') {
       const sval: string = this.getNodeData(arg).sval || '';
-      return /^[A-Za-z_][A-Za-z0-9_]*$/.test(sval) ? sval : QuoteUtils.escape(sval);
+      return /^[a-z_][a-z0-9_]*$/.test(sval) && keywordKindOf(sval) === 'NO_KEYWORD'
+        ? sval
+        : QuoteUtils.escape(sval);
     }
     return argValue;
   }
