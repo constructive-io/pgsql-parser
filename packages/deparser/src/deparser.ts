@@ -10043,7 +10043,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.relation) {
-      output.push(this.visit(node.relation as any, context));
+      output.push(this.RangeVar(node.relation, context));
     }
 
     if (node.skipData) {
@@ -11664,7 +11664,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['LIKE'];
 
     if (node.relation) {
-      output.push(this.visit(node.relation as any, context));
+      output.push(this.RangeVar(node.relation, context));
     }
 
     if (node.options && typeof node.options === 'number') {
