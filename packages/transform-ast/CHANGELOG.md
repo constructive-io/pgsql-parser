@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.5.0](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.4.14...%40pgsql%2Ftransform-ast%4018.5.0) (2026-10-24)
+
+### Bug Fixes
+
+- **deps:** bump libpg-query to 18.2.0 and the 13-17 lines to their new releases ([46ae9bd](https://github.com/constructive-io/pgsql-parser/commit/46ae9bd8be4bacb6e72b9a2606ab39a7a69f3219))
+
 ## [18.4.14](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.4.13...%40pgsql%2Ftransform-ast%4018.4.14) (2026-10-13)
 
 **Note:** Version bump only for package @pgsql/transform-ast

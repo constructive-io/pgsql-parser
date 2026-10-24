@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.3.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-parse%4018.2.12...pgsql-parse%4018.3.0) (2026-10-24)
+
+### Bug Fixes
+
+- **deps:** bump libpg-query to 18.2.0 and the 13-17 lines to their new releases ([46ae9bd](https://github.com/constructive-io/pgsql-parser/commit/46ae9bd8be4bacb6e72b9a2606ab39a7a69f3219))
+
 ## [18.2.12](https://github.com/constructive-io/pgsql-parser/compare/pgsql-parse%4018.2.11...pgsql-parse%4018.2.12) (2026-10-13)
 
 **Note:** Version bump only for package pgsql-parse
