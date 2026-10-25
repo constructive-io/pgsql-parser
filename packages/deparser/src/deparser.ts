@@ -981,18 +981,36 @@ export class Deparser implements DeparserVisitor {
       return '';
     }
 
-    const parts = name.map((n: any) => {
-      if (n.String) {
-        return n.String.sval || n.String.str;
-      }
-      return this.visit(n, context);
-    });
+    const qualified = this.qualifiedOperatorName(name);
+    return name.length > 1 ? `OPERATOR(${qualified})` : qualified;
+  }
 
-    if (parts.length > 1) {
-      return `OPERATOR(${parts.join('.')})`;
+  /**
+   * Renders `schema.op` with the schema quoted. Throws if the operator symbol
+   * would not lex back as a single operator token (e.g. `+-`, `--`, `!=`).
+   */
+  qualifiedOperatorName(name: t.Node[]): string {
+    const parts = ListUtils.unwrapList(name).map((n: any) => n.String ? (n.String.sval ?? n.String.str ?? '') : '');
+    const op = parts.pop() ?? '';
+    if (!this.isValidOperatorSymbol(op)) {
+      throw new Error(`Invalid operator name: ${JSON.stringify(op)}`);
     }
+    return [...parts.map(part => QuoteUtils.quoteIdentifier(part)), op].join('.');
+  }
 
-    return parts.join('.');
+  private isValidOperatorSymbol(op: string): boolean {
+    if (!/^[~!@#^&|`?+\-*/%<>=]+$/.test(op) || op.length >= 64) return false;
+    if (op.includes('--') || op.includes('/*')) return false;
+    // The lexer rewrites `!=` to `<>` and treats `=>` as its own token.
+    if (op === '!=' || op === '=>') return false;
+    // A multi-char operator may only end in + or - if it contains one of these.
+    return op.length === 1 || !/[+-]$/.test(op) || /[~!@#^&|`?%]/.test(op);
+  }
+
+  private isOperatorNameList(arg: t.Node | undefined): boolean {
+    if (!arg || this.getNodeType(arg) !== 'List') return false;
+    const items = ListUtils.unwrapList(this.getNodeData(arg).items);
+    return items.length > 0 && items.every((item: any) => item.String);
   }
 
   private getOperatorPrecedence(operator: string): number {
@@ -3225,10 +3243,7 @@ export class Deparser implements DeparserVisitor {
               const operatorNode = elemList[1];
               let operator = '';
               if (this.getNodeType(operatorNode) === 'List') {
-                const operatorList = ListUtils.unwrapList(operatorNode);
-                if (operatorList.length > 0 && operatorList[0].String) {
-                  operator = operatorList[0].String.sval;
-                }
+                operator = this.deparseOperatorName(ListUtils.unwrapList(operatorNode), context);
               } else if (operatorNode.String) {
                 operator = operatorNode.String.sval;
               } else {
@@ -5979,13 +5994,9 @@ export class Deparser implements DeparserVisitor {
     // Handle CREATE OPERATOR commutator/negator - MUST be first to prevent quoting
     if (context.parentNodeTypes.includes('DefineStmt') &&
         ['commutator', 'negator'].includes(node.defname.toLowerCase())) {
-      if (node.arg && this.getNodeType(node.arg) === 'List') {
-        const listData = this.getNodeData(node.arg);
-        const listItems = ListUtils.unwrapList(listData.items);
-        if (listItems.length === 1 && listItems[0].String) {
-          const preservedName = this.preserveOperatorDefElemCase(node.defname);
-          return `${preservedName} = ${listItems[0].String.sval}`;
-        }
+      if (this.isOperatorNameList(node.arg)) {
+        const preservedName = this.preserveOperatorDefElemCase(node.defname);
+        return `${preservedName} = ${this.deparseOperatorName(ListUtils.unwrapList(this.getNodeData(node.arg).items), context)}`;
       }
     }
 
@@ -6091,12 +6102,8 @@ export class Deparser implements DeparserVisitor {
           }
         }
 
-        if (node.arg && this.getNodeType(node.arg) === 'List') {
-          const listData = this.getNodeData(node.arg);
-          const listItems = ListUtils.unwrapList(listData.items);
-          if (listItems.length === 1 && listItems[0].String) {
-            return `${node.defname} = ${listItems[0].String.sval}`;
-          }
+        if (this.isOperatorNameList(node.arg)) {
+          return `${node.defname} = ${this.deparseOperatorName(ListUtils.unwrapList(this.getNodeData(node.arg).items), context)}`;
         }
       }
 
@@ -6461,12 +6468,8 @@ export class Deparser implements DeparserVisitor {
         if (['commutator', 'negator'].includes(node.defname.toLowerCase())) {
           if (node.arg) {
             // For commutator/negator, preserve the original operator symbol without quotes
-            if (node.arg && this.getNodeType(node.arg) === 'List') {
-              const listData = this.getNodeData(node.arg);
-              const listItems = ListUtils.unwrapList(listData.items);
-              if (listItems.length === 1 && listItems[0].String) {
-                return `${preservedName} = ${listItems[0].String.sval}`;
-              }
+            if (this.isOperatorNameList(node.arg)) {
+              return `${preservedName} = ${this.deparseOperatorName(ListUtils.unwrapList(this.getNodeData(node.arg).items), context)}`;
             }
             const unquotedValue = argValue.replace(/^"(.*)"$/, '$1');
             return `${preservedName} = ${unquotedValue}`;
@@ -7158,12 +7161,7 @@ export class Deparser implements DeparserVisitor {
             // For operators, we need to handle ObjectWithArgs structure
             if (node.object && (node.object as any).ObjectWithArgs) {
               const objWithArgs = (node.object as any).ObjectWithArgs;
-              let operatorName = objWithArgs.objname && objWithArgs.objname[0] && objWithArgs.objname[0].String
-                ? objWithArgs.objname[0].String.sval : 'unknown';
-
-              if (operatorName.startsWith('"') && operatorName.endsWith('"')) {
-                operatorName = operatorName.slice(1, -1);
-              }
+              const operatorName = this.qualifiedOperatorName(objWithArgs.objname);
 
               const args: string[] = [];
               if (objWithArgs.objargs) {
@@ -7220,13 +7218,7 @@ export class Deparser implements DeparserVisitor {
       } else if (node.objtype === 'OBJECT_OPERATOR' && node.object && (node.object as any).ObjectWithArgs) {
         // Handle direct ObjectWithArgs for OPERATOR syntax: COMMENT ON OPERATOR -(NONE, integer) IS 'comment'
         const objWithArgs = (node.object as any).ObjectWithArgs;
-        let operatorName = objWithArgs.objname && objWithArgs.objname[0] && objWithArgs.objname[0].String
-          ? objWithArgs.objname[0].String.sval : 'unknown';
-
-        // Remove quotes from operator name if present
-        if (operatorName.startsWith('"') && operatorName.endsWith('"')) {
-          operatorName = operatorName.slice(1, -1);
-        }
+        const operatorName = this.qualifiedOperatorName(objWithArgs.objname);
 
         const args: string[] = [];
         if (objWithArgs.objargs) {
@@ -7997,24 +7989,28 @@ export class Deparser implements DeparserVisitor {
   AlterStatsStmt(node: t.AlterStatsStmt, context: DeparserContext): string {
     const output: string[] = ['ALTER', 'STATISTICS'];
 
+    if (node.missing_ok) {
+      output.push('IF EXISTS');
+    }
+
     if (node.defnames && node.defnames.length > 0) {
-      const names = ListUtils.unwrapList(node.defnames).map(name => this.visit(name, context));
+      const names = ListUtils.unwrapList(node.defnames).map(name => QuoteUtils.quoteIdentifier(this.getNodeData(name).sval));
       output.push(names.join('.'));
     }
 
     output.push('SET', 'STATISTICS');
 
-    if (node.stxstattarget) {
-      output.push(this.visit(node.stxstattarget, context));
-    }
+    output.push(node.stxstattarget ? this.visit(node.stxstattarget, context) : 'DEFAULT');
 
     return output.join(' ');
   }
 
-  ObjectWithArgs(node: t.ObjectWithArgs, context: DeparserContext): string {
+  ObjectWithArgs(node: t.ObjectWithArgs, context: DeparserContext, isOperator = context.objtype === 'OBJECT_OPERATOR'): string {
     let result = '';
 
-    if (node.objname && node.objname.length > 0) {
+    if (isOperator && node.objname && node.objname.length > 0) {
+      result = this.qualifiedOperatorName(node.objname);
+    } else if (node.objname && node.objname.length > 0) {
       const objContext = context.spawn('ObjectWithArgs');
       const names = ListUtils.unwrapList(node.objname).map(name => this.visit(name, objContext));
       result = names.join('.');
@@ -8052,7 +8048,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'OPERATOR'];
 
     if (node.opername) {
-      output.push(this.ObjectWithArgs(node.opername, context));
+      output.push(this.ObjectWithArgs(node.opername, context, true));
     }
 
     output.push('SET');
@@ -8556,6 +8552,9 @@ export class Deparser implements DeparserVisitor {
     case 'OBJECT_ROUTINE':
       output.push('ROUTINE');
       break;
+    case 'OBJECT_STATISTIC_EXT':
+      output.push('STATISTICS');
+      break;
     default:
       throw new Error(`Unsupported RenameStmt renameType: ${node.renameType}`);
     }
@@ -8589,7 +8588,7 @@ export class Deparser implements DeparserVisitor {
         } else {
           output.push(this.visit(node.object, context));
         }
-      } else if ((node.renameType === 'OBJECT_TYPE' || node.renameType === 'OBJECT_DOMAIN') && (node.object as any).List) {
+      } else if ((node.renameType === 'OBJECT_TYPE' || node.renameType === 'OBJECT_DOMAIN' || node.renameType === 'OBJECT_STATISTIC_EXT') && (node.object as any).List) {
         // Qualified type names - join List parts with dots
         const items = ListUtils.unwrapList(node.object as any);
         const parts = items
@@ -10136,16 +10135,7 @@ export class Deparser implements DeparserVisitor {
       output.push('CREATE OPERATOR');
 
       if (node.defnames && node.defnames.length > 0) {
-        const names = ListUtils.unwrapList(node.defnames).map((name, index) => {
-          if (index === node.defnames.length - 1) {
-            const nodeData = this.getNodeData(name);
-            if (nodeData && nodeData.sval) {
-              return nodeData.sval; // Return operator symbol unquoted
-            }
-          }
-          return this.visit(name, context); // Quote schema/namespace names normally
-        });
-        output.push(names.join('.'));
+        output.push(this.qualifiedOperatorName(node.defnames));
       }
 
       if (node.definition && node.definition.length > 0) {
@@ -10160,11 +10150,8 @@ export class Deparser implements DeparserVisitor {
               const quotedDefName = QuoteUtils.quoteIdentifier(defName);
               const preservedDefName = quotedDefName !== defName ? quotedDefName : this.preserveOperatorDefElemCase(defName);
 
-              if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator') && defValue.List) {
-                const listItems = ListUtils.unwrapList(defValue.List.items);
-                if (listItems.length === 1 && listItems[0].String) {
-                  return `${preservedDefName} = ${listItems[0].String.sval}`;
-                }
+              if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator') && this.isOperatorNameList(defValue)) {
+                return `${preservedDefName} = ${this.deparseOperatorName(ListUtils.unwrapList(defValue.List.items), context)}`;
               }
               // For commutator/negator, we already handled them above
               if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator')) {
@@ -10748,7 +10735,7 @@ export class Deparser implements DeparserVisitor {
       output.push(operatorNumber.toString());
       if (node.name) {
         const opClassContext = context.spawn('CreateOpClassItem');
-        output.push(this.ObjectWithArgs(node.name, opClassContext));
+        output.push(this.ObjectWithArgs(node.name, opClassContext, true));
       }
     } else if (node.itemtype === 2) {
       output.push('FUNCTION');
