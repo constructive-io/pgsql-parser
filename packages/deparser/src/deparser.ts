@@ -11140,6 +11140,189 @@ export class Deparser implements DeparserVisitor {
     return parts.join(' ');
   }
 
+  JsonBehavior(node: t.JsonBehavior, context: DeparserContext): string {
+    switch (node.btype) {
+    case 'JSON_BEHAVIOR_NULL':
+      return 'NULL';
+    case 'JSON_BEHAVIOR_ERROR':
+      return 'ERROR';
+    case 'JSON_BEHAVIOR_EMPTY':
+      return 'EMPTY';
+    case 'JSON_BEHAVIOR_TRUE':
+      return 'TRUE';
+    case 'JSON_BEHAVIOR_FALSE':
+      return 'FALSE';
+    case 'JSON_BEHAVIOR_UNKNOWN':
+      return 'UNKNOWN';
+    case 'JSON_BEHAVIOR_EMPTY_ARRAY':
+      return 'EMPTY ARRAY';
+    case 'JSON_BEHAVIOR_EMPTY_OBJECT':
+      return 'EMPTY OBJECT';
+    case 'JSON_BEHAVIOR_DEFAULT':
+      return `DEFAULT ${this.visit(node.expr as Node, context)}`;
+    default:
+      throw new Error(`Unsupported JsonBehavior btype: ${node.btype}`);
+    }
+  }
+
+  JsonArgument(node: t.JsonArgument, context: DeparserContext): string {
+    const val = node.val ? this.JsonValueExpr(node.val, context) : '';
+    return `${val} AS ${QuoteUtils.quoteIdentifier(node.name)}`;
+  }
+
+  formatJsonPassing(passing: t.Node[] | undefined, context: DeparserContext): string | null {
+    if (!passing || passing.length === 0) return null;
+    return 'PASSING ' + ListUtils.unwrapList(passing).map(arg => this.visit(arg, context)).join(', ');
+  }
+
+  formatJsonWrapper(wrapper: t.JsonWrapper | undefined): string | null {
+    switch (wrapper) {
+    case 'JSW_NONE':
+      return 'WITHOUT WRAPPER';
+    case 'JSW_CONDITIONAL':
+      return 'WITH CONDITIONAL WRAPPER';
+    case 'JSW_UNCONDITIONAL':
+      return 'WITH UNCONDITIONAL WRAPPER';
+    default:
+      return null;
+    }
+  }
+
+  formatJsonQuotes(quotes: t.JsonQuotes | undefined): string | null {
+    switch (quotes) {
+    case 'JS_QUOTES_KEEP':
+      return 'KEEP QUOTES';
+    case 'JS_QUOTES_OMIT':
+      return 'OMIT QUOTES';
+    default:
+      return null;
+    }
+  }
+
+  formatJsonBehaviors(onEmpty: t.JsonBehavior | undefined, onError: t.JsonBehavior | undefined, context: DeparserContext): string[] {
+    const parts: string[] = [];
+    if (onEmpty) parts.push(`${this.JsonBehavior(onEmpty, context)} ON EMPTY`);
+    if (onError) parts.push(`${this.JsonBehavior(onError, context)} ON ERROR`);
+    return parts;
+  }
+
+  JsonFuncExpr(node: t.JsonFuncExpr, context: DeparserContext): string {
+    let name: string;
+    switch (node.op) {
+    case 'JSON_EXISTS_OP':
+      name = 'JSON_EXISTS';
+      break;
+    case 'JSON_QUERY_OP':
+      name = 'JSON_QUERY';
+      break;
+    case 'JSON_VALUE_OP':
+      name = 'JSON_VALUE';
+      break;
+    default:
+      throw new Error(`Unsupported JsonFuncExpr op: ${node.op}`);
+    }
+
+    const args: string[] = [];
+    const contextItem = node.context_item ? this.JsonValueExpr(node.context_item, context) : '';
+    args.push(`${contextItem}, ${this.visit(node.pathspec as Node, context)}`);
+
+    const passing = this.formatJsonPassing(node.passing, context);
+    if (passing) args.push(passing);
+
+    const output = this.formatJsonOutput(node.output, context);
+    if (output) args.push(output);
+
+    const wrapper = this.formatJsonWrapper(node.wrapper);
+    if (wrapper) args.push(wrapper);
+
+    const quotes = this.formatJsonQuotes(node.quotes);
+    if (quotes) args.push(quotes);
+
+    args.push(...this.formatJsonBehaviors(node.on_empty, node.on_error, context));
+
+    return `${name}(${args.join(' ')})`;
+  }
+
+  JsonTablePathSpec(node: t.JsonTablePathSpec, context: DeparserContext): string {
+    const path = this.visit(node.string as Node, context);
+    return node.name ? `${path} AS ${QuoteUtils.quoteIdentifier(node.name)}` : path;
+  }
+
+  formatJsonTableColumns(columns: t.Node[] | undefined, context: DeparserContext): string {
+    const cols = ListUtils.unwrapList(columns || []).map(col => this.visit(col, context));
+    return `COLUMNS (${cols.join(', ')})`;
+  }
+
+  JsonTableColumn(node: t.JsonTableColumn, context: DeparserContext): string {
+    if (node.coltype === 'JTC_NESTED') {
+      const path = node.pathspec ? this.JsonTablePathSpec(node.pathspec, context) : '';
+      return `NESTED PATH ${path} ${this.formatJsonTableColumns(node.columns, context)}`;
+    }
+
+    const parts: string[] = [QuoteUtils.quoteIdentifier(node.name)];
+
+    if (node.coltype === 'JTC_FOR_ORDINALITY') {
+      parts.push('FOR ORDINALITY');
+      return parts.join(' ');
+    }
+
+    if (node.typeName) {
+      parts.push(this.TypeName(node.typeName, context));
+    }
+
+    if (node.coltype === 'JTC_EXISTS') {
+      parts.push('EXISTS');
+    } else if (node.coltype === 'JTC_FORMATTED') {
+      parts.push(this.formatJsonFormat(node.format) || 'FORMAT JSON');
+    }
+
+    if (node.pathspec) {
+      parts.push('PATH', this.JsonTablePathSpec(node.pathspec, context));
+    }
+
+    if (node.coltype !== 'JTC_EXISTS') {
+      const wrapper = this.formatJsonWrapper(node.wrapper);
+      if (wrapper) parts.push(wrapper);
+
+      const quotes = this.formatJsonQuotes(node.quotes);
+      if (quotes) parts.push(quotes);
+    }
+
+    parts.push(...this.formatJsonBehaviors(node.on_empty, node.on_error, context));
+
+    return parts.join(' ');
+  }
+
+  JsonTable(node: t.JsonTable, context: DeparserContext): string {
+    const output: string[] = [];
+
+    if (node.lateral) {
+      output.push('LATERAL');
+    }
+
+    const args: string[] = [];
+    const contextItem = node.context_item ? this.JsonValueExpr(node.context_item, context) : '';
+    const pathspec = node.pathspec ? this.JsonTablePathSpec(node.pathspec, context) : '';
+    args.push(`${contextItem}, ${pathspec}`);
+
+    const passing = this.formatJsonPassing(node.passing, context);
+    if (passing) args.push(passing);
+
+    args.push(this.formatJsonTableColumns(node.columns, context));
+
+    if (node.on_error) {
+      args.push(`${this.JsonBehavior(node.on_error, context)} ON ERROR`);
+    }
+
+    output.push(`JSON_TABLE(${args.join(' ')})`);
+
+    if (node.alias) {
+      output.push(this.Alias(node.alias, context));
+    }
+
+    return output.join(' ');
+  }
+
   RangeFunction(node: t.RangeFunction, context: DeparserContext): string {
     const output: string[] = [];
 
