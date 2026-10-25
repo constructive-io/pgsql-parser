@@ -90,8 +90,8 @@ importers:
         version: 18.0.0
     devDependencies:
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       makage:
         specifier: ^0.5.1
         version: 0.5.1
@@ -109,8 +109,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       minimist:
         specifier: 1.2.8
         version: 1.2.8
@@ -132,8 +132,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -149,8 +149,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -213,8 +213,8 @@ importers:
         version: link:../utils/dist
     devDependencies:
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       makage:
         specifier: ^0.5.1
         version: 0.5.1
@@ -226,8 +226,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -243,8 +243,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -269,8 +269,8 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       pgsql-deparser:
         specifier: workspace:*
         version: link:../deparser/dist
@@ -388,14 +388,14 @@ importers:
   packages/transform-ast:
     devDependencies:
       "@pgsql/parser":
-        specifier: ^1.5.0
-        version: 1.5.0
+        specifier: ^1.6.2
+        version: 1.6.2
       "@pgsql/types":
         specifier: ^18.0.0
         version: 18.0.0
       libpg-query:
-        specifier: 18.2.0
-        version: 18.2.0
+        specifier: 18.2.1
+        version: 18.2.1
       makage:
         specifier: ^0.5.1
         version: 0.5.1
@@ -1567,7 +1567,6 @@ packages:
       }
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   "@nx/nx-linux-arm64-musl@23.1.1":
     resolution:
@@ -1576,7 +1575,6 @@ packages:
       }
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   "@nx/nx-linux-x64-gnu@23.1.1":
     resolution:
@@ -1585,7 +1583,6 @@ packages:
       }
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   "@nx/nx-linux-x64-musl@23.1.1":
     resolution:
@@ -1594,7 +1591,6 @@ packages:
       }
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   "@nx/nx-win32-arm64-msvc@23.1.1":
     resolution:
@@ -1712,10 +1708,10 @@ packages:
         integrity: sha512-s3NgG+w3Vd4viPkgj9+RvrIN1UCNL+YnvuZbTMdpsF2oR73kiB+G8xY8jUUIhf95ZYMRgLvdgWvev2HLegfHsQ==,
       }
 
-  "@pgsql/parser@1.5.0":
+  "@pgsql/parser@1.6.2":
     resolution:
       {
-        integrity: sha512-a5Bn0eVj69g8ae9d0jGxfXpq9bhN6hx2DnU7uiQjoSZtpWLgq1aSA1y3qKkilb+Tm1EV9i56PbZBp5rclyeBAw==,
+        integrity: sha512-P5JIkF3L2tSQ1zJPTczI7tFXUO9lYhma/+OIpLjRvFFccFwImd5lyEV0Mu6QjyzslS6mBUWJ//0X7in1mItXhQ==,
       }
 
   "@pgsql/types@17.6.2":
@@ -2298,7 +2294,6 @@ packages:
       }
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   "@unrs/resolver-binding-linux-arm64-musl@1.11.1":
     resolution:
@@ -2307,7 +2302,6 @@ packages:
       }
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   "@unrs/resolver-binding-linux-ppc64-gnu@1.11.1":
     resolution:
@@ -2316,7 +2310,6 @@ packages:
       }
     cpu: [ppc64]
     os: [linux]
-    libc: [glibc]
 
   "@unrs/resolver-binding-linux-riscv64-gnu@1.11.1":
     resolution:
@@ -2325,7 +2318,6 @@ packages:
       }
     cpu: [riscv64]
     os: [linux]
-    libc: [glibc]
 
   "@unrs/resolver-binding-linux-riscv64-musl@1.11.1":
     resolution:
@@ -2334,7 +2326,6 @@ packages:
       }
     cpu: [riscv64]
     os: [linux]
-    libc: [musl]
 
   "@unrs/resolver-binding-linux-s390x-gnu@1.11.1":
     resolution:
@@ -2343,7 +2334,6 @@ packages:
       }
     cpu: [s390x]
     os: [linux]
-    libc: [glibc]
 
   "@unrs/resolver-binding-linux-x64-gnu@1.11.1":
     resolution:
@@ -2352,7 +2342,6 @@ packages:
       }
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   "@unrs/resolver-binding-linux-x64-musl@1.11.1":
     resolution:
@@ -2361,7 +2350,6 @@ packages:
       }
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   "@unrs/resolver-binding-wasm32-wasi@1.11.1":
     resolution:
@@ -4635,10 +4623,10 @@ packages:
       }
     engines: { node: ^20.17.0 || >=22.9.0 }
 
-  libpg-query@18.2.0:
+  libpg-query@18.2.1:
     resolution:
       {
-        integrity: sha512-xoNEjLosxCZsDIP9DXjy9/m3g3uc3trfSg2G3hm2CEzqC/DVorogLy7sKOMxPLDRffr2eibbF7klx0ySOPjB6Q==,
+        integrity: sha512-0zPlJei06//awjKmslKEwmGMSjF0n4p4OnPa3boRp8Xzl6ZnDIOddyLAsoJcJntrPCBLrWUbEwv5Laxg8BZYlA==,
       }
 
   lines-and-columns@1.2.4:
@@ -7534,7 +7522,7 @@ snapshots:
 
   "@pgsql/enums@18.0.0": {}
 
-  "@pgsql/parser@1.5.0": {}
+  "@pgsql/parser@1.6.2": {}
 
   "@pgsql/types@17.6.2": {}
 
@@ -9503,7 +9491,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  libpg-query@18.2.0:
+  libpg-query@18.2.1:
     dependencies:
       "@pgsql/types": 18.0.0
 
