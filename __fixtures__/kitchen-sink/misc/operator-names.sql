@@ -1,0 +1,18 @@
+SELECT a OPERATOR(pg_catalog.+) b FROM t;
+SELECT a OPERATOR("My Schema".+) b FROM t;
+SELECT a OPERATOR("S".===) b OPERATOR(public.*) c FROM t;
+SELECT OPERATOR("S".-) a FROM t;
+SELECT a OPERATOR("S".=) ANY (ARRAY[1]) FROM t;
+SELECT a OPERATOR("S".=) ALL (SELECT 1) FROM t;
+SELECT - -1, @ -1, 1 - -1, 2 ^ - 1;
+CREATE OPERATOR "My Schema".=== (LEFTARG = int, RIGHTARG = int, PROCEDURE = f, COMMUTATOR = OPERATOR("My Schema".===), NEGATOR = OPERATOR("My Schema".!==));
+CREATE OPERATOR === (LEFTARG = int, RIGHTARG = int, PROCEDURE = f, COMMUTATOR = ===, NEGATOR = !==);
+ALTER OPERATOR === (int, int) SET (COMMUTATOR = OPERATOR("My Schema".===));
+ALTER OPERATOR "S".=== (int, int) SET (NEGATOR = !==);
+DROP OPERATOR "S".< (int, int);
+COMMENT ON OPERATOR "My Schema".=== (int, int) IS 'x';
+COMMENT ON OPERATOR - (NONE, int) IS 'x';
+CREATE OPERATOR CLASS c FOR TYPE int USING btree AS OPERATOR 1 "S".< (int, int), OPERATOR 2 <=, FUNCTION 1 f(int, int);
+ALTER OPERATOR FAMILY f USING btree ADD OPERATOR 1 "S".< (int, int);
+ALTER TABLE t ADD EXCLUDE USING gist (c WITH OPERATOR("S".&&));
+ALTER TABLE t ADD EXCLUDE USING gist (c WITH &&);
