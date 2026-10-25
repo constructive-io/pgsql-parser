@@ -28,6 +28,7 @@ for (const key of Object.keys(statements)) {
 }
 
 const observed: Record<string, string[]> = {};
+const ran = new Set<string>();
 const utils = new TestUtils();
 
 describe('regress corpus round-trip', () => {
@@ -37,9 +38,18 @@ describe('regress corpus round-trip', () => {
   afterAll(() => {
     jest.restoreAllMocks();
     if (UPDATE) {
-      const sorted = Object.fromEntries(Object.entries(observed).sort(([a], [b]) => a.localeCompare(b)));
+      // Only replace entries for files that ran, so a filtered run (-t, --shard) keeps the rest
+      const merged = { ...knownFailures };
+      for (const file of ran) delete merged[file];
+      Object.assign(merged, observed);
+      for (const file of Object.keys(merged)) if (!byFile.has(file)) delete merged[file];
+      const sorted = Object.fromEntries(Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)));
       fs.writeFileSync(KNOWN_FAILURES_FILE, JSON.stringify(sorted, null, 2) + '\n');
     }
+  });
+
+  it('lists only files that are in the corpus', () => {
+    expect(Object.keys(knownFailures).filter((file) => !byFile.has(file))).toEqual([]);
   });
 
   it.each([...byFile.keys()])('%s', async (file) => {
@@ -51,6 +61,7 @@ describe('regress corpus round-trip', () => {
         failing.push(key);
       }
     }
+    ran.add(file);
     if (failing.length) observed[file] = failing;
     if (!UPDATE) expect(failing).toEqual(knownFailures[file] ?? []);
   });

@@ -41,7 +41,7 @@ function splitWithScanner(sql: string): string[] {
   for (const tok of tokens) {
     const word = tok.text.toUpperCase();
     if (tok.text === '(') parens++;
-    else if (tok.text === ')') parens--;
+    else if (tok.text === ')') parens = Math.max(0, parens - 1);
     else if (word === 'ATOMIC' && prev === 'BEGIN') atomic++;
     else if (atomic > 0 && word === 'CASE') cases++;
     else if (atomic > 0 && word === 'END') {
