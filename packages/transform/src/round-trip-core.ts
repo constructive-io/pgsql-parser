@@ -59,7 +59,8 @@ export function normalizeTree(node: any, options: NormalizeTreeOptions = {}): an
     const keys = sortKeys ? Object.keys(node).sort() : Object.keys(node);
     for (const key of keys) {
       if (volatileKeys?.has(key)) continue;
-      const handler = keyHandlers?.[key];
+      const handler =
+        keyHandlers && Object.prototype.hasOwnProperty.call(keyHandlers, key) ? keyHandlers[key] : undefined;
       out[key] = handler ? handler(node[key], recurse) : recurse(node[key]);
     }
     return out;
