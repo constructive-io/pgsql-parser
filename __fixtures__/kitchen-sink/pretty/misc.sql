@@ -233,3 +233,8 @@ GRANT EXECUTE ON FUNCTION dashboard_private.uuid_generate_seeded_uuid TO PUBLIC;
 
 -- https://github.com/constructive-io/pgsql-parser/issues/217
 SELECT CAST(t.date AT TIME ZONE $$America/New_York$$ AS text)::date FROM tbl t;
+
+-- FETCH/MOVE ALL (FETCH_ALL is 2147483647 in the WASM AST)
+FETCH ALL FROM c;
+
+MOVE BACKWARD ALL IN c;
