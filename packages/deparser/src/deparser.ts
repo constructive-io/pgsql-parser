@@ -7904,8 +7904,9 @@ export class Deparser implements DeparserVisitor {
   FetchStmt(node: t.FetchStmt, context: DeparserContext): string {
     const output: string[] = [node.ismove ? 'MOVE' : 'FETCH'];
 
-    // Check if howMany represents "ALL" (PostgreSQL uses LONG_MAX as sentinel)
-    const isAll = (node.howMany as any) === 9223372036854776000;
+    // FETCH_ALL is LONG_MAX: 2^63-1 from a 64-bit libpg_query, 2^31-1 from the 32-bit WASM build
+    const howMany = node.howMany as any;
+    const isAll = howMany === 9223372036854776000 || howMany === 2147483647;
 
     // Handle direction first, then check for ALL within each direction
     if (node.direction) {
