@@ -837,3 +837,48 @@ BEGIN
   a[2] := coalesce(nullif(3, 0), 4);
   r.f := greatest(1, 2);
 END$$;
+
+-- Test 68: multi-line string literals keep their exact text inside nested blocks
+CREATE FUNCTION test_multiline_literals(p_on boolean) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF p_on THEN
+    RAISE NOTICE 'line one
+  line two';
+    EXECUTE format('SELECT 1
+       FROM %I', 'pg_class');
+    PERFORM E'it''s\
+  escaped', $q$dollar
+   quoted$q$;
+  END IF;
+END$$;
+
+-- Test 69: quoted "char" type keeps its quotes
+CREATE FUNCTION test_quoted_char_type() RETURNS "char"
+LANGUAGE plpgsql AS $$
+DECLARE
+  c "char" := 'a';
+BEGIN
+  RETURN c;
+END$$;
+
+-- Test 70: CASE with an empty ELSE keeps the ELSE
+CREATE FUNCTION test_case_empty_else(x int) RETURNS text
+LANGUAGE plpgsql AS $$
+BEGIN
+  CASE x
+    WHEN 1 THEN RETURN 'one';
+    ELSE
+  END CASE;
+  RETURN 'other';
+END$$;
+
+-- Test 71: nested block comments do not hide the string literal after them
+CREATE FUNCTION test_nested_comment_literal(p_on boolean) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF p_on THEN
+    PERFORM /* outer /* inner */ it's */ 'line one
+  line two';
+  END IF;
+END$$;

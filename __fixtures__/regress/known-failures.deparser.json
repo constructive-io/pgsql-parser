@@ -1,0 +1,225 @@
+{
+  "postgres_regress/alter_generic.sql": [
+    "postgres_regress/alter_generic-237.sql",
+    "postgres_regress/alter_generic-238.sql",
+    "postgres_regress/alter_generic-243.sql",
+    "postgres_regress/alter_generic-244.sql",
+    "postgres_regress/alter_generic-245.sql",
+    "postgres_regress/alter_generic-314.sql",
+    "postgres_regress/alter_generic-323.sql"
+  ],
+  "postgres_regress/alter_operator.sql": [
+    "postgres_regress/alter_operator-21.sql"
+  ],
+  "postgres_regress/bit.sql": [
+    "postgres_regress/bit-17.sql",
+    "postgres_regress/bit-18.sql"
+  ],
+  "postgres_regress/collate.linux.utf8.sql": [
+    "postgres_regress/collate.linux.utf8-156.sql",
+    "postgres_regress/collate.linux.utf8-157.sql"
+  ],
+  "postgres_regress/collate.sql": [
+    "postgres_regress/collate-126.sql",
+    "postgres_regress/collate-143.sql"
+  ],
+  "postgres_regress/compression.sql": [
+    "postgres_regress/compression-17.sql"
+  ],
+  "postgres_regress/copy.sql": [
+    "postgres_regress/copy-22.sql"
+  ],
+  "postgres_regress/copy2.sql": [
+    "postgres_regress/copy2-106.sql"
+  ],
+  "postgres_regress/copyselect.sql": [
+    "postgres_regress/copyselect-18.sql",
+    "postgres_regress/copyselect-24.sql"
+  ],
+  "postgres_regress/database.sql": [
+    "postgres_regress/database-2.sql"
+  ],
+  "postgres_regress/domain.sql": [
+    "postgres_regress/domain-8.sql",
+    "postgres_regress/domain-17.sql",
+    "postgres_regress/domain-253.sql",
+    "postgres_regress/domain-287.sql",
+    "postgres_regress/domain-291.sql",
+    "postgres_regress/domain-293.sql"
+  ],
+  "postgres_regress/drop_if_exists.sql": [
+    "postgres_regress/drop_if_exists-158.sql",
+    "postgres_regress/drop_if_exists-159.sql",
+    "postgres_regress/drop_if_exists-160.sql",
+    "postgres_regress/drop_if_exists-161.sql"
+  ],
+  "postgres_regress/foreign_data.sql": [
+    "postgres_regress/foreign_data-77.sql",
+    "postgres_regress/foreign_data-216.sql",
+    "postgres_regress/foreign_data-237.sql",
+    "postgres_regress/foreign_data-295.sql",
+    "postgres_regress/foreign_data-493.sql"
+  ],
+  "postgres_regress/groupingsets.sql": [
+    "postgres_regress/groupingsets-188.sql"
+  ],
+  "postgres_regress/matview.sql": [
+    "postgres_regress/matview-162.sql",
+    "postgres_regress/matview-165.sql"
+  ],
+  "postgres_regress/misc.sql": [
+    "postgres_regress/misc-30.sql"
+  ],
+  "postgres_regress/namespace.sql": [
+    "postgres_regress/namespace-40.sql"
+  ],
+  "postgres_regress/numerology.sql": [
+    "postgres_regress/numerology-68.sql"
+  ],
+  "postgres_regress/object_address.sql": [
+    "postgres_regress/object_address-35.sql"
+  ],
+  "postgres_regress/plpgsql.sql": [
+    "postgres_regress/plpgsql-937.sql",
+    "postgres_regress/plpgsql-939.sql"
+  ],
+  "postgres_regress/privileges.sql": [
+    "postgres_regress/privileges-978.sql",
+    "postgres_regress/privileges-983.sql",
+    "postgres_regress/privileges-987.sql",
+    "postgres_regress/privileges-992.sql"
+  ],
+  "postgres_regress/reloptions.sql": [
+    "postgres_regress/reloptions-48.sql",
+    "postgres_regress/reloptions-58.sql"
+  ],
+  "postgres_regress/rules.sql": [
+    "postgres_regress/rules-481.sql",
+    "postgres_regress/rules-572.sql"
+  ],
+  "postgres_regress/sequence.sql": [
+    "postgres_regress/sequence-13.sql",
+    "postgres_regress/sequence-14.sql",
+    "postgres_regress/sequence-15.sql",
+    "postgres_regress/sequence-16.sql",
+    "postgres_regress/sequence-17.sql",
+    "postgres_regress/sequence-18.sql",
+    "postgres_regress/sequence-19.sql",
+    "postgres_regress/sequence-20.sql",
+    "postgres_regress/sequence-21.sql",
+    "postgres_regress/sequence-22.sql",
+    "postgres_regress/sequence-23.sql",
+    "postgres_regress/sequence-24.sql",
+    "postgres_regress/sequence-25.sql",
+    "postgres_regress/sequence-26.sql",
+    "postgres_regress/sequence-27.sql",
+    "postgres_regress/sequence-28.sql",
+    "postgres_regress/sequence-29.sql",
+    "postgres_regress/sequence-30.sql",
+    "postgres_regress/sequence-31.sql",
+    "postgres_regress/sequence-32.sql",
+    "postgres_regress/sequence-33.sql",
+    "postgres_regress/sequence-34.sql",
+    "postgres_regress/sequence-35.sql",
+    "postgres_regress/sequence-36.sql",
+    "postgres_regress/sequence-154.sql"
+  ],
+  "postgres_regress/sqljson_queryfuncs.sql": [
+    "postgres_regress/sqljson_queryfuncs-186.sql",
+    "postgres_regress/sqljson_queryfuncs-187.sql"
+  ],
+  "postgres_regress/stats_ext.sql": [
+    "postgres_regress/stats_ext-39.sql"
+  ],
+  "postgres_regress/stats_import.sql": [
+    "postgres_regress/stats_import-121.sql"
+  ],
+  "postgres_regress/stats.sql": [
+    "postgres_regress/stats-371.sql"
+  ],
+  "postgres_regress/subselect.sql": [
+    "postgres_regress/subselect-99.sql",
+    "postgres_regress/subselect-100.sql"
+  ],
+  "postgres_regress/tablespace.sql": [
+    "postgres_regress/tablespace-2.sql",
+    "postgres_regress/tablespace-4.sql",
+    "postgres_regress/tablespace-5.sql",
+    "postgres_regress/tablespace-13.sql",
+    "postgres_regress/tablespace-14.sql",
+    "postgres_regress/tablespace-15.sql",
+    "postgres_regress/tablespace-16.sql",
+    "postgres_regress/tablespace-17.sql",
+    "postgres_regress/tablespace-18.sql",
+    "postgres_regress/tablespace-19.sql",
+    "postgres_regress/tablespace-20.sql",
+    "postgres_regress/tablespace-21.sql",
+    "postgres_regress/tablespace-22.sql",
+    "postgres_regress/tablespace-26.sql",
+    "postgres_regress/tablespace-27.sql",
+    "postgres_regress/tablespace-29.sql",
+    "postgres_regress/tablespace-30.sql",
+    "postgres_regress/tablespace-40.sql",
+    "postgres_regress/tablespace-61.sql",
+    "postgres_regress/tablespace-170.sql",
+    "postgres_regress/tablespace-178.sql",
+    "postgres_regress/tablespace-190.sql",
+    "postgres_regress/tablespace-191.sql",
+    "postgres_regress/tablespace-193.sql",
+    "postgres_regress/tablespace-196.sql"
+  ],
+  "postgres_regress/timestamptz.sql": [
+    "postgres_regress/timestamptz-376.sql",
+    "postgres_regress/timestamptz-377.sql",
+    "postgres_regress/timestamptz-382.sql"
+  ],
+  "postgres_regress/timetz.sql": [
+    "postgres_regress/timetz-53.sql"
+  ],
+  "postgres_regress/transactions.sql": [
+    "postgres_regress/transactions-483.sql",
+    "postgres_regress/transactions-486.sql"
+  ],
+  "postgres_regress/triggers.sql": [
+    "postgres_regress/triggers-594.sql",
+    "postgres_regress/triggers-595.sql"
+  ],
+  "postgres_regress/tsdicts.sql": [
+    "postgres_regress/tsdicts-121.sql",
+    "postgres_regress/tsdicts-125.sql",
+    "postgres_regress/tsdicts-128.sql"
+  ],
+  "postgres_regress/vacuum_parallel.sql": [
+    "postgres_regress/vacuum_parallel-11.sql"
+  ],
+  "postgres_regress/vacuum.sql": [
+    "postgres_regress/vacuum-94.sql",
+    "postgres_regress/vacuum-98.sql",
+    "postgres_regress/vacuum-99.sql",
+    "postgres_regress/vacuum-100.sql",
+    "postgres_regress/vacuum-101.sql",
+    "postgres_regress/vacuum-104.sql",
+    "postgres_regress/vacuum-110.sql",
+    "postgres_regress/vacuum-111.sql",
+    "postgres_regress/vacuum-119.sql",
+    "postgres_regress/vacuum-120.sql",
+    "postgres_regress/vacuum-134.sql",
+    "postgres_regress/vacuum-135.sql",
+    "postgres_regress/vacuum-136.sql",
+    "postgres_regress/vacuum-139.sql",
+    "postgres_regress/vacuum-144.sql",
+    "postgres_regress/vacuum-232.sql",
+    "postgres_regress/vacuum-234.sql",
+    "postgres_regress/vacuum-236.sql",
+    "postgres_regress/vacuum-237.sql",
+    "postgres_regress/vacuum-239.sql",
+    "postgres_regress/vacuum-244.sql",
+    "postgres_regress/vacuum-245.sql",
+    "postgres_regress/vacuum-246.sql",
+    "postgres_regress/vacuum-247.sql",
+    "postgres_regress/vacuum-248.sql",
+    "postgres_regress/vacuum-249.sql",
+    "postgres_regress/vacuum-250.sql",
+    "postgres_regress/vacuum-251.sql"
+  ]
+}

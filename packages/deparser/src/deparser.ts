@@ -717,12 +717,28 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    if (node.limitCount) {
-      output.push('LIMIT ' + this.visit(node.limitCount as Node, context));
-    }
+    if (node.limitOption === 'LIMIT_OPTION_WITH_TIES') {
+      if (node.limitOffset) {
+        output.push('OFFSET ' + this.visit(node.limitOffset as Node, context) + ' ROWS');
+      }
+      const count = node.limitCount as Node | undefined;
+      if (count) {
+        let countStr = this.visit(count, context);
+        if (!('A_Const' in count) || countStr.startsWith('-')) {
+          countStr = `(${countStr})`;
+        }
+        output.push(`FETCH FIRST ${countStr} ROWS WITH TIES`);
+      } else {
+        output.push('FETCH FIRST ROWS WITH TIES');
+      }
+    } else {
+      if (node.limitCount) {
+        output.push('LIMIT ' + this.visit(node.limitCount as Node, context));
+      }
 
-    if (node.limitOffset) {
-      output.push('OFFSET ' + this.visit(node.limitOffset as Node, context));
+      if (node.limitOffset) {
+        output.push('OFFSET ' + this.visit(node.limitOffset as Node, context));
+      }
     }
 
     if (node.lockingClause) {
@@ -965,18 +981,36 @@ export class Deparser implements DeparserVisitor {
       return '';
     }
 
-    const parts = name.map((n: any) => {
-      if (n.String) {
-        return n.String.sval || n.String.str;
-      }
-      return this.visit(n, context);
-    });
+    const qualified = this.qualifiedOperatorName(name);
+    return name.length > 1 ? `OPERATOR(${qualified})` : qualified;
+  }
 
-    if (parts.length > 1) {
-      return `OPERATOR(${parts.join('.')})`;
+  /**
+   * Renders `schema.op` with the schema quoted. Throws if the operator symbol
+   * would not lex back as a single operator token (e.g. `+-`, `--`, `!=`).
+   */
+  qualifiedOperatorName(name: t.Node[]): string {
+    const parts = ListUtils.unwrapList(name).map((n: any) => n.String ? (n.String.sval ?? n.String.str ?? '') : '');
+    const op = parts.pop() ?? '';
+    if (!this.isValidOperatorSymbol(op)) {
+      throw new Error(`Invalid operator name: ${JSON.stringify(op)}`);
     }
+    return [...parts.map(part => QuoteUtils.quoteIdentifier(part)), op].join('.');
+  }
 
-    return parts.join('.');
+  private isValidOperatorSymbol(op: string): boolean {
+    if (!/^[~!@#^&|`?+\-*/%<>=]+$/.test(op) || op.length >= 64) return false;
+    if (op.includes('--') || op.includes('/*')) return false;
+    // The lexer rewrites `!=` to `<>` and treats `=>` as its own token.
+    if (op === '!=' || op === '=>') return false;
+    // A multi-char operator may only end in + or - if it contains one of these.
+    return op.length === 1 || !/[+-]$/.test(op) || /[~!@#^&|`?%]/.test(op);
+  }
+
+  private isOperatorNameList(arg: t.Node | undefined): boolean {
+    if (!arg || this.getNodeType(arg) !== 'List') return false;
+    const items = ListUtils.unwrapList(this.getNodeData(arg).items);
+    return items.length > 0 && items.every((item: any) => item.String);
   }
 
   private getOperatorPrecedence(operator: string): number {
@@ -2808,6 +2842,10 @@ export class Deparser implements DeparserVisitor {
       output.push(this.quoteIfNeeded(node.accessMethod));
     }
 
+    if (node.tablespacename) {
+      output.push('TABLESPACE', QuoteUtils.quoteIdentifier(node.tablespacename));
+    }
+
     return output.join(' ');
   }
 
@@ -3018,10 +3056,7 @@ export class Deparser implements DeparserVisitor {
         }
         output.push(`(${keyItems.join(', ')})`);
       }
-      if (node.indexname) {
-        output.push('USING INDEX');
-        output.push(node.indexname);
-      }
+      this.pushIndexConstraintOptions(node, output, context);
       break;
     case 'CONSTR_UNIQUE':
       if (context.isPretty() && !context.isColumnConstraint) {
@@ -3040,10 +3075,7 @@ export class Deparser implements DeparserVisitor {
         }
         output.push(`(${keyItems.join(', ')})`);
       }
-      if (node.indexname) {
-        output.push('USING INDEX');
-        output.push(node.indexname);
-      }
+      this.pushIndexConstraintOptions(node, output, context);
       break;
     case 'CONSTR_FOREIGN':
       // Only add "FOREIGN KEY" for table-level constraints, not column-level constraints
@@ -3211,10 +3243,7 @@ export class Deparser implements DeparserVisitor {
               const operatorNode = elemList[1];
               let operator = '';
               if (this.getNodeType(operatorNode) === 'List') {
-                const operatorList = ListUtils.unwrapList(operatorNode);
-                if (operatorList.length > 0 && operatorList[0].String) {
-                  operator = operatorList[0].String.sval;
-                }
+                operator = this.deparseOperatorName(ListUtils.unwrapList(operatorNode), context);
               } else if (operatorNode.String) {
                 operator = operatorNode.String.sval;
               } else {
@@ -3227,6 +3256,7 @@ export class Deparser implements DeparserVisitor {
         });
         output.push(`(${exclusionElements.join(', ')})`);
       }
+      this.pushIndexConstraintOptions(node, output, context);
       if (node.where_clause) {
         output.push('WHERE');
         output.push(context.parens(this.visit(node.where_clause as any, context)));
@@ -3278,6 +3308,25 @@ export class Deparser implements DeparserVisitor {
       return result;
     }
     return output.join(' ');
+  }
+
+  private pushIndexConstraintOptions(node: t.Constraint, output: string[], context: DeparserContext): void {
+    if (node.indexname) {
+      output.push('USING INDEX', QuoteUtils.quoteIdentifier(node.indexname));
+      return;
+    }
+    if (node.including && node.including.length > 0) {
+      const cols = ListUtils.unwrapList(node.including).map(col => this.visit(col, context));
+      output.push(`INCLUDE (${cols.join(', ')})`);
+    }
+    if (node.options && node.options.length > 0) {
+      const optionContext = context.spawn('IndexStmt');
+      const opts = ListUtils.unwrapList(node.options).map(opt => this.visit(opt, optionContext));
+      output.push(`WITH (${opts.join(', ')})`);
+    }
+    if (node.indexspace) {
+      output.push('USING INDEX TABLESPACE', QuoteUtils.quoteIdentifier(node.indexspace));
+    }
   }
 
   SubLink(node: t.SubLink, context: DeparserContext): string {
@@ -4347,6 +4396,10 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
+    if (node.chain) {
+      output.push('AND CHAIN');
+    }
+
     return output.join(' ');
   }
 
@@ -4466,10 +4519,10 @@ export class Deparser implements DeparserVisitor {
   }
 
   VariableShowStmt(node: t.VariableShowStmt, context: DeparserContext): string {
-    if (node.name === 'ALL') {
+    if (node.name === 'all') {
       return 'SHOW ALL';
     }
-    return `SHOW ${node.name}`;
+    return `SHOW ${QuoteUtils.quoteDottedName(node.name.split('.'))}`;
   }
 
   CreateSchemaStmt(node: t.CreateSchemaStmt, context: DeparserContext): string {
@@ -5941,13 +5994,9 @@ export class Deparser implements DeparserVisitor {
     // Handle CREATE OPERATOR commutator/negator - MUST be first to prevent quoting
     if (context.parentNodeTypes.includes('DefineStmt') &&
         ['commutator', 'negator'].includes(node.defname.toLowerCase())) {
-      if (node.arg && this.getNodeType(node.arg) === 'List') {
-        const listData = this.getNodeData(node.arg);
-        const listItems = ListUtils.unwrapList(listData.items);
-        if (listItems.length === 1 && listItems[0].String) {
-          const preservedName = this.preserveOperatorDefElemCase(node.defname);
-          return `${preservedName} = ${listItems[0].String.sval}`;
-        }
+      if (this.isOperatorNameList(node.arg)) {
+        const preservedName = this.preserveOperatorDefElemCase(node.defname);
+        return `${preservedName} = ${this.deparseOperatorName(ListUtils.unwrapList(this.getNodeData(node.arg).items), context)}`;
       }
     }
 
@@ -6053,12 +6102,8 @@ export class Deparser implements DeparserVisitor {
           }
         }
 
-        if (node.arg && this.getNodeType(node.arg) === 'List') {
-          const listData = this.getNodeData(node.arg);
-          const listItems = ListUtils.unwrapList(listData.items);
-          if (listItems.length === 1 && listItems[0].String) {
-            return `${node.defname} = ${listItems[0].String.sval}`;
-          }
+        if (this.isOperatorNameList(node.arg)) {
+          return `${node.defname} = ${this.deparseOperatorName(ListUtils.unwrapList(this.getNodeData(node.arg).items), context)}`;
         }
       }
 
@@ -6187,7 +6232,7 @@ export class Deparser implements DeparserVisitor {
       }
 
       if (context.parentNodeTypes.includes('CreateTableSpaceStmt') || context.parentNodeTypes.includes('AlterTableSpaceOptionsStmt')) {
-        return `${node.defname.toUpperCase()} ${argValue}`;
+        return `${QuoteUtils.quoteIdentifier(node.defname)} = ${this.formatOptionValue(node.arg, argValue)}`;
       }
 
       if (context.parentNodeTypes.includes('ExplainStmt')) {
@@ -6397,8 +6442,8 @@ export class Deparser implements DeparserVisitor {
           return optName;
         }
         const copyArgType = this.getNodeType(node.arg);
-        if (copyArgType === 'Boolean' && this.getNodeData(node.arg).boolval !== false) {
-          return optName;
+        if (copyArgType === 'Boolean') {
+          return this.getNodeData(node.arg).boolval ? optName : `${optName} false`;
         }
         if (copyArgType === 'List') {
           const items = ListUtils.unwrapList(this.getNodeData(node.arg).items)
@@ -6407,7 +6452,7 @@ export class Deparser implements DeparserVisitor {
         }
         if (copyArgType === 'String') {
           const sval: string = this.getNodeData(node.arg).sval;
-          if (node.defname === 'format') {
+          if (node.defname === 'format' && QuoteUtils.quoteIdentifier(sval) === sval) {
             return `${optName} ${sval}`;
           }
           return `${optName} ${QuoteUtils.escape(sval)}`;
@@ -6423,12 +6468,8 @@ export class Deparser implements DeparserVisitor {
         if (['commutator', 'negator'].includes(node.defname.toLowerCase())) {
           if (node.arg) {
             // For commutator/negator, preserve the original operator symbol without quotes
-            if (node.arg && this.getNodeType(node.arg) === 'List') {
-              const listData = this.getNodeData(node.arg);
-              const listItems = ListUtils.unwrapList(listData.items);
-              if (listItems.length === 1 && listItems[0].String) {
-                return `${preservedName} = ${listItems[0].String.sval}`;
-              }
+            if (this.isOperatorNameList(node.arg)) {
+              return `${preservedName} = ${this.deparseOperatorName(ListUtils.unwrapList(this.getNodeData(node.arg).items), context)}`;
             }
             const unquotedValue = argValue.replace(/^"(.*)"$/, '$1');
             return `${preservedName} = ${unquotedValue}`;
@@ -6525,7 +6566,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['CREATE', 'TABLESPACE'];
 
     if (node.tablespacename) {
-      output.push(node.tablespacename);
+      output.push(QuoteUtils.quoteIdentifier(node.tablespacename));
     }
 
     if (node.owner) {
@@ -6558,7 +6599,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.tablespacename) {
-      output.push(node.tablespacename);
+      output.push(QuoteUtils.quoteIdentifier(node.tablespacename));
     }
 
     return output.join(' ');
@@ -6568,7 +6609,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'TABLESPACE'];
 
     if (node.tablespacename) {
-      output.push(node.tablespacename);
+      output.push(QuoteUtils.quoteIdentifier(node.tablespacename));
     }
 
     if (node.isReset) {
@@ -7120,12 +7161,7 @@ export class Deparser implements DeparserVisitor {
             // For operators, we need to handle ObjectWithArgs structure
             if (node.object && (node.object as any).ObjectWithArgs) {
               const objWithArgs = (node.object as any).ObjectWithArgs;
-              let operatorName = objWithArgs.objname && objWithArgs.objname[0] && objWithArgs.objname[0].String
-                ? objWithArgs.objname[0].String.sval : 'unknown';
-
-              if (operatorName.startsWith('"') && operatorName.endsWith('"')) {
-                operatorName = operatorName.slice(1, -1);
-              }
+              const operatorName = this.qualifiedOperatorName(objWithArgs.objname);
 
               const args: string[] = [];
               if (objWithArgs.objargs) {
@@ -7182,13 +7218,7 @@ export class Deparser implements DeparserVisitor {
       } else if (node.objtype === 'OBJECT_OPERATOR' && node.object && (node.object as any).ObjectWithArgs) {
         // Handle direct ObjectWithArgs for OPERATOR syntax: COMMENT ON OPERATOR -(NONE, integer) IS 'comment'
         const objWithArgs = (node.object as any).ObjectWithArgs;
-        let operatorName = objWithArgs.objname && objWithArgs.objname[0] && objWithArgs.objname[0].String
-          ? objWithArgs.objname[0].String.sval : 'unknown';
-
-        // Remove quotes from operator name if present
-        if (operatorName.startsWith('"') && operatorName.endsWith('"')) {
-          operatorName = operatorName.slice(1, -1);
-        }
+        const operatorName = this.qualifiedOperatorName(objWithArgs.objname);
 
         const args: string[] = [];
         if (objWithArgs.objargs) {
@@ -7904,8 +7934,9 @@ export class Deparser implements DeparserVisitor {
   FetchStmt(node: t.FetchStmt, context: DeparserContext): string {
     const output: string[] = [node.ismove ? 'MOVE' : 'FETCH'];
 
-    // Check if howMany represents "ALL" (PostgreSQL uses LONG_MAX as sentinel)
-    const isAll = (node.howMany as any) === 9223372036854776000;
+    // FETCH_ALL is LONG_MAX: 2^63-1 from a 64-bit libpg_query, 2^31-1 from the 32-bit WASM build
+    const howMany = node.howMany as any;
+    const isAll = howMany === 9223372036854776000 || howMany === 2147483647;
 
     // Handle direction first, then check for ALL within each direction
     if (node.direction) {
@@ -7958,24 +7989,28 @@ export class Deparser implements DeparserVisitor {
   AlterStatsStmt(node: t.AlterStatsStmt, context: DeparserContext): string {
     const output: string[] = ['ALTER', 'STATISTICS'];
 
+    if (node.missing_ok) {
+      output.push('IF EXISTS');
+    }
+
     if (node.defnames && node.defnames.length > 0) {
-      const names = ListUtils.unwrapList(node.defnames).map(name => this.visit(name, context));
+      const names = ListUtils.unwrapList(node.defnames).map(name => QuoteUtils.quoteIdentifier(this.getNodeData(name).sval));
       output.push(names.join('.'));
     }
 
     output.push('SET', 'STATISTICS');
 
-    if (node.stxstattarget) {
-      output.push(this.visit(node.stxstattarget, context));
-    }
+    output.push(node.stxstattarget ? this.visit(node.stxstattarget, context) : 'DEFAULT');
 
     return output.join(' ');
   }
 
-  ObjectWithArgs(node: t.ObjectWithArgs, context: DeparserContext): string {
+  ObjectWithArgs(node: t.ObjectWithArgs, context: DeparserContext, isOperator = context.objtype === 'OBJECT_OPERATOR'): string {
     let result = '';
 
-    if (node.objname && node.objname.length > 0) {
+    if (isOperator && node.objname && node.objname.length > 0) {
+      result = this.qualifiedOperatorName(node.objname);
+    } else if (node.objname && node.objname.length > 0) {
       const objContext = context.spawn('ObjectWithArgs');
       const names = ListUtils.unwrapList(node.objname).map(name => this.visit(name, objContext));
       result = names.join('.');
@@ -8013,7 +8048,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'OPERATOR'];
 
     if (node.opername) {
-      output.push(this.ObjectWithArgs(node.opername, context));
+      output.push(this.ObjectWithArgs(node.opername, context, true));
     }
 
     output.push('SET');
@@ -8485,6 +8520,9 @@ export class Deparser implements DeparserVisitor {
       break;
     case 'OBJECT_TRIGGER':
       output.push('TRIGGER');
+      if (node.subname) {
+        output.push(QuoteUtils.quoteIdentifier(node.subname));
+      }
       break;
     case 'OBJECT_TSCONFIGURATION':
       output.push('TEXT SEARCH CONFIGURATION');
@@ -8514,6 +8552,9 @@ export class Deparser implements DeparserVisitor {
     case 'OBJECT_ROUTINE':
       output.push('ROUTINE');
       break;
+    case 'OBJECT_STATISTIC_EXT':
+      output.push('STATISTICS');
+      break;
     default:
       throw new Error(`Unsupported RenameStmt renameType: ${node.renameType}`);
     }
@@ -8530,8 +8571,8 @@ export class Deparser implements DeparserVisitor {
     } else if (node.relation) {
       const rangeVarContext = context.spawn('RenameStmt', { objtype: node.relationType });
 
-      // Add ON keyword for policy operations
-      if (node.renameType === 'OBJECT_POLICY') {
+      // Add ON keyword for policy and trigger operations
+      if (node.renameType === 'OBJECT_POLICY' || node.renameType === 'OBJECT_TRIGGER') {
         output.push('ON');
       }
 
@@ -8547,7 +8588,7 @@ export class Deparser implements DeparserVisitor {
         } else {
           output.push(this.visit(node.object, context));
         }
-      } else if ((node.renameType === 'OBJECT_TYPE' || node.renameType === 'OBJECT_DOMAIN') && (node.object as any).List) {
+      } else if ((node.renameType === 'OBJECT_TYPE' || node.renameType === 'OBJECT_DOMAIN' || node.renameType === 'OBJECT_STATISTIC_EXT') && (node.object as any).List) {
         // Qualified type names - join List parts with dots
         const items = ListUtils.unwrapList(node.object as any);
         const parts = items
@@ -10094,16 +10135,7 @@ export class Deparser implements DeparserVisitor {
       output.push('CREATE OPERATOR');
 
       if (node.defnames && node.defnames.length > 0) {
-        const names = ListUtils.unwrapList(node.defnames).map((name, index) => {
-          if (index === node.defnames.length - 1) {
-            const nodeData = this.getNodeData(name);
-            if (nodeData && nodeData.sval) {
-              return nodeData.sval; // Return operator symbol unquoted
-            }
-          }
-          return this.visit(name, context); // Quote schema/namespace names normally
-        });
-        output.push(names.join('.'));
+        output.push(this.qualifiedOperatorName(node.defnames));
       }
 
       if (node.definition && node.definition.length > 0) {
@@ -10118,11 +10150,8 @@ export class Deparser implements DeparserVisitor {
               const quotedDefName = QuoteUtils.quoteIdentifier(defName);
               const preservedDefName = quotedDefName !== defName ? quotedDefName : this.preserveOperatorDefElemCase(defName);
 
-              if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator') && defValue.List) {
-                const listItems = ListUtils.unwrapList(defValue.List.items);
-                if (listItems.length === 1 && listItems[0].String) {
-                  return `${preservedDefName} = ${listItems[0].String.sval}`;
-                }
+              if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator') && this.isOperatorNameList(defValue)) {
+                return `${preservedDefName} = ${this.deparseOperatorName(ListUtils.unwrapList(defValue.List.items), context)}`;
               }
               // For commutator/negator, we already handled them above
               if ((defName.toLowerCase() === 'commutator' || defName.toLowerCase() === 'negator')) {
@@ -10706,7 +10735,7 @@ export class Deparser implements DeparserVisitor {
       output.push(operatorNumber.toString());
       if (node.name) {
         const opClassContext = context.spawn('CreateOpClassItem');
-        output.push(this.ObjectWithArgs(node.name, opClassContext));
+        output.push(this.ObjectWithArgs(node.name, opClassContext, true));
       }
     } else if (node.itemtype === 2) {
       output.push('FUNCTION');
@@ -11098,6 +11127,189 @@ export class Deparser implements DeparserVisitor {
     return parts.join(' ');
   }
 
+  JsonBehavior(node: t.JsonBehavior, context: DeparserContext): string {
+    switch (node.btype) {
+    case 'JSON_BEHAVIOR_NULL':
+      return 'NULL';
+    case 'JSON_BEHAVIOR_ERROR':
+      return 'ERROR';
+    case 'JSON_BEHAVIOR_EMPTY':
+      return 'EMPTY';
+    case 'JSON_BEHAVIOR_TRUE':
+      return 'TRUE';
+    case 'JSON_BEHAVIOR_FALSE':
+      return 'FALSE';
+    case 'JSON_BEHAVIOR_UNKNOWN':
+      return 'UNKNOWN';
+    case 'JSON_BEHAVIOR_EMPTY_ARRAY':
+      return 'EMPTY ARRAY';
+    case 'JSON_BEHAVIOR_EMPTY_OBJECT':
+      return 'EMPTY OBJECT';
+    case 'JSON_BEHAVIOR_DEFAULT':
+      return `DEFAULT ${this.visit(node.expr as Node, context)}`;
+    default:
+      throw new Error(`Unsupported JsonBehavior btype: ${node.btype}`);
+    }
+  }
+
+  JsonArgument(node: t.JsonArgument, context: DeparserContext): string {
+    const val = node.val ? this.JsonValueExpr(node.val, context) : '';
+    return `${val} AS ${QuoteUtils.quoteIdentifier(node.name)}`;
+  }
+
+  formatJsonPassing(passing: t.Node[] | undefined, context: DeparserContext): string | null {
+    if (!passing || passing.length === 0) return null;
+    return 'PASSING ' + ListUtils.unwrapList(passing).map(arg => this.visit(arg, context)).join(', ');
+  }
+
+  formatJsonWrapper(wrapper: t.JsonWrapper | undefined): string | null {
+    switch (wrapper) {
+    case 'JSW_NONE':
+      return 'WITHOUT WRAPPER';
+    case 'JSW_CONDITIONAL':
+      return 'WITH CONDITIONAL WRAPPER';
+    case 'JSW_UNCONDITIONAL':
+      return 'WITH UNCONDITIONAL WRAPPER';
+    default:
+      return null;
+    }
+  }
+
+  formatJsonQuotes(quotes: t.JsonQuotes | undefined): string | null {
+    switch (quotes) {
+    case 'JS_QUOTES_KEEP':
+      return 'KEEP QUOTES';
+    case 'JS_QUOTES_OMIT':
+      return 'OMIT QUOTES';
+    default:
+      return null;
+    }
+  }
+
+  formatJsonBehaviors(onEmpty: t.JsonBehavior | undefined, onError: t.JsonBehavior | undefined, context: DeparserContext): string[] {
+    const parts: string[] = [];
+    if (onEmpty) parts.push(`${this.JsonBehavior(onEmpty, context)} ON EMPTY`);
+    if (onError) parts.push(`${this.JsonBehavior(onError, context)} ON ERROR`);
+    return parts;
+  }
+
+  JsonFuncExpr(node: t.JsonFuncExpr, context: DeparserContext): string {
+    let name: string;
+    switch (node.op) {
+    case 'JSON_EXISTS_OP':
+      name = 'JSON_EXISTS';
+      break;
+    case 'JSON_QUERY_OP':
+      name = 'JSON_QUERY';
+      break;
+    case 'JSON_VALUE_OP':
+      name = 'JSON_VALUE';
+      break;
+    default:
+      throw new Error(`Unsupported JsonFuncExpr op: ${node.op}`);
+    }
+
+    const args: string[] = [];
+    const contextItem = node.context_item ? this.JsonValueExpr(node.context_item, context) : '';
+    args.push(`${contextItem}, ${this.visit(node.pathspec as Node, context)}`);
+
+    const passing = this.formatJsonPassing(node.passing, context);
+    if (passing) args.push(passing);
+
+    const output = this.formatJsonOutput(node.output, context);
+    if (output) args.push(output);
+
+    const wrapper = this.formatJsonWrapper(node.wrapper);
+    if (wrapper) args.push(wrapper);
+
+    const quotes = this.formatJsonQuotes(node.quotes);
+    if (quotes) args.push(quotes);
+
+    args.push(...this.formatJsonBehaviors(node.on_empty, node.on_error, context));
+
+    return `${name}(${args.join(' ')})`;
+  }
+
+  JsonTablePathSpec(node: t.JsonTablePathSpec, context: DeparserContext): string {
+    const path = this.visit(node.string as Node, context);
+    return node.name ? `${path} AS ${QuoteUtils.quoteIdentifier(node.name)}` : path;
+  }
+
+  formatJsonTableColumns(columns: t.Node[] | undefined, context: DeparserContext): string {
+    const cols = ListUtils.unwrapList(columns || []).map(col => this.visit(col, context));
+    return `COLUMNS (${cols.join(', ')})`;
+  }
+
+  JsonTableColumn(node: t.JsonTableColumn, context: DeparserContext): string {
+    if (node.coltype === 'JTC_NESTED') {
+      const path = node.pathspec ? this.JsonTablePathSpec(node.pathspec, context) : '';
+      return `NESTED PATH ${path} ${this.formatJsonTableColumns(node.columns, context)}`;
+    }
+
+    const parts: string[] = [QuoteUtils.quoteIdentifier(node.name)];
+
+    if (node.coltype === 'JTC_FOR_ORDINALITY') {
+      parts.push('FOR ORDINALITY');
+      return parts.join(' ');
+    }
+
+    if (node.typeName) {
+      parts.push(this.TypeName(node.typeName, context));
+    }
+
+    if (node.coltype === 'JTC_EXISTS') {
+      parts.push('EXISTS');
+    } else if (node.coltype === 'JTC_FORMATTED') {
+      parts.push(this.formatJsonFormat(node.format) || 'FORMAT JSON');
+    }
+
+    if (node.pathspec) {
+      parts.push('PATH', this.JsonTablePathSpec(node.pathspec, context));
+    }
+
+    if (node.coltype !== 'JTC_EXISTS') {
+      const wrapper = this.formatJsonWrapper(node.wrapper);
+      if (wrapper) parts.push(wrapper);
+
+      const quotes = this.formatJsonQuotes(node.quotes);
+      if (quotes) parts.push(quotes);
+    }
+
+    parts.push(...this.formatJsonBehaviors(node.on_empty, node.on_error, context));
+
+    return parts.join(' ');
+  }
+
+  JsonTable(node: t.JsonTable, context: DeparserContext): string {
+    const output: string[] = [];
+
+    if (node.lateral) {
+      output.push('LATERAL');
+    }
+
+    const args: string[] = [];
+    const contextItem = node.context_item ? this.JsonValueExpr(node.context_item, context) : '';
+    const pathspec = node.pathspec ? this.JsonTablePathSpec(node.pathspec, context) : '';
+    args.push(`${contextItem}, ${pathspec}`);
+
+    const passing = this.formatJsonPassing(node.passing, context);
+    if (passing) args.push(passing);
+
+    args.push(this.formatJsonTableColumns(node.columns, context));
+
+    if (node.on_error) {
+      args.push(`${this.JsonBehavior(node.on_error, context)} ON ERROR`);
+    }
+
+    output.push(`JSON_TABLE(${args.join(' ')})`);
+
+    if (node.alias) {
+      output.push(this.Alias(node.alias, context));
+    }
+
+    return output.join(' ');
+  }
+
   RangeFunction(node: t.RangeFunction, context: DeparserContext): string {
     const output: string[] = [];
 
@@ -11417,6 +11629,10 @@ export class Deparser implements DeparserVisitor {
       output.push(this.visit(node.expr as any, context));
       output.push('AS');
       output.push(this.TypeName(node.typeName, context));
+
+      if (node.indent) {
+        output.push('INDENT');
+      }
     }
 
     output.push(')');
