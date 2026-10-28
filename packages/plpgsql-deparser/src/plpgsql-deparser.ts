@@ -2441,8 +2441,21 @@ export class PLpgSQLDeparser {
       return nl === -1 ? text.length : nl;
     }
     if (ch === '/') {
-      const close = text.indexOf('*/', start + 2);
-      return close === -1 ? text.length : close + 2;
+      // PostgreSQL block comments nest
+      let depth = 0;
+      let i = start;
+      while (i < text.length) {
+        if (text[i] === '/' && text[i + 1] === '*') {
+          depth++;
+          i += 2;
+        } else if (text[i] === '*' && text[i + 1] === '/') {
+          i += 2;
+          if (--depth === 0) return i;
+        } else {
+          i++;
+        }
+      }
+      return text.length;
     }
     if (ch === '$') {
       const prev = start > 0 ? text[start - 1] : '';

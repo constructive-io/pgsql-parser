@@ -6232,7 +6232,7 @@ export class Deparser implements DeparserVisitor {
       }
 
       if (context.parentNodeTypes.includes('CreateTableSpaceStmt') || context.parentNodeTypes.includes('AlterTableSpaceOptionsStmt')) {
-        return `${node.defname} = ${this.formatOptionValue(node.arg, argValue)}`;
+        return `${QuoteUtils.quoteIdentifier(node.defname)} = ${this.formatOptionValue(node.arg, argValue)}`;
       }
 
       if (context.parentNodeTypes.includes('ExplainStmt')) {

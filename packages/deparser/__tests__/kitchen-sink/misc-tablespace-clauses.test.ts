@@ -19,6 +19,7 @@ it('misc-tablespace-clauses', async () => {
   "misc/tablespace-clauses-13.sql",
   "misc/tablespace-clauses-14.sql",
   "misc/tablespace-clauses-15.sql",
-  "misc/tablespace-clauses-16.sql"
+  "misc/tablespace-clauses-16.sql",
+  "misc/tablespace-clauses-17.sql"
 ]);
 });

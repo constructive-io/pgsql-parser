@@ -872,3 +872,13 @@ BEGIN
   END CASE;
   RETURN 'other';
 END$$;
+
+-- Test 71: nested block comments do not hide the string literal after them
+CREATE FUNCTION test_nested_comment_literal(p_on boolean) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF p_on THEN
+    PERFORM /* outer /* inner */ it's */ 'line one
+  line two';
+  END IF;
+END$$;

@@ -462,6 +462,15 @@ exports[`plpgsql-deparser bug fixes implicit trailing RETURN suppression should 
 END"
 `;
 
+exports[`plpgsql-deparser bug fixes nested block comments should keep a string literal intact after a nested block comment 1`] = `
+"BEGIN
+  IF p_on THEN
+      PERFORM /* outer /* inner */ it's */ 'line one
+  line two';
+  END IF;
+END"
+`;
+
 exports[`plpgsql-deparser bug fixes nested block compositions (END; bug class) should handle labeled nested block 1`] = `
 "BEGIN
   <<inner>>

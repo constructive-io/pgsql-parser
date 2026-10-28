@@ -15,4 +15,5 @@ ALTER TABLE t ADD UNIQUE USING INDEX idx DEFERRABLE INITIALLY DEFERRED;
 CREATE TABLESPACE "My Space" OWNER regress_user LOCATION '/tmp' WITH (random_page_cost = 3, seq_page_cost = '1.5');
 ALTER TABLESPACE "My Space" SET (random_page_cost = 1.5, effective_io_concurrency = 2);
 ALTER TABLESPACE "My Space" RESET (random_page_cost);
+ALTER TABLESPACE "My Space" SET ("Random_Page_Cost" = 2);
 DROP TABLESPACE IF EXISTS "My Space";
