@@ -15,6 +15,17 @@ hook, or a definition read from a live catalog via `pg_get_functiondef`
 Runtime footprint is only the parser stack in this repo: `pgsql-parser`
 (SQL → AST), `libpg-query` (`parsePlPgSQL`), `@pgsql/traverse` (`walk`).
 
+## Install
+
+```bash
+npx skills add constructive-io/pgsql-parser --skill pgsql-lint   # this skill
+npm install -D @pgsql/lint                                       # the library + `pgsql-lint` CLI
+```
+
+For the live-database half — RLS, grants, effective access, index hygiene, the
+same C1–C4 rules read from the catalog — see the `safegres` skill
+(`npx skills add constructive-io/constructive --skill safegres`).
+
 ## The built-in rules
 
 | Code | Id | Flags | Reason required? |
