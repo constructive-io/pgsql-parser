@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.5.2](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.5.1...%40pgsql%2Ftransform-ast%4018.5.2) (2026-10-31)
+
+**Note:** Version bump only for package @pgsql/transform-ast
+
 ## [18.5.1](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.5.0...%40pgsql%2Ftransform-ast%4018.5.1) (2026-10-25)
 
 ### Bug Fixes

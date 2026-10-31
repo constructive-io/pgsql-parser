@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.4.2](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.1...pgsql-deparser%4018.4.2) (2026-10-31)
+
+### Bug Fixes
+
+- **deparser:** quote policy names in DROP POLICY and COMMENT ON POLICY ([7e5320d](https://github.com/constructive-io/pgsql-parser/commit/7e5320de706f343dfc9d9582fcd062d8e4163c49))
+
 ## [18.4.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.0...pgsql-deparser%4018.4.1) (2026-10-25)
 
 ### Bug Fixes
