@@ -24,6 +24,9 @@ via `pg_get_functiondef`.
 npm install @pgsql/lint
 ```
 
+Agent skill (rules, CLI, authoring new rules):
+`npx skills add constructive-io/pgsql-parser --skill pgsql-lint`.
+
 ## Rules
 
 | Code | Id | Flags |
