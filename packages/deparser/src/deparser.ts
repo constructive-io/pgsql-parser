@@ -4699,7 +4699,7 @@ export class Deparser implements DeparserVisitor {
         if (objList && (objList as any).List && (objList as any).List.items) {
           const items = (objList as any).List.items.map((item: any) => {
             if (item.String && item.String.sval) {
-              return item.String.sval;
+              return QuoteUtils.quoteIdentifier(item.String.sval);
             }
             return this.visit(item, context);
           });
@@ -7156,7 +7156,12 @@ export class Deparser implements DeparserVisitor {
             }
           } else if (node.objtype === 'OBJECT_POLICY') {
             // Handle POLICY syntax: COMMENT ON POLICY policy_name ON table_name IS 'comment'
-            if (objectParts.length === 2) {
+            if (objectParts.length === 3) {
+              const [schema, table, policy] = objectParts;
+              output.push(policy);
+              output.push('ON');
+              output.push(`${schema}.${table}`);
+            } else if (objectParts.length === 2) {
               const [table, policy] = objectParts;
               output.push(policy);
               output.push('ON');
