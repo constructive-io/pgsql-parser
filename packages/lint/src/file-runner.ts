@@ -14,7 +14,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { parse } from 'pgsql-parser';
 
-import { lintDefinition, LintOptions } from './engine';
+import { lintDefinition, LintOptions, PARSE_ERROR, severityOf } from './engine';
 import { applyIgnore } from './ignore';
 import type {
   LintDefinitionInput,
@@ -23,6 +23,7 @@ import type {
   SourceAdapter,
   SuppressionScope
 } from './types';
+import { newlinesBeforeByte, sliceBytes, utf8 } from './util';
 import { findAll } from './walk';
 
 /** A finding re-anchored to a source file. */
@@ -53,14 +54,6 @@ export interface FileReport {
   findings: FileFinding[];
   /** A parse error on the whole file (not a single definition). */
   parseError?: string;
-}
-
-/** Count newlines before `offset` — the 0-based line the offset sits on. */
-function lineAtOffset(text: string, offset: number): number {
-  let n = 0;
-  const end = Math.min(Math.max(offset, 0), text.length);
-  for (let i = 0; i < end; i++) if (text.charCodeAt(i) === 10) n++;
-  return n;
 }
 
 /** Printable `schema.name` of a `CreateFunctionStmt.funcname`. */
@@ -98,6 +91,9 @@ function funcLanguage(createFnStmt: Record<string, unknown>): string {
  * `CREATE FUNCTION` is sliced back out with its absolute start line, so a
  * mixed migration (schema + tables + functions) yields one input per function
  * rather than being treated as a single malformed definition.
+ *
+ * `stmt_location` / `stmt_len` are byte offsets into the UTF-8 source, so the
+ * slicing happens over the encoded bytes (see `util.ts`).
  */
 export async function sqlTextDefinitions(
   source: string,
@@ -106,18 +102,19 @@ export async function sqlTextDefinitions(
   const parsed = (await parse(source)) as {
     stmts?: Array<{ stmt?: unknown; stmt_location?: number; stmt_len?: number }>;
   };
+  const bytes = utf8(source);
   const out: LintDefinitionInput[] = [];
   for (const entry of parsed.stmts ?? []) {
     const createFnStmt = entry.stmt ? findAll(entry.stmt, 'CreateFunctionStmt')[0] : undefined;
     if (!createFnStmt) continue;
     const start = entry.stmt_location ?? 0;
-    const len = entry.stmt_len ?? source.length - start;
+    const len = entry.stmt_len ?? bytes.length - start;
     out.push({
-      text: source.slice(start, start + len),
+      text: sliceBytes(bytes, start, len),
       language: funcLanguage(createFnStmt),
       name: funcName(createFnStmt),
       file,
-      startLine: lineAtOffset(source, start) // 0-based line the definition begins on
+      startLine: newlinesBeforeByte(bytes, start) // 0-based line the definition begins on
     });
   }
   return out;
@@ -132,7 +129,12 @@ export async function lintSqlText(source: string, options: LintOptions = {}): Pr
   try {
     inputs = await sqlTextDefinitions(source);
   } catch (err) {
-    return { file: '<source>', findings: [], parseError: (err as Error).message };
+    const message = (err as Error).message;
+    return {
+      file: '<source>',
+      findings: [parseErrorFinding(message, '<file>', 1, options)],
+      parseError: message
+    };
   }
   const findings = await lintInputs(inputs, options);
   return { file: '<source>', findings };
@@ -147,12 +149,13 @@ async function lintInputs(
   for (const input of inputs) {
     const subject = input.name ?? '<anonymous>';
     const startLine = input.startLine ?? 0;
-    const { problems, suppressed } = await lintDefinition(
+    const { problems, suppressed, parseError } = await lintDefinition(
       input.text,
       input.language,
       subject,
       options
     );
+    if (parseError) findings.push(parseErrorFinding(parseError, subject, startLine + 1, options));
     const absLine = (p: LintProblem): number => startLine + p.line; // p.line is 1-based within input.text
     for (const p of problems) findings.push(toFinding(p, subject, absLine(p), false));
     for (const s of suppressed) {
@@ -190,6 +193,7 @@ function toFinding(
 }
 
 const RULE_CODE: Record<string, string> = {
+  [PARSE_ERROR.id]: PARSE_ERROR.code,
   'no-set-search-path': 'C1',
   'no-variable-conflict': 'C2',
   'require-qualified-refs': 'C3',
@@ -197,6 +201,30 @@ const RULE_CODE: Record<string, string> = {
 };
 function codeFor(ruleId: string): string {
   return RULE_CODE[ruleId] ?? ruleId;
+}
+
+/**
+ * A definition (or file) the parser rejected. Nothing in it was checked, so
+ * the failure is reported as a finding rather than dropped: an unparseable
+ * function would otherwise pass every rule by default. Severity is configured
+ * like any rule (`parse-error` / `P0`); it is `error` unless downgraded.
+ */
+function parseErrorFinding(
+  message: string,
+  subject: string,
+  line: number,
+  options: LintOptions
+): FileFinding {
+  return {
+    ruleId: PARSE_ERROR.id,
+    code: PARSE_ERROR.code,
+    line,
+    message: `Definition could not be parsed, so no rule was checked: ${message}`,
+    hint: 'Fix the syntax (or, if the parser is wrong, downgrade `parse-error` in the lint config).',
+    severity: severityOf(PARSE_ERROR, options.severity),
+    subject,
+    acknowledged: false
+  };
 }
 
 /** Recursively collect `.sql` files under a directory. */

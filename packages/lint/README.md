@@ -36,6 +36,10 @@ Agent skill (rules, CLI, authoring new rules):
 | `C3` | `require-qualified-refs` | an unqualified relation reference (`FROM users` → `FROM app_public.users`) |
 | `C4` | `no-dynamic-sql` | `EXECUTE`, `EXECUTE … USING`, `FOR … IN EXECUTE` |
 
+A definition the parser rejects is reported as `parse-error` (`P0`) rather than
+skipped: no rule ran over it, so it is not clean. Downgrade it like any rule
+(`--warn parse-error`) when the parser, not the SQL, is at fault.
+
 The rules encode a single discipline: never depend on `search_path` — fully
 qualify everything (`C1` + `C3`) — don't paper over ambiguity (`C2`), and treat
 dynamic SQL as opaque and exceptional (`C4`).

@@ -84,6 +84,12 @@ export interface LintResult {
   problems: LintProblem[];
   /** Suppressed findings, kept for the "accepted risk" report bucket. */
   suppressed: SuppressedProblem[];
+  /**
+   * Set when the definition could not be parsed. `problems` is then empty
+   * because no rule ran — not because the definition is clean — so a consumer
+   * must report this rather than treat the result as a pass.
+   */
+  parseError?: string;
 }
 
 /** Static metadata for a lint rule. */
