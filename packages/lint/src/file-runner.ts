@@ -130,11 +130,8 @@ export async function lintSqlText(source: string, options: LintOptions = {}): Pr
     inputs = await sqlTextDefinitions(source);
   } catch (err) {
     const message = (err as Error).message;
-    return {
-      file: '<source>',
-      findings: [parseErrorFinding(message, '<file>', 1, options)],
-      parseError: message
-    };
+    const finding = parseErrorFinding(message, '<file>', 1, options);
+    return { file: '<source>', findings: finding ? [finding] : [], parseError: message };
   }
   const findings = await lintInputs(inputs, options);
   return { file: '<source>', findings };
@@ -155,7 +152,10 @@ async function lintInputs(
       subject,
       options
     );
-    if (parseError) findings.push(parseErrorFinding(parseError, subject, startLine + 1, options));
+    if (parseError) {
+      const finding = parseErrorFinding(parseError, subject, startLine + 1, options);
+      if (finding) findings.push(finding);
+    }
     const absLine = (p: LintProblem): number => startLine + p.line; // p.line is 1-based within input.text
     for (const p of problems) findings.push(toFinding(p, subject, absLine(p), false));
     for (const s of suppressed) {
@@ -207,21 +207,24 @@ function codeFor(ruleId: string): string {
  * A definition (or file) the parser rejected. Nothing in it was checked, so
  * the failure is reported as a finding rather than dropped: an unparseable
  * function would otherwise pass every rule by default. Severity is configured
- * like any rule (`parse-error` / `P0`); it is `error` unless downgraded.
+ * like any rule (`parse-error` / `P0`): `error` unless downgraded, and `off`
+ * drops it like any other rule turned off.
  */
 function parseErrorFinding(
   message: string,
   subject: string,
   line: number,
   options: LintOptions
-): FileFinding {
+): FileFinding | undefined {
+  const severity = severityOf(PARSE_ERROR, options.severity);
+  if (severity === 'off') return undefined;
   return {
     ruleId: PARSE_ERROR.id,
     code: PARSE_ERROR.code,
     line,
     message: `Definition could not be parsed, so no rule was checked: ${message}`,
     hint: 'Fix the syntax (or, if the parser is wrong, downgrade `parse-error` in the lint config).',
-    severity: severityOf(PARSE_ERROR, options.severity),
+    severity,
     subject,
     acknowledged: false
   };

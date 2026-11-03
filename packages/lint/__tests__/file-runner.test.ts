@@ -115,4 +115,16 @@ describe('definitions that fail to parse', () => {
       line: 1
     });
   });
+
+  it('are not reported when parse-error is configured off', async () => {
+    const report = await lintSource(
+      sqlTextAdapter(
+        `CREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS $$ BEGIN this is not plpgsql; END; $$;`,
+        'bad.sql'
+      ),
+      { severity: { 'parse-error': 'off' } }
+    );
+    expect(report).toHaveLength(1);
+    expect(report[0].findings).toEqual([]);
+  });
 });
