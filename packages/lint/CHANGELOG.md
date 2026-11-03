@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.4](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Flint%4018.3.3...%40pgsql%2Flint%4018.3.4) (2026-11-03)
+
+### Bug Fixes
+
+- **lint:** honour parse-error: off ([5d9609e](https://github.com/constructive-io/pgsql-parser/commit/5d9609ef102e8d2169f5773e22e5c9499f11dca9))
+- **lint:** slice definitions by UTF-8 byte offset; report unparseable definitions ([0473fb0](https://github.com/constructive-io/pgsql-parser/commit/0473fb0e584be751963fd6e07fe1d3e1cd509eba))
+
 ## [18.3.3](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Flint%4018.3.2...%40pgsql%2Flint%4018.3.3) (2026-10-31)
 
 **Note:** Version bump only for package @pgsql/lint
