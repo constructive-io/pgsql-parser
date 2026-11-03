@@ -13,19 +13,15 @@ import { parsePlPgSQL } from 'libpg-query';
 import { parse } from 'pgsql-parser';
 
 import type { DynamicSqlSite, LintUnit, SqlFragment } from './types';
+import { newlinesBeforeByte, utf8 } from './util';
 import { findAll } from './walk';
-
-/** Count newlines in `s[0..offset)` — i.e. how many lines precede `offset`. */
-function newlinesBefore(s: string, offset: number): number {
-  let n = 0;
-  const end = Math.min(offset, s.length);
-  for (let i = 0; i < end; i++) if (s.charCodeAt(i) === 10) n++;
-  return n;
-}
 
 /** Absolute 1-based line of a char offset within `text`. */
 function lineOf(text: string, offset: number): number {
-  return newlinesBefore(text, offset) + 1;
+  let n = 0;
+  const end = Math.min(offset, text.length);
+  for (let i = 0; i < end; i++) if (text.charCodeAt(i) === 10) n++;
+  return n + 1;
 }
 
 /** The body string of a `CreateFunctionStmt` (`AS $$ … $$`), or null. */
@@ -138,13 +134,14 @@ export async function parseUnit(
   const lang = language.toLowerCase();
 
   if (lang === 'sql' && body !== null && bodyStartLine !== undefined) {
-    // A SQL-language body is itself SQL: parse it whole. Locations are
-    // relative to the body, so re-anchor them onto the definition.
+    // A SQL-language body is itself SQL: parse it whole. Locations are byte
+    // offsets relative to the body, so re-anchor them onto the definition.
     try {
       const ast = await parse(body);
+      const bodyBytes = utf8(body);
       fragments.push({
         ast,
-        lineForOffset: (offset) => bodyStartLine + newlinesBefore(body, offset)
+        lineForOffset: (offset) => bodyStartLine + newlinesBeforeByte(bodyBytes, offset)
       });
     } catch {
       // Body may contain positional parameters etc. that don't parse alone —

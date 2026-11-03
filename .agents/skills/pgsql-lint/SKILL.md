@@ -80,7 +80,14 @@ await lintFiles(['./migrations']);          // files/dirs on disk
 `lintSqlText`/`lintFiles` slice out each top-level `CREATE FUNCTION` using the
 parser's `stmt_location`/`stmt_len`, lint each in isolation, and **re-anchor**
 findings to absolute file lines — so a mixed migration is never treated as one
-malformed definition.
+malformed definition. Those offsets are **bytes** into the UTF-8 source, not
+string indices: slice and count lines over `utf8(text)` (`src/util.ts`), never
+over the JS string, or one `→` in a comment shifts every later definition.
+
+A definition the parser rejects is a `parse-error` (`P0`) finding, never a
+silent skip — no rule ran, so it is not clean. `lintDefinition` returns it as
+`parseError` on the result; the file runner turns it into a finding whose
+severity is configured like any rule (`--warn parse-error`).
 
 ## Authoring a new rule
 

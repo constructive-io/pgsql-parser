@@ -16,7 +16,7 @@ export { changedFiles, changedSqlFiles, resolveChangedBase } from './changed';
 export type { LintConfigFile, LoadedLintConfig } from './config';
 export { CONFIG_FILENAMES, configDir, findConfigFile, loadLintConfig } from './config';
 export type { LintOptions } from './engine';
-export { lintDefinition, severityOf } from './engine';
+export { lintDefinition, PARSE_ERROR, severityOf } from './engine';
 export {
   FileFinding,
   FileLintOptions,

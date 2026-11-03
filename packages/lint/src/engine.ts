@@ -15,6 +15,7 @@ import type {
   LintProblem,
   LintResult,
   LintRule,
+  LintRuleMeta,
   Severity,
   SeverityMap,
   SuppressedProblem
@@ -38,9 +39,21 @@ export interface LintOptions {
 }
 
 /** Resolve a rule's configured severity (id wins over code; default `error`). */
-export function severityOf(rule: LintRule, severity: SeverityMap = {}): Severity {
+export function severityOf(rule: LintRuleMeta, severity: SeverityMap = {}): Severity {
   return severity[rule.id] ?? severity[rule.code] ?? 'error';
 }
+
+/**
+ * The pseudo-rule a parse failure is reported under. Not a {@link LintRule}
+ * (it has no `run`): it exists so the failure has an id/code a consumer can
+ * configure (`off` / `warn`) exactly like a rule.
+ */
+export const PARSE_ERROR: LintRuleMeta = {
+  id: 'parse-error',
+  code: 'P0',
+  title: 'Definition could not be parsed',
+  reasonRequired: false
+};
 
 /** Lint a single function definition. */
 export async function lintDefinition(
@@ -63,9 +76,10 @@ export async function lintDefinition(
   if (selected.length === 0) return { problems: active, suppressed };
 
   const unit = await parseUnit(text, language, name);
-  // An unparseable definition produces no lint findings — dynamic/opaque bodies
-  // are a downstream concern (e.g. a call-graph), not the linter's.
-  if (unit.parseError) return { problems: active, suppressed };
+  // An unparseable definition was checked by no rule. That is never a pass:
+  // the failure is returned so the caller reports it (the file runner turns
+  // it into a `parse-error` finding).
+  if (unit.parseError) return { problems: active, suppressed, parseError: unit.parseError };
 
   const keywords = options.keyword
     ? (Array.isArray(options.keyword) ? options.keyword : [options.keyword])

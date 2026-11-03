@@ -194,10 +194,6 @@ async function main(): Promise<void> {
   let warnings = 0;
   let acknowledged = 0;
   for (const report of reports) {
-    if (report.parseError) {
-      if (!argv.json) console.error(chalk.yellow(`⚠ ${report.file}: ${report.parseError}`));
-      continue;
-    }
     const shown = report.findings.filter((f) => !f.acknowledged || !argv.quiet);
     if (!argv.json && shown.length > 0) {
       console.log(chalk.underline(report.file));
