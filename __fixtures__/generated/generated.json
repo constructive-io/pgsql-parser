@@ -96,6 +96,8 @@
   "pretty/misc-15.sql": "ALTER DEFAULT PRIVILEGES IN SCHEMA dashboard_jobs \n GRANT EXECUTE ON FUNCTIONS  TO administrator",
   "pretty/misc-16.sql": "GRANT EXECUTE ON FUNCTION dashboard_private.uuid_generate_seeded_uuid TO PUBLIC",
   "pretty/misc-17.sql": "SELECT CAST(t.date AT TIME ZONE $$America/New_York$$ AS text)::date FROM tbl t",
+  "pretty/misc-18.sql": "FETCH ALL FROM c",
+  "pretty/misc-19.sql": "MOVE BACKWARD ALL IN c",
   "pretty/formatting-1.sql": "EXPLAIN (COSTS OFF) SELECT * FROM onek2 WHERE unique2 = 11 AND stringu1 = 'ATAAAA'",
   "pretty/formatting-2.sql": "EXPLAIN SELECT * FROM onek2 WHERE unique2 = 11 AND stringu1 = 'ATAAAA'",
   "pretty/formatting-3.sql": "INSERT INTO objects.object (name, val, active, hash)\nVALUES ('name', 'val', 't'::boolean, 'abcdefg'),\n       ('name', 'val', 't'::boolean, 'abcdefg'),\n       ('name', 'val', 't'::boolean, 'abcdefg')",

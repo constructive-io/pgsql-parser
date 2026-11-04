@@ -34,6 +34,10 @@ exports[`non-pretty: pretty/misc-16.sql 1`] = `"GRANT EXECUTE ON FUNCTION dashbo
 
 exports[`non-pretty: pretty/misc-17.sql 1`] = `"SELECT CAST((t.date AT TIME ZONE 'America/New_York')::text AS date) FROM tbl AS t"`;
 
+exports[`non-pretty: pretty/misc-18.sql 1`] = `"FETCH FORWARD ALL c"`;
+
+exports[`non-pretty: pretty/misc-19.sql 1`] = `"MOVE BACKWARD ALL c"`;
+
 exports[`pretty: pretty/misc-1.sql 1`] = `
 "WITH 
   recent_orders AS (SELECT
@@ -302,3 +306,7 @@ exports[`pretty: pretty/misc-17.sql 1`] = `
 "SELECT CAST((t.date AT TIME ZONE 'America/New_York')::text AS date)
 FROM tbl AS t"
 `;
+
+exports[`pretty: pretty/misc-18.sql 1`] = `"FETCH FORWARD ALL c"`;
+
+exports[`pretty: pretty/misc-19.sql 1`] = `"MOVE BACKWARD ALL c"`;
