@@ -79,9 +79,12 @@ describe('firstDifference', () => {
 describe('cleanTree preset (upstream-compatible)', () => {
   it('exposes the upstream volatile key set', () => {
     expect([...CLEAN_TREE_VOLATILE_KEYS].sort()).toEqual([
+      'arg_location',
+      'conninfo_location',
       'list_end',
       'list_start',
       'location',
+      'payload_location',
       'rexpr_list_end',
       'rexpr_list_start',
       'stmt_len',

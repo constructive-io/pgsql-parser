@@ -248,6 +248,9 @@ export const transform = (obj: any, props: any): any => {
 const cleanProps: Record<string, any> = {
   lineno: noop,
   location: noop,
+  arg_location: noop,
+  payload_location: noop,
+  conninfo_location: noop,
   stmt_len: noop,
   stmt_location: noop,
   // varno values are assigned based on position in datums array and can change
