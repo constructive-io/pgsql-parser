@@ -349,7 +349,7 @@
       "isArray": true
     },
     "stxstattarget": {
-      "nullable": false,
+      "nullable": true,
       "tags": [
         "Integer"
       ],
@@ -2527,7 +2527,8 @@
         "A_Const",
         "A_Expr",
         "CaseExpr",
-        "FuncCall"
+        "FuncCall",
+        "ParamRef"
       ],
       "isArray": false
     },

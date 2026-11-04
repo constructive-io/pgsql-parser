@@ -144,6 +144,27 @@ This generates two tests per case (pretty and non-pretty) and uses Jest snapshot
 3. Run `npx jest` to verify all tests pass
 4. Commit the `.sql` file, `generated.json`, and any new generated test files in `__tests__/kitchen-sink/`
 
+## PostgreSQL Regression Corpus (`__fixtures__/regress/`)
+
+A ratchet over the SQL that libpg_query vendors from PostgreSQL (`test/sql/postgres_regress`,
+`test/sql/plpgsql_regress`) plus its own test SQL (`test/sql/deparse*`, `test/plpgsql_samples.sql`):
+
+- `statements.json.gz`: unique parseable statements keyed like `generated.json`
+  (`postgres_regress/arrays-12.sql`), plus the libpg_query commit they came from. Built by
+  `cd packages/deparser && npm run fixtures:regress -- /path/to/libpg_query`. Check out the
+  `x-publish.libpgQueryCommit` of the pinned `libpg-query` release first.
+- `known-failures.deparser.json` / `known-failures.plpgsql-deparser.json`: statements that do not
+  round-trip yet.
+- Tests: `packages/deparser/__tests__/regress/regress-corpus.test.ts` (one test per source file,
+  pretty and non-pretty, via `TestUtils.expectAstMatch`) and
+  `packages/plpgsql-deparser/__tests__/regress-corpus.test.ts`. They run in the normal `test` script.
+
+A new failure fails the test, and so does a known failure that now passes. After fixing deparser
+bugs (or bumping `libpg-query` and regenerating the corpus), refresh the lists with
+`UPDATE_KNOWN_FAILURES=1 npx jest __tests__/regress` (deparser) and
+`UPDATE_KNOWN_FAILURES=1 npx jest __tests__/regress-corpus` (plpgsql-deparser), then review the diff.
+Bug fixes still get a kitchen-sink fixture; the corpus only guards against regressions.
+
 ## PL/pgSQL Fixtures (`plpgsql-deparser`)
 
 The PL/pgSQL deparser has its own fixture pipeline:

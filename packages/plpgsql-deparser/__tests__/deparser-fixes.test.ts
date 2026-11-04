@@ -1513,4 +1513,24 @@ END$$`;
       expect(deparsed).toContain('updated ALIAS FOR new;');
     });
   });
+
+  describe('nested block comments', () => {
+    it('should keep a string literal intact after a nested block comment', async () => {
+      const sql = `CREATE FUNCTION test_nested_comment_literal(p_on boolean) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF p_on THEN
+    PERFORM /* outer /* inner */ it's */ 'line one
+  line two';
+  END IF;
+END$$`;
+
+      await testUtils.expectAstMatch('nested block comment before literal', sql);
+
+      const parsed = parsePlPgSQLSync(sql) as unknown as PLpgSQLParseResult;
+      const deparsed = deparseSync(parsed);
+      expect(deparsed).toMatchSnapshot();
+      expect(deparsed).toContain(`'line one\n  line two'`);
+    });
+  });
 });

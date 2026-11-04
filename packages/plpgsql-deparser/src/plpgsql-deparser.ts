@@ -883,8 +883,9 @@ export class PLpgSQLDeparser {
       const isSchemaQualified = this.isSchemaQualifiedType(typname);
       
       if (!isSchemaQualified) {
-        // Simple type - just strip quotes and return as-is
-        return typname.replace(/"/g, '').trim();
+        // Simple type - strip quotes unless they change the meaning ("char" is not char)
+        const trimmed = typname.trim();
+        return /^"char"(\[\d*\])*$/.test(trimmed) ? trimmed : trimmed.replace(/"/g, '');
       }
       
       // Schema-qualified type - apply proper quoting
@@ -1266,10 +1267,10 @@ export class PLpgSQLDeparser {
     }
 
     // ELSE clause
-    if (caseStmt.have_else && caseStmt.else_stmts) {
+    if (caseStmt.have_else) {
       parts.push(this.indent(kw('ELSE'), context.indentLevel + 1));
       const bodyContext = { ...context, indentLevel: context.indentLevel + 2 };
-      for (const stmt of caseStmt.else_stmts) {
+      for (const stmt of caseStmt.else_stmts ?? []) {
         const stmtStr = this.deparseStmt(stmt, bodyContext);
         parts.push(this.indent(stmtStr + ';', bodyContext.indentLevel));
       }
@@ -2406,7 +2407,79 @@ export class PLpgSQLDeparser {
    */
   private indent(text: string, level: number): string {
     const indent = this.options.indent!.repeat(level);
-    return indent + text.replace(/\n/g, '\n' + indent);
+    if (!indent) return text;
+    let out = indent;
+    let i = 0;
+    while (i < text.length) {
+      const ch = text[i];
+      if (ch === '\n') {
+        out += '\n' + indent;
+        i++;
+      } else if (ch === "'" || ch === '"' || ch === '$' || (ch === '-' && text[i + 1] === '-') || (ch === '/' && text[i + 1] === '*')) {
+        const end = this.skipQuoted(text, i);
+        const chunk = text.slice(i, end);
+        out += ch === '/' ? chunk.replace(/\n/g, '\n' + indent) : chunk;
+        i = end;
+      } else {
+        out += ch;
+        i++;
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Return the index just past a string literal, quoted identifier or
+   * dollar-quoted string starting at `start`, so its newlines are left intact.
+   * Comments are skipped so that quotes inside them are not mistaken for
+   * literal delimiters.
+   */
+  private skipQuoted(text: string, start: number): number {
+    const ch = text[start];
+    if (ch === '-') {
+      const nl = text.indexOf('\n', start);
+      return nl === -1 ? text.length : nl;
+    }
+    if (ch === '/') {
+      // PostgreSQL block comments nest
+      let depth = 0;
+      let i = start;
+      while (i < text.length) {
+        if (text[i] === '/' && text[i + 1] === '*') {
+          depth++;
+          i += 2;
+        } else if (text[i] === '*' && text[i + 1] === '/') {
+          i += 2;
+          if (--depth === 0) return i;
+        } else {
+          i++;
+        }
+      }
+      return text.length;
+    }
+    if (ch === '$') {
+      const prev = start > 0 ? text[start - 1] : '';
+      const tag = /^\$([A-Za-z_\u0080-\uffff][A-Za-z0-9_\u0080-\uffff]*)?\$/.exec(text.slice(start));
+      if (!tag || /[A-Za-z0-9_$]/.test(prev)) return start + 1;
+      const close = text.indexOf(tag[0], start + tag[0].length);
+      return close === -1 ? text.length : close + tag[0].length;
+    }
+    const escapes = ch === "'" && start > 0 && /[eE]/.test(text[start - 1]) && !/[A-Za-z0-9_]/.test(text[start - 2] ?? '');
+    let i = start + 1;
+    while (i < text.length) {
+      if (escapes && text[i] === '\\') {
+        i += 2;
+      } else if (text[i] === ch) {
+        if (text[i + 1] === ch) {
+          i += 2;
+        } else {
+          return i + 1;
+        }
+      } else {
+        i++;
+      }
+    }
+    return text.length;
   }
 
   /**
