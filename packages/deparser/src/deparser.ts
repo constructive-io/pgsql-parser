@@ -5944,9 +5944,12 @@ export class Deparser implements DeparserVisitor {
       if (node.arg && this.getNodeType(node.arg) === 'List') {
         const listData = this.getNodeData(node.arg);
         const listItems = ListUtils.unwrapList(listData.items);
+        const preservedName = this.preserveOperatorDefElemCase(node.defname);
         if (listItems.length === 1 && listItems[0].String) {
-          const preservedName = this.preserveOperatorDefElemCase(node.defname);
           return `${preservedName} = ${listItems[0].String.sval}`;
+        }
+        if (listItems.length > 1 && listItems.every((item: any) => item.String)) {
+          return `${preservedName} = OPERATOR(${this.qualifiedOperatorName(listItems)})`;
         }
       }
     }
@@ -6058,6 +6061,9 @@ export class Deparser implements DeparserVisitor {
           const listItems = ListUtils.unwrapList(listData.items);
           if (listItems.length === 1 && listItems[0].String) {
             return `${node.defname} = ${listItems[0].String.sval}`;
+          }
+          if (listItems.length > 1 && listItems.every((item: any) => item.String)) {
+            return `${node.defname} = OPERATOR(${this.qualifiedOperatorName(listItems)})`;
           }
         }
       }
