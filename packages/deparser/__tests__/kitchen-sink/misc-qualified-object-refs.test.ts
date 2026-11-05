@@ -13,6 +13,7 @@ it('misc-qualified-object-refs', async () => {
   "misc/qualified-object-refs-7.sql",
   "misc/qualified-object-refs-8.sql",
   "misc/qualified-object-refs-9.sql",
-  "misc/qualified-object-refs-10.sql"
+  "misc/qualified-object-refs-10.sql",
+  "misc/qualified-object-refs-11.sql"
 ]);
 });

@@ -10,3 +10,4 @@ COMMENT ON OPERATOR fx.### (int, int) IS 'operator comment';
 COMMENT ON OPERATOR fx.### (NONE, int) IS 'prefix operator comment';
 COMMENT ON CAST (int AS text) IS 'cast comment';
 CREATE OPERATOR fx.### (LEFTARG = int, RIGHTARG = int, FUNCTION = fx.add3, COMMUTATOR = OPERATOR(fx.###), NEGATOR = OPERATOR(fx.!!!));
+ALTER OPERATOR fx.### (int, int) SET (COMMUTATOR = OPERATOR(fx.!!!), NEGATOR = OPERATOR(fx.!!!));

@@ -21266,6 +21266,7 @@
   "misc/qualified-object-refs-8.sql": "COMMENT ON OPERATOR fx.### (NONE, int) IS 'prefix operator comment'",
   "misc/qualified-object-refs-9.sql": "COMMENT ON CAST (int AS text) IS 'cast comment'",
   "misc/qualified-object-refs-10.sql": "CREATE OPERATOR fx.### (LEFTARG = int, RIGHTARG = int, FUNCTION = fx.add3, COMMUTATOR = OPERATOR(fx.###), NEGATOR = OPERATOR(fx.!!!))",
+  "misc/qualified-object-refs-11.sql": "ALTER OPERATOR fx.### (int, int) SET (COMMUTATOR = OPERATOR(fx.!!!), NEGATOR = OPERATOR(fx.!!!))",
   "misc/policy-quoted-names-1.sql": "CREATE POLICY \"Users can view own data\" ON public.todos FOR SELECT TO authenticated USING (auth.uid() = user_id)",
   "misc/policy-quoted-names-2.sql": "DROP POLICY \"Users can view own data\" ON public.todos",
   "misc/policy-quoted-names-3.sql": "DROP POLICY IF EXISTS \"Users can view own data\" ON todos",
