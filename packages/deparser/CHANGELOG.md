@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.4.3](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.2...pgsql-deparser%4018.4.3) (2026-11-05)
+
+### Bug Fixes
+
+- **deparser:** keep schema qualification on GRANT ON TYPE/DOMAIN, COMMENT ON TRIGGER/RULE/OPERATOR/CAST and CREATE OPERATOR commutator/negator ([b030b3a](https://github.com/constructive-io/pgsql-parser/commit/b030b3a81e4f184e3212799d75975411a829e67e))
+- **deparser:** render multi-part COMMUTATOR/NEGATOR lists as OPERATOR(schema.op) in ALTER OPERATOR and DefElem paths too ([5aef5ad](https://github.com/constructive-io/pgsql-parser/commit/5aef5ad39f4becd24d30810a97877fe326a06b0c))
+
 ## [18.4.2](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.1...pgsql-deparser%4018.4.2) (2026-10-31)
 
 ### Bug Fixes
