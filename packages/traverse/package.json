@@ -32,11 +32,11 @@
   },
   "dependencies": {
     "@pgsql/types": "^18.0.0",
-    "pg-proto-parser": "workspace:*",
     "plpgsql-deparser": "workspace:*"
   },
   "devDependencies": {
-    "makage": "^0.5.1"
+    "makage": "^0.5.1",
+    "pg-proto-parser": "workspace:*"
   },
   "keywords": [
     "sql",
