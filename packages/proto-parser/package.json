@@ -1,7 +1,7 @@
 {
   "name": "pg-proto-parser",
   "version": "1.32.5",
-  "description": "The LaunchQL Proto parser",
+  "description": "Generate TypeScript from the PostgreSQL protobuf definitions",
   "author": "Constructive <developers@constructive.io>",
   "main": "index.js",
   "module": "esm/index.js",
