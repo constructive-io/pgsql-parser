@@ -1,6 +1,6 @@
 {
   "name": "pg-proto-parser",
-  "version": "1.32.5",
+  "version": "1.32.6",
   "description": "Generate TypeScript from the PostgreSQL protobuf definitions",
   "author": "Constructive <developers@constructive.io>",
   "main": "index.js",

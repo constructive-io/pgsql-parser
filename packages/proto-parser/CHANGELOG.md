@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.32.6](https://github.com/constructive-io/pgsql-parser/compare/pg-proto-parser%401.32.5...pg-proto-parser%401.32.6) (2026-11-08)
+
+### Bug Fixes
+
+- **traverse:** pg-proto-parser is a build-time dependency ([2e57b32](https://github.com/constructive-io/pgsql-parser/commit/2e57b329724a37bf449dd1699fe26224369a3417))
+
 ## [1.32.5](https://github.com/constructive-io/pgsql-parser/compare/pg-proto-parser%401.32.4...pg-proto-parser%401.32.5) (2026-08-07)
 
 **Note:** Version bump only for package pg-proto-parser

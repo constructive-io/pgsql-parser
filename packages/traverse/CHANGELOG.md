@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.8.4](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftraverse%4018.8.3...%40pgsql%2Ftraverse%4018.8.4) (2026-11-08)
+
+### Bug Fixes
+
+- **traverse:** pg-proto-parser is a build-time dependency ([2e57b32](https://github.com/constructive-io/pgsql-parser/commit/2e57b329724a37bf449dd1699fe26224369a3417))
+
 ## [18.8.3](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftraverse%4018.8.2...%40pgsql%2Ftraverse%4018.8.3) (2026-11-05)
 
 **Note:** Version bump only for package @pgsql/traverse
