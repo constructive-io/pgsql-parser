@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.5.5](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.5.4...%40pgsql%2Ftransform-ast%4018.5.5) (2026-11-12)
+
+### Bug Fixes
+
+- **deps:** libpg-query 18.2.4, @pgsql/parser ^1.6.4 (Cloudflare Workers loadModule fix) ([e197bb7](https://github.com/constructive-io/pgsql-parser/commit/e197bb715fe02a1684f6d79aaff02393acda096e))
+
 ## [18.5.4](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.5.3...%40pgsql%2Ftransform-ast%4018.5.4) (2026-11-08)
 
 **Note:** Version bump only for package @pgsql/transform-ast
