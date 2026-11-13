@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.5](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser%4018.3.4...plpgsql-deparser%4018.3.5) (2026-11-13)
+
+### Bug Fixes
+
+- **deparser:** preserve multi-line string literals in pretty mode and parenthesize indirection targets ([2b646ac](https://github.com/constructive-io/pgsql-parser/commit/2b646ac710450789fd4828ecd1173522dd84e1ab))
+- **plpgsql-deparser:** keep IN (...) conditions of a searched CASE ([68b056a](https://github.com/constructive-io/pgsql-parser/commit/68b056a251fd0d58fd21c0c13dc63de8a46be229))
+
 ## [18.3.4](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser%4018.3.3...plpgsql-deparser%4018.3.4) (2026-11-12)
 
 ### Bug Fixes

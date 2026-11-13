@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.4.5](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.4...pgsql-deparser%4018.4.5) (2026-11-13)
+
+### Bug Fixes
+
+- **deparser:** do not loop in splitSqlLines on an empty newline option ([ec18140](https://github.com/constructive-io/pgsql-parser/commit/ec181402f33e1b120e9085a150432578eae22c12))
+- **deparser:** keep a quoted EXTRACT field quoted unless it round-trips as a bare keyword ([da94153](https://github.com/constructive-io/pgsql-parser/commit/da94153d89fab8722932cf650c100d734246748f))
+- **deparser:** preserve multi-line string literals in pretty mode and parenthesize indirection targets ([2b646ac](https://github.com/constructive-io/pgsql-parser/commit/2b646ac710450789fd4828ecd1173522dd84e1ab))
+
 ## [18.4.4](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.3...pgsql-deparser%4018.4.4) (2026-11-12)
 
 ### Bug Fixes

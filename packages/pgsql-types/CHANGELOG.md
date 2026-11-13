@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.6](https://github.com/constructive-io/pgsql-parser/compare/pgsql-types%4018.3.5...pgsql-types%4018.3.6) (2026-11-13)
+
+### Bug Fixes
+
+- **deparser:** preserve multi-line string literals in pretty mode and parenthesize indirection targets ([2b646ac](https://github.com/constructive-io/pgsql-parser/commit/2b646ac710450789fd4828ecd1173522dd84e1ab))
+
 ## [18.3.5](https://github.com/constructive-io/pgsql-parser/compare/pgsql-types%4018.3.4...pgsql-types%4018.3.5) (2026-11-12)
 
 ### Bug Fixes

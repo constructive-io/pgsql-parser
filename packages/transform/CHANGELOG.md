@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.18.6](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform%4018.18.5...%40pgsql%2Ftransform%4018.18.6) (2026-11-13)
+
+### Bug Fixes
+
+- **deparser:** preserve multi-line string literals in pretty mode and parenthesize indirection targets ([2b646ac](https://github.com/constructive-io/pgsql-parser/commit/2b646ac710450789fd4828ecd1173522dd84e1ab))
+
 ## [18.18.5](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform%4018.18.4...%40pgsql%2Ftransform%4018.18.5) (2026-11-12)
 
 **Note:** Version bump only for package @pgsql/transform
