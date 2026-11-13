@@ -11,7 +11,7 @@
  * CREATE FUNCTION statement.
  */
 
-import { QuoteUtils } from 'pgsql-deparser';
+import { QuoteUtils, splitSqlLines } from 'pgsql-deparser';
 
 import { ParseMode } from './hydrate-types';
 import {
@@ -1248,7 +1248,7 @@ export class PLpgSQLDeparser {
           // We need to extract just the value part
           let whenExpr = whenData.expr ? this.deparseExpr(whenData.expr) : '';
           // Try to extract the value from IN clause
-          const inMatch = whenExpr.match(/IN \((.+)\)$/);
+          const inMatch = whenExpr.match(/IN \(([\s\S]+)\)$/);
           if (inMatch) {
             whenExpr = inMatch[1];
           }
@@ -1266,10 +1266,10 @@ export class PLpgSQLDeparser {
     }
 
     // ELSE clause
-    if (caseStmt.have_else && caseStmt.else_stmts) {
+    if (caseStmt.have_else) {
       parts.push(this.indent(kw('ELSE'), context.indentLevel + 1));
       const bodyContext = { ...context, indentLevel: context.indentLevel + 2 };
-      for (const stmt of caseStmt.else_stmts) {
+      for (const stmt of caseStmt.else_stmts ?? []) {
         const stmtStr = this.deparseStmt(stmt, bodyContext);
         parts.push(this.indent(stmtStr + ';', bodyContext.indentLevel));
       }
@@ -2406,7 +2406,7 @@ export class PLpgSQLDeparser {
    */
   private indent(text: string, level: number): string {
     const indent = this.options.indent!.repeat(level);
-    return indent + text.replace(/\n/g, '\n' + indent);
+    return indent + splitSqlLines(text).join('\n' + indent);
   }
 
   /**

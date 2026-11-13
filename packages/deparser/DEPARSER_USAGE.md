@@ -174,7 +174,14 @@ Pretty formatting is supported for:
 
 **Important Notes:**
 - Pretty formatting preserves SQL semantics - the formatted SQL parses to the same AST
-- Multi-line string literals are preserved without indentation to maintain their content
+- Multi-line string literals are preserved without indentation to maintain their content: indentation is applied only at line breaks the formatter itself emits, never at a newline inside a single-quoted (`'...'`), escape (`E'...'`) or dollar-quoted (`$tag$...$tag$`) string, a quoted identifier, or a comment — so a continuation line of a literal stays at column 0 while the SQL around it is indented:
+
+```sql
+CREATE TABLE t (
+  memo text DEFAULT 'line one
+line two'
+)
+```
 - Complex expressions maintain proper parentheses and operator precedence
 
 ## Instance Usage

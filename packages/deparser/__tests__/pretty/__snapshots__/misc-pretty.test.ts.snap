@@ -93,14 +93,14 @@ exports[`pretty: pretty/misc-4.sql 1`] = `
 "SELECT
   p.id,
   p.title,
-CASE 
-  WHEN EXISTS (SELECT 1
-  FROM reviews AS r
-  WHERE
-    r.product_id = p.id
-    AND r.rating >= 4) THEN 'Popular' 
-  ELSE 'Unrated' 
-END AS status
+  CASE 
+    WHEN EXISTS (SELECT 1
+    FROM reviews AS r
+    WHERE
+      r.product_id = p.id
+      AND r.rating >= 4) THEN 'Popular' 
+    ELSE 'Unrated' 
+  END AS status
 FROM products AS p
 WHERE
   p.archived = false"
@@ -108,13 +108,13 @@ WHERE
 
 exports[`pretty: pretty/misc-5.sql 1`] = `
 "WITH 
-logs AS (SELECT
-  id,
-  payload::json ->> 'event' AS event,
-  CAST(payload::json ->> 'ts' AS timestamp) AS ts
-FROM event_log
-WHERE
-  ts > (now() - '7 days'::interval))
+  logs AS (SELECT
+    id,
+    payload::json ->> 'event' AS event,
+    CAST(payload::json ->> 'ts' AS timestamp) AS ts
+  FROM event_log
+  WHERE
+    ts > (now() - '7 days'::interval))
 SELECT
   event,
   count(*) AS freq
@@ -145,20 +145,23 @@ JOIN products AS p ON
     OR (p.sku = oi.product_sku
     AND (p.discontinued = false
     OR p.replacement_id IS NOT NULL))
-LEFT JOIN shipping AS sh ON sh.order_id = o.id
-  AND ((sh.carrier = 'UPS'
-  AND sh.tracking_number IS NOT NULL)
-  OR (sh.carrier = 'FedEx'
-  AND sh.shipped_at > (o.created_at + '1 day'::interval)))
-LEFT JOIN statuses AS s ON s.id = o.status_id
-  AND (s.name <> 'cancelled'
-  OR (s.name = 'cancelled'
-  AND s.updated_at > (now() - '7 days'::interval)))
-LEFT JOIN refunds AS r ON r.order_id = o.id
-  AND ((r.status = 'approved'
-  AND r.processed_at IS NOT NULL)
-  OR (r.status = 'pending'
-  AND r.requested_at < (now() - '14 days'::interval)))
+LEFT JOIN shipping AS sh ON
+  sh.order_id = o.id
+    AND ((sh.carrier = 'UPS'
+    AND sh.tracking_number IS NOT NULL)
+    OR (sh.carrier = 'FedEx'
+    AND sh.shipped_at > (o.created_at + '1 day'::interval)))
+LEFT JOIN statuses AS s ON
+  s.id = o.status_id
+    AND (s.name <> 'cancelled'
+    OR (s.name = 'cancelled'
+    AND s.updated_at > (now() - '7 days'::interval)))
+LEFT JOIN refunds AS r ON
+  r.order_id = o.id
+    AND ((r.status = 'approved'
+    AND r.processed_at IS NOT NULL)
+    OR (r.status = 'pending'
+    AND r.requested_at < (now() - '14 days'::interval)))
 WHERE
   o.created_at > (now() - '90 days'::interval)
   AND u.active = true
@@ -175,66 +178,66 @@ ORDER BY
 
 exports[`pretty: pretty/misc-7.sql 1`] = `
 "SELECT
-CASE 
-  WHEN n = 2 THEN ARRAY['month'] 
-  WHEN n = 4 THEN ARRAY['year'] 
-  WHEN n = 6 THEN ARRAY['year', 'month'] 
-  WHEN n = 8 THEN ARRAY['day'] 
-  WHEN n = 1024 THEN ARRAY['hour'] 
-  WHEN n = 1032 THEN ARRAY['day', 'hour'] 
-  WHEN n = 2048 THEN ARRAY['minute'] 
-  WHEN n = 3072 THEN ARRAY['hour', 'minute'] 
-  WHEN n = 3080 THEN ARRAY['day', 'minute'] 
-  WHEN n = 4096 THEN ARRAY['second'] 
-  WHEN n = 6144 THEN ARRAY['minute', 'second'] 
-  WHEN n = 7168 THEN ARRAY['hour', 'second'] 
-  WHEN n = 7176 THEN ARRAY['day', 'second'] 
-  WHEN n = 32767 THEN CAST(ARRAY[] AS text[]) 
-END"
+  CASE 
+    WHEN n = 2 THEN ARRAY['month'] 
+    WHEN n = 4 THEN ARRAY['year'] 
+    WHEN n = 6 THEN ARRAY['year', 'month'] 
+    WHEN n = 8 THEN ARRAY['day'] 
+    WHEN n = 1024 THEN ARRAY['hour'] 
+    WHEN n = 1032 THEN ARRAY['day', 'hour'] 
+    WHEN n = 2048 THEN ARRAY['minute'] 
+    WHEN n = 3072 THEN ARRAY['hour', 'minute'] 
+    WHEN n = 3080 THEN ARRAY['day', 'minute'] 
+    WHEN n = 4096 THEN ARRAY['second'] 
+    WHEN n = 6144 THEN ARRAY['minute', 'second'] 
+    WHEN n = 7168 THEN ARRAY['hour', 'second'] 
+    WHEN n = 7176 THEN ARRAY['day', 'second'] 
+    WHEN n = 32767 THEN CAST(ARRAY[] AS text[]) 
+  END"
 `;
 
 exports[`pretty: pretty/misc-8.sql 1`] = `
 "SELECT
-CASE 
-  WHEN n = 2
-    OR n = 3 THEN ARRAY['month', COALESCE(extra_label, 'unknown')] 
-WHEN n IN (4, 5) THEN CASE 
-  WHEN is_leap_year THEN ARRAY['year', 'leap'] 
-  ELSE ARRAY['year'] 
-END 
-  WHEN n = 6 THEN ARRAY['year', 'month', 'quarter'] 
-  WHEN n = 8 THEN ARRAY['day', 'week', compute_label(n)] 
-  WHEN n = 1024 THEN ARRAY['hour', format('%s-hour', extra_label)] 
-  WHEN n = 1032
-    AND flag = true THEN ARRAY['day', 'hour', 'flagged'] 
-  WHEN n BETWEEN 2048 AND 2049 THEN ARRAY['minute', 'tick'] 
-  WHEN n = 3072 THEN ARRAY['hour', 'minute', current_setting('timezone')] 
-  WHEN n = 3080 THEN ARRAY['day', 'minute', to_char(now(), 'HH24:MI')] 
-  WHEN n IN (4096, 4097, 4098) THEN ARRAY['second', 'millisecond'] 
-WHEN n = 6144 THEN ARRAY['minute', 'second', CASE 
-  WHEN use_micro = true THEN 'microsecond' 
-  ELSE 'none' 
-END] 
-  WHEN n = 7168
-    OR (n > 7170
-    AND n < 7180) THEN ARRAY['hour', 'second', 'buffered'] 
-  WHEN n = 7176 THEN ARRAY['day', 'second', extra_info::text] 
-  WHEN n = 32767 THEN CAST(ARRAY[] AS text[]) 
-  ELSE ARRAY['undefined', 'unknown', 'fallback'] 
-END"
+  CASE 
+    WHEN n = 2
+      OR n = 3 THEN ARRAY['month', COALESCE(extra_label, 'unknown')] 
+    WHEN n IN (4, 5) THEN CASE 
+      WHEN is_leap_year THEN ARRAY['year', 'leap'] 
+      ELSE ARRAY['year'] 
+    END 
+    WHEN n = 6 THEN ARRAY['year', 'month', 'quarter'] 
+    WHEN n = 8 THEN ARRAY['day', 'week', compute_label(n)] 
+    WHEN n = 1024 THEN ARRAY['hour', format('%s-hour', extra_label)] 
+    WHEN n = 1032
+      AND flag = true THEN ARRAY['day', 'hour', 'flagged'] 
+    WHEN n BETWEEN 2048 AND 2049 THEN ARRAY['minute', 'tick'] 
+    WHEN n = 3072 THEN ARRAY['hour', 'minute', current_setting('timezone')] 
+    WHEN n = 3080 THEN ARRAY['day', 'minute', to_char(now(), 'HH24:MI')] 
+    WHEN n IN (4096, 4097, 4098) THEN ARRAY['second', 'millisecond'] 
+    WHEN n = 6144 THEN ARRAY['minute', 'second', CASE 
+      WHEN use_micro = true THEN 'microsecond' 
+      ELSE 'none' 
+    END] 
+    WHEN n = 7168
+      OR (n > 7170
+      AND n < 7180) THEN ARRAY['hour', 'second', 'buffered'] 
+    WHEN n = 7176 THEN ARRAY['day', 'second', extra_info::text] 
+    WHEN n = 32767 THEN CAST(ARRAY[] AS text[]) 
+    ELSE ARRAY['undefined', 'unknown', 'fallback'] 
+  END"
 `;
 
 exports[`pretty: pretty/misc-9.sql 1`] = `
 "SELECT
   user_id,
-CASE 
-  WHEN EXISTS (SELECT 1
-  FROM logins
-  WHERE
-    logins.user_id = users.user_id
-    AND success = false) THEN 'risky' 
-  ELSE 'safe' 
-END AS risk_status
+  CASE 
+    WHEN EXISTS (SELECT 1
+    FROM logins
+    WHERE
+      logins.user_id = users.user_id
+      AND success = false) THEN 'risky' 
+    ELSE 'safe' 
+  END AS risk_status
 FROM users"
 `;
 
@@ -252,33 +255,33 @@ END)"
 exports[`pretty: pretty/misc-11.sql 1`] = `
 "SELECT *
 FROM users AS u, LATERAL ( SELECT
-CASE 
-  WHEN u.is_admin THEN 'admin_dashboard' 
-  ELSE 'user_dashboard' 
-END AS dashboard_view ) AS derived"
+  CASE 
+    WHEN u.is_admin THEN 'admin_dashboard' 
+    ELSE 'user_dashboard' 
+  END AS dashboard_view ) AS derived"
 `;
 
 exports[`pretty: pretty/misc-12.sql 1`] = `
 "SELECT
   id,
-(SELECT
-CASE 
-  WHEN count(*) > 5 THEN 'frequent' 
-  ELSE 'occasional' 
-END
-FROM purchases AS p
-WHERE
-  p.user_id = u.id) AS purchase_freq
+  (SELECT
+    CASE 
+      WHEN count(*) > 5 THEN 'frequent' 
+      ELSE 'occasional' 
+    END
+  FROM purchases AS p
+  WHERE
+    p.user_id = u.id) AS purchase_freq
 FROM users AS u"
 `;
 
 exports[`pretty: pretty/misc-13.sql 1`] = `
 "SELECT
   id,
-CASE 
-  WHEN rank() OVER (ORDER BY score DESC) = 1 THEN 'top' 
-  ELSE 'normal' 
-END AS tier
+  CASE 
+    WHEN rank() OVER (ORDER BY score DESC) = 1 THEN 'top' 
+    ELSE 'normal' 
+  END AS tier
 FROM players"
 `;
 
@@ -288,7 +291,7 @@ exports[`pretty: pretty/misc-14.sql 1`] = `
   ON dashboard_jobs.jobs
   FOR EACH ROW
   WHEN (old.queue_name IS NOT NULL)
-  EXECUTE PROCEDURE dashboard_jobs.tg_decrease_job_queue_count()"
+  EXECUTE FUNCTION dashboard_jobs.tg_decrease_job_queue_count()"
 `;
 
 exports[`pretty: pretty/misc-15.sql 1`] = `

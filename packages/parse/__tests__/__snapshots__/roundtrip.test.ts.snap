@@ -219,5 +219,5 @@ CREATE TRIGGER users_audit
   AFTER INSERT OR UPDATE
   ON app.users
   FOR EACH ROW
-  EXECUTE PROCEDURE app.audit_trigger();"
+  EXECUTE FUNCTION app.audit_trigger();"
 `;

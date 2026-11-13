@@ -6,6 +6,7 @@
         "A_ArrayExpr",
         "A_Const",
         "A_Expr",
+        "A_Indirection",
         "CaseExpr",
         "CoalesceExpr",
         "ColumnRef",
@@ -90,7 +91,9 @@
       "tags": [
         "A_Const",
         "A_Expr",
-        "ColumnRef"
+        "A_Indirection",
+        "ColumnRef",
+        "SubLink"
       ],
       "isArray": false
     }
@@ -99,13 +102,30 @@
     "arg": {
       "nullable": false,
       "tags": [
+        "A_ArrayExpr",
+        "A_Const",
+        "A_Expr",
         "A_Indirection",
+        "BoolExpr",
+        "BooleanTest",
+        "CaseExpr",
+        "CoalesceExpr",
+        "CollateClause",
         "ColumnRef",
         "FuncCall",
+        "GroupingFunc",
+        "JsonArrayConstructor",
         "JsonFuncExpr",
+        "JsonObjectConstructor",
+        "MinMaxExpr",
+        "NullTest",
+        "ParamRef",
         "RowExpr",
+        "SQLValueFunction",
+        "SetToDefault",
         "SubLink",
-        "TypeCast"
+        "TypeCast",
+        "XmlExpr"
       ],
       "isArray": false
     },
@@ -301,6 +321,7 @@
     "with_check": {
       "nullable": true,
       "tags": [
+        "A_Expr",
         "SubLink"
       ],
       "isArray": false
@@ -418,6 +439,7 @@
         "ATAlterConstraint",
         "A_Const",
         "A_Expr",
+        "A_Indirection",
         "ColumnDef",
         "Constraint",
         "FuncCall",
@@ -489,6 +511,7 @@
       "tags": [
         "A_Const",
         "A_Expr",
+        "A_Indirection",
         "BoolExpr",
         "BooleanTest",
         "CaseExpr",
@@ -562,6 +585,7 @@
         "A_ArrayExpr",
         "A_Const",
         "A_Expr",
+        "A_Indirection",
         "CaseExpr",
         "ColumnRef",
         "FuncCall",
@@ -688,6 +712,7 @@
         "A_Const",
         "A_Expr",
         "CaseExpr",
+        "CoalesceExpr",
         "FuncCall",
         "TypeCast"
       ],
@@ -826,6 +851,7 @@
       "tags": [
         "A_Const",
         "A_Expr",
+        "A_Indirection",
         "BoolExpr",
         "CaseExpr",
         "ColumnRef",
@@ -1580,7 +1606,9 @@
     "defexpr": {
       "nullable": true,
       "tags": [
+        "A_ArrayExpr",
         "A_Const",
+        "A_Indirection",
         "FuncCall",
         "SQLValueFunction",
         "TypeCast"
@@ -1701,6 +1729,7 @@
       "tags": [
         "A_Const",
         "A_Expr",
+        "A_Indirection",
         "CoalesceExpr",
         "CollateClause",
         "FuncCall",
@@ -1951,6 +1980,7 @@
         "A_ArrayExpr",
         "A_Const",
         "A_Expr",
+        "A_Indirection",
         "BoolExpr",
         "CoalesceExpr",
         "CollateClause",
@@ -2480,6 +2510,7 @@
       "nullable": true,
       "tags": [
         "A_Const",
+        "A_Expr",
         "ColumnRef"
       ],
       "isArray": true
@@ -2502,6 +2533,7 @@
       "tags": [
         "A_Const",
         "A_Expr",
+        "A_Indirection",
         "CollateClause",
         "ColumnRef",
         "FuncCall",
@@ -2841,6 +2873,7 @@
     "partitionClause": {
       "nullable": true,
       "tags": [
+        "A_Expr",
         "ColumnRef"
       ],
       "isArray": true

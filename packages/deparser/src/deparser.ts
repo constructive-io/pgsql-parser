@@ -563,11 +563,7 @@ export class Deparser implements DeparserVisitor {
           // Check if single target is complex - if so, use multiline format
           if (this.isComplexSelectTarget(targetNode)) {
             output.push('SELECT' + distinctPart);
-            if (this.containsMultilineStringLiteral(target)) {
-              output.push(target);
-            } else {
-              output.push(context.indent(target));
-            }
+            output.push(context.indent(target));
           } else {
             output.push('SELECT' + distinctPart + ' ' + target);
           }
@@ -575,9 +571,6 @@ export class Deparser implements DeparserVisitor {
           const targetStrings = targetList
             .map(e => {
               const targetStr = this.visit(e as Node, context.spawn('SelectStmt', { select: true }));
-              if (this.containsMultilineStringLiteral(targetStr)) {
-                return targetStr;
-              }
               return context.indent(targetStr);
             });
           const formattedTargets = targetStrings.join(',' + context.newline());
@@ -631,9 +624,6 @@ export class Deparser implements DeparserVisitor {
           return context.parens(values.join(', '));
         });
         const indentedTuples = lists.map(tuple => {
-          if (this.containsMultilineStringLiteral(tuple)) {
-            return tuple;
-          }
           return context.indent(tuple);
         });
         output.push(indentedTuples.join(',\n'));
@@ -653,9 +643,6 @@ export class Deparser implements DeparserVisitor {
         const groupItems = groupList
           .map(e => {
             const groupStr = this.visit(e as Node, context.spawn('SelectStmt', { group: true, indentLevel: context.indentLevel + 1 }));
-            if (this.containsMultilineStringLiteral(groupStr)) {
-              return groupStr;
-            }
             return context.indent(groupStr);
           })
           .join(',' + context.newline());
@@ -674,11 +661,7 @@ export class Deparser implements DeparserVisitor {
       if (context.isPretty()) {
         output.push('HAVING');
         const havingStr = this.visit(node.havingClause as Node, context);
-        if (this.containsMultilineStringLiteral(havingStr)) {
-          output.push(havingStr);
-        } else {
-          output.push(context.indent(havingStr));
-        }
+        output.push(context.indent(havingStr));
       } else {
         output.push('HAVING');
         output.push(this.visit(node.havingClause as Node, context));
@@ -700,9 +683,6 @@ export class Deparser implements DeparserVisitor {
         const sortItems = sortList
           .map(e => {
             const sortStr = this.visit(e as Node, context.spawn('SelectStmt', { sort: true, indentLevel: context.indentLevel + 1 }));
-            if (this.containsMultilineStringLiteral(sortStr)) {
-              return sortStr;
-            }
             return context.indent(sortStr);
           })
           .join(',' + context.newline());
@@ -1197,7 +1177,7 @@ export class Deparser implements DeparserVisitor {
             if (context.isPretty()) {
               // Put each assignment on its own line for pretty printing
               const indentedTargets = targets.map(target => context.indent(target));
-              output.push('\n' + indentedTargets.join(',\n'));
+              output[output.length - 1] += '\n' + indentedTargets.join(',\n');
             } else {
               output.push(targets.join(', '));
             }
@@ -1369,9 +1349,6 @@ export class Deparser implements DeparserVisitor {
         const cteStrings = ctes.map((cte, index) => {
           const cteStr = this.visit(cte, context);
           const prefix = index === 0 ? context.newline() : ',' + context.newline();
-          if (this.containsMultilineStringLiteral(cteStr)) {
-            return prefix + cteStr;
-          }
           return prefix + context.indent(cteStr);
         });
         output.push(cteStrings.join(''));
@@ -2399,7 +2376,9 @@ export class Deparser implements DeparserVisitor {
     let argStr = this.visit(node.arg, context);
 
     const argType = this.getNodeType(node.arg);
-    if (argType === 'TypeCast' || argType === 'SubLink' || argType === 'A_Expr' || argType === 'FuncCall' || argType === 'A_Indirection' || argType === 'ColumnRef' || argType === 'RowExpr') {
+    // Grammar: only a parameter takes indirection bare; every other target is
+    // `'(' a_expr ')' opt_indirection` (a plain column subscript is the same node).
+    if (argType !== 'ParamRef') {
       argStr = `(${argStr})`;
     }
 
@@ -2434,20 +2413,12 @@ export class Deparser implements DeparserVisitor {
     if (context.isPretty() && args.length > 0) {
       for (const arg of args) {
         const whenClause = this.visit(arg, context);
-        if (this.containsMultilineStringLiteral(whenClause)) {
-          output.push(context.newline() + whenClause);
-        } else {
-          output.push(context.newline() + context.indent(whenClause));
-        }
+        output.push(context.newline() + context.indent(whenClause));
       }
 
       if (node.defresult) {
         const elseResult = this.visit(node.defresult, context);
-        if (this.containsMultilineStringLiteral(elseResult)) {
-          output.push(context.newline() + 'ELSE ' + elseResult);
-        } else {
-          output.push(context.newline() + context.indent('ELSE ' + elseResult));
-        }
+        output.push(context.newline() + context.indent('ELSE ' + elseResult));
       }
 
       output.push(context.newline() + 'END');
@@ -4182,11 +4153,7 @@ export class Deparser implements DeparserVisitor {
       if (context.isPretty()) {
         // For complex JOIN conditions, format with proper indentation
         if (qualsStr.includes('AND') || qualsStr.includes('OR') || qualsStr.length > 50) {
-          if (this.containsMultilineStringLiteral(qualsStr)) {
-            output.push(` ON ${qualsStr}`);
-          } else {
-            output.push(` ON${context.newline()}${context.indent(qualsStr)}`);
-          }
+          output.push(` ON${context.newline()}${context.indent(qualsStr)}`);
         } else {
           output.push(` ON ${qualsStr}`);
         }
@@ -6302,7 +6269,7 @@ export class Deparser implements DeparserVisitor {
           if (node.defname === 'new_version') {
             // argValue is unquoted due to DefElem context, so we need to quote it
             const quotedValue = this.quoteDefElemArg(node.arg, argValue);
-            return `UPDATE TO ${quotedValue}`;
+            return `TO ${quotedValue}`;
           }
           if (node.defname === 'schema') {
             return `SET SCHEMA ${argValue}`;
@@ -6327,6 +6294,12 @@ export class Deparser implements DeparserVisitor {
         // CreateExtensionStmt cases (schema, version, etc.)
         if (node.defname === 'cascade') {
           return argValue === 'true' ? 'CASCADE' : '';
+        }
+        if (node.defname === 'new_version') {
+          return `VERSION ${this.quoteDefElemArg(node.arg, argValue)}`;
+        }
+        if (node.defname === 'schema' && node.arg && this.getNodeType(node.arg) === 'String') {
+          return `SCHEMA ${QuoteUtils.quoteIdentifier(this.getNodeData(node.arg).sval)}`;
         }
         return `${node.defname.toUpperCase()} ${argValue}`;
       }
@@ -6622,6 +6595,8 @@ export class Deparser implements DeparserVisitor {
     if (node.extname) {
       output.push(this.quoteIfNeeded(node.extname));
     }
+
+    output.push('UPDATE');
 
     if (node.options && node.options.length > 0) {
       const extContext = context.spawn('AlterExtensionStmt');
@@ -9187,6 +9162,10 @@ export class Deparser implements DeparserVisitor {
         components.push(context.indent('REFERENCING ' + transitionClauses));
       }
 
+      if (node.constrrel) {
+        components.push(context.indent('FROM ' + this.RangeVar(node.constrrel, context)));
+      }
+
       if (node.deferrable) {
         components.push(context.indent('DEFERRABLE'));
       }
@@ -9211,7 +9190,7 @@ export class Deparser implements DeparserVisitor {
         const funcName = ListUtils.unwrapList(node.funcname)
           .map(name => this.visit(name, context))
           .join('.');
-        executeStr += ' PROCEDURE ' + funcName;
+        executeStr += ' FUNCTION ' + funcName;
       }
 
       if (node.args && node.args.length > 0) {
@@ -11952,10 +11931,5 @@ export class Deparser implements DeparserVisitor {
     }
 
     return output.join(' ');
-  }
-
-  private containsMultilineStringLiteral(content: string): boolean {
-    const stringLiteralRegex = /'[^']*\n[^']*'/g;
-    return stringLiteralRegex.test(content);
   }
 }
