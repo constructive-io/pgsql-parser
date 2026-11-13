@@ -1247,8 +1247,11 @@ export class PLpgSQLDeparser {
           // The expr contains the full condition like "__Case__Variable_9__" IN (0)
           // We need to extract just the value part
           let whenExpr = whenData.expr ? this.deparseExpr(whenData.expr) : '';
-          // Try to extract the value from IN clause
-          const inMatch = whenExpr.match(/IN \(([\s\S]+)\)$/);
+          // Only a simple CASE (with a search expression) has that synthetic wrapper;
+          // a searched CASE's condition is emitted as written
+          const inMatch = caseStmt.t_expr
+            ? whenExpr.match(/^"?__Case__Variable_\d+__"? IN \(([\s\S]+)\)$/)
+            : null;
           if (inMatch) {
             whenExpr = inMatch[1];
           }

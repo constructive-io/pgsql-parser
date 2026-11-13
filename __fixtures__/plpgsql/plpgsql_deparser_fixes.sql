@@ -893,3 +893,18 @@ suffix';
     END LOOP;
   END LOOP;
 END$do$;
+
+-- Test 70: searched CASE keeps an IN (...) condition, single- and multi-line
+CREATE FUNCTION test_searched_case_in(x int) RETURNS text
+LANGUAGE plpgsql AS $$
+BEGIN
+  CASE
+    WHEN x IN (1, 2) THEN
+      RETURN 'low';
+    WHEN x IN (
+      3, 4) THEN
+      RETURN 'mid';
+    ELSE
+      RETURN 'high';
+  END CASE;
+END$$;
