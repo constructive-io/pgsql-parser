@@ -94,7 +94,7 @@ BEGIN
       v_status := 'standard';
   END IF;
   -- Finally, record the result
-  UPDATE orders SET status = v_status,total = v_total WHERE id = p_order_id;
+  UPDATE orders SET status = v_status, total = v_total WHERE id = p_order_id;
 END
 $$;"
 `;

@@ -100,6 +100,9 @@ export interface PgProtoStoreOptions {
 
     // Whether to include a header in generated TypeScript files.
     includeHeader?: boolean;
+    // Whether that header names the pg-proto-parser version. Turn off for output
+    // committed to a repository, so a generator release does not touch every file.
+    includeHeaderVersion?: boolean;
 }
 
 

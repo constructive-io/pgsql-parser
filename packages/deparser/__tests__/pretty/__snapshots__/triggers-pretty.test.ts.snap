@@ -25,7 +25,7 @@ exports[`pretty: pretty/triggers-1.sql 1`] = `
   AFTER INSERT
   ON public.users
   FOR EACH ROW
-  EXECUTE PROCEDURE log_user_insert()"
+  EXECUTE FUNCTION log_user_insert()"
 `;
 
 exports[`pretty: pretty/triggers-2.sql 1`] = `
@@ -33,7 +33,7 @@ exports[`pretty: pretty/triggers-2.sql 1`] = `
   AFTER DELETE
   ON "SensitiveData"
   FOR EACH ROW
-  EXECUTE PROCEDURE public.log_deletion()"
+  EXECUTE FUNCTION public.log_deletion()"
 `;
 
 exports[`pretty: pretty/triggers-3.sql 1`] = `
@@ -42,7 +42,7 @@ exports[`pretty: pretty/triggers-3.sql 1`] = `
   ON accounts
   FOR EACH ROW
   WHEN (old.active = false)
-  EXECUTE PROCEDURE "ArchiveFunction"()"
+  EXECUTE FUNCTION "ArchiveFunction"()"
 `;
 
 exports[`pretty: pretty/triggers-4.sql 1`] = `
@@ -50,7 +50,7 @@ exports[`pretty: pretty/triggers-4.sql 1`] = `
   AFTER INSERT OR UPDATE
   ON metrics.stats
   FOR EACH ROW
-  EXECUTE PROCEDURE metrics.update_stats('user', 'true')"
+  EXECUTE FUNCTION metrics.update_stats('user', 'true')"
 `;
 
 exports[`pretty: pretty/triggers-5.sql 1`] = `
@@ -59,7 +59,7 @@ exports[`pretty: pretty/triggers-5.sql 1`] = `
   ON "weirdSchema"."ComplexTable"
   FOR EACH ROW
   WHEN (old.status = 'pending')
-  EXECUTE PROCEDURE "weirdSchema"."ComplexFn"('arg1', '42')"
+  EXECUTE FUNCTION "weirdSchema"."ComplexFn"('arg1', '42')"
 `;
 
 exports[`pretty: pretty/triggers-6.sql 1`] = `
@@ -67,7 +67,7 @@ exports[`pretty: pretty/triggers-6.sql 1`] = `
   AFTER INSERT OR DELETE OR UPDATE
   ON users
   FOR EACH ROW
-  EXECUTE PROCEDURE audit.activity_log()"
+  EXECUTE FUNCTION audit.activity_log()"
 `;
 
 exports[`pretty: pretty/triggers-7.sql 1`] = `
@@ -75,7 +75,7 @@ exports[`pretty: pretty/triggers-7.sql 1`] = `
   BEFORE INSERT
   ON log_table
   FOR EACH ROW
-  EXECUTE PROCEDURE update_log()"
+  EXECUTE FUNCTION update_log()"
 `;
 
 exports[`pretty: pretty/triggers-8.sql 1`] = `
@@ -84,7 +84,7 @@ exports[`pretty: pretty/triggers-8.sql 1`] = `
   ON profiles
   FOR EACH ROW
   WHEN (new."accessLevel" = 'admin')
-  EXECUTE PROCEDURE flag_admin_change()"
+  EXECUTE FUNCTION flag_admin_change()"
 `;
 
 exports[`pretty: pretty/triggers-9.sql 1`] = `
@@ -92,7 +92,7 @@ exports[`pretty: pretty/triggers-9.sql 1`] = `
   BEFORE INSERT
   ON datapoints
   FOR EACH ROW
-  EXECUTE PROCEDURE "HandleInsert"('TYPE_A', 'Region-1')"
+  EXECUTE FUNCTION "HandleInsert"('TYPE_A', 'Region-1')"
 `;
 
 exports[`pretty: pretty/triggers-10.sql 1`] = `
@@ -100,5 +100,5 @@ exports[`pretty: pretty/triggers-10.sql 1`] = `
   AFTER DELETE
   ON events_log_partition
   FOR EACH ROW
-  EXECUTE PROCEDURE propagate_deletion()"
+  EXECUTE FUNCTION propagate_deletion()"
 `;

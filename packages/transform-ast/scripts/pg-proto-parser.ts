@@ -10,6 +10,7 @@ for (const version of versions) {
 
   const options: PgProtoParserOptions = {
     outDir,
+    includeHeaderVersion: false,
     types: {
       enabled: true,
       wrappedNodeTypeExport: true

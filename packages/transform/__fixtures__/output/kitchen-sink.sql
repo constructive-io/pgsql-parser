@@ -116,13 +116,13 @@ CREATE TRIGGER trg_audit_insert
   AFTER INSERT
   ON my_schema.users
   FOR EACH ROW
-  EXECUTE PROCEDURE other_schema.log_change();
+  EXECUTE FUNCTION other_schema.log_change();
 
 CREATE TRIGGER trg_audit_update
   AFTER UPDATE
   ON my_schema.users
   FOR EACH ROW
-  EXECUTE PROCEDURE my_schema.on_user_update();
+  EXECUTE FUNCTION my_schema.on_user_update();
 
 ALTER TABLE my_schema.users SET SCHEMA other_schema;
 

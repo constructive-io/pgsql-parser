@@ -837,3 +837,74 @@ BEGIN
   a[2] := coalesce(nullif(3, 0), 4);
   r.f := greatest(1, 2);
 END$$;
+
+-- Test 68: multi-line string literals inside nested blocks keep their value
+CREATE FUNCTION test_multiline_literals(x boolean) RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE
+  v text := 'declared
+default';
+BEGIN
+  IF x THEN
+    FOR i IN 1..2 LOOP
+      RAISE NOTICE 'line one
+line two';
+      PERFORM length('a
+b');
+      v := 'c
+d' || E'tab\there
+quote\'s';
+      EXECUTE $q$SELECT 'e
+f'$q$;
+      BEGIN
+        INSERT INTO t (memo) VALUES ('g
+h') ON CONFLICT (memo) DO UPDATE SET memo = 'i
+j';
+      EXCEPTION WHEN others THEN
+        RAISE EXCEPTION 'failed:
+%', sqlerrm;
+      END;
+    END LOOP;
+  ELSIF v = 'k
+l' THEN
+    CASE v WHEN 'm
+n' THEN
+      RETURN 'o
+p';
+    ELSE
+      NULL;
+    END CASE;
+  END IF;
+  RETURN v;
+END$$;
+
+-- Test 69: multi-line quoted identifiers and dollar-quoted strings inside nested blocks
+DO $do$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN SELECT "odd
+column" AS c FROM t WHERE memo = $s$dollar
+quoted$s$ LOOP
+    WHILE r.c IS NOT NULL LOOP
+      RAISE NOTICE '%', r.c || '
+suffix';
+      EXIT;
+    END LOOP;
+  END LOOP;
+END$do$;
+
+-- Test 70: searched CASE keeps an IN (...) condition, single- and multi-line
+CREATE FUNCTION test_searched_case_in(x int) RETURNS text
+LANGUAGE plpgsql AS $$
+BEGIN
+  CASE
+    WHEN x IN (1, 2) THEN
+      RETURN 'low';
+    WHEN x IN (
+      3, 4) THEN
+      RETURN 'mid';
+    ELSE
+      RETURN 'high';
+  END CASE;
+END$$;

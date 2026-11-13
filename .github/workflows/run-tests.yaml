@@ -20,6 +20,11 @@ jobs:
           - pgsql-parser
           - plpgsql-deparser
           - plpgsql-parser
+          - pgsql-parse
+          - plpgsql-parse
+          - '@pgsql/utils'
+          - '@pgsql/cli'
+          - pgsql-types
           - pg-proto-parser
           - '@pgsql/quotes'
           - '@pgsql/transform-ast'
@@ -54,3 +59,47 @@ jobs:
 
       - name: test
         run: pnpm --filter ${{ matrix.package }} test
+
+  generated-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: install dependencies
+        run: pnpm install
+
+      - name: build
+        run: pnpm build
+
+      - name: every package with tests is in the test matrix
+        run: npx ts-node scripts/check-ci-matrix.ts
+
+      - name: regenerate fixtures and types
+        run: |
+          pnpm --filter pgsql-deparser run kitchen-sink
+          pnpm --filter plpgsql-deparser run fixtures
+          pnpm --filter @pgsql/traverse run build:proto
+          pnpm --filter pgsql-types run generate
+
+      # A fixture .sql that was added without regenerating is never tested,
+      # and generated sources must match what the build produces
+      - name: generated files are up to date
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            git --no-pager diff --stat
+            echo "::error::Generated files are stale. Run 'pnpm build', 'npm run kitchen-sink' in packages/deparser and 'npm run fixtures' in packages/plpgsql-deparser, then commit the result."
+            exit 1
+          fi

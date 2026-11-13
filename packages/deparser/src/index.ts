@@ -11,4 +11,5 @@ export const deparse = async (...args: Parameters<typeof deparseMethod>): Promis
 };
 
 export { Deparser, DeparserOptions };
+export { splitSqlLines } from './utils/sql-formatter';
 export { QuoteUtils } from '@pgsql/quotes';
