@@ -23,6 +23,8 @@ jobs:
           - pgsql-parse
           - plpgsql-parse
           - '@pgsql/utils'
+          - '@pgsql/cli'
+          - pgsql-types
           - pg-proto-parser
           - '@pgsql/quotes'
           - '@pgsql/transform-ast'
@@ -81,18 +83,23 @@ jobs:
       - name: build
         run: pnpm build
 
-      - name: regenerate fixtures
+      - name: every package with tests is in the test matrix
+        run: npx ts-node scripts/check-ci-matrix.ts
+
+      - name: regenerate fixtures and types
         run: |
           pnpm --filter pgsql-deparser run kitchen-sink
           pnpm --filter plpgsql-deparser run fixtures
+          pnpm --filter @pgsql/traverse run build:proto
+          pnpm --filter pgsql-types run generate
 
-      # A fixture .sql that was added without regenerating is never tested
-      - name: generated fixtures and tests are up to date
+      # A fixture .sql that was added without regenerating is never tested,
+      # and generated sources must match what the build produces
+      - name: generated files are up to date
         run: |
-          paths="__fixtures__/generated __fixtures__/plpgsql-generated packages/deparser/__tests__/kitchen-sink packages/pgsql-types/src/field-metadata.json"
-          if [ -n "$(git status --porcelain -- $paths)" ]; then
-            git status --porcelain -- $paths
-            git --no-pager diff --stat -- $paths
-            echo "::error::Generated files are stale. Run 'npm run kitchen-sink' in packages/deparser, 'npm run fixtures' in packages/plpgsql-deparser and 'pnpm build', then commit the result."
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            git --no-pager diff --stat
+            echo "::error::Generated files are stale. Run 'pnpm build', 'npm run kitchen-sink' in packages/deparser and 'npm run fixtures' in packages/plpgsql-deparser, then commit the result."
             exit 1
           fi

@@ -6,6 +6,7 @@ const outDir: string = resolve(join(__dirname, '../src'));
 
 const options: PgProtoParserOptions = {
   outDir,
+  includeHeaderVersion: false,
   types: {
     enabled: false
   },

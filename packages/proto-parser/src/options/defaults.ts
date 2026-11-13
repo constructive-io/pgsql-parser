@@ -7,6 +7,7 @@ import { PgProtoParserOptions } from './types';
 export const defaultPgProtoParserOptions: PgProtoParserOptions = {
   outDir: join(process.cwd(), 'out'),
   includeHeader: true,
+  includeHeaderVersion: true,
   exclude: [],
   utils: {
     enums: {
