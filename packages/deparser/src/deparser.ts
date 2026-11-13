@@ -1547,7 +1547,9 @@ export class Deparser implements DeparserVisitor {
       const source = this.visit(args[1], context);
       // EXTRACT requires an unquoted uppercase keyword (EPOCH, YEAR, etc.)
       // but A_Const sval deparsing wraps it in single quotes — strip and uppercase
-      if (field.startsWith("'") && field.endsWith("'")) {
+      // only when it is spelled the way the bare-keyword form parses back
+      if (/^'(?:year|month|day|hour|minute|second)'$/.test(field)
+        || (/^'[a-z_][a-z0-9_]*'$/.test(field) && keywordKindOf(field.slice(1, -1)) === 'NO_KEYWORD')) {
         field = field.slice(1, -1).toUpperCase();
       }
       return `EXTRACT(${field} FROM ${source})`;

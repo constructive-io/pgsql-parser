@@ -21979,6 +21979,8 @@
   "misc/extract-16.sql": "SELECT EXTRACT(TIMEZONE FROM CURRENT_TIMESTAMP)",
   "misc/extract-17.sql": "SELECT EXTRACT(TIMEZONE_HOUR FROM CURRENT_TIMESTAMP)",
   "misc/extract-18.sql": "SELECT EXTRACT(TIMEZONE_MINUTE FROM CURRENT_TIMESTAMP)",
+  "misc/extract-19.sql": "SELECT EXTRACT('Year' FROM d), EXTRACT('time zone' FROM d), EXTRACT('select' FROM d), EXTRACT('zone' FROM d), EXTRACT('' FROM d) FROM t",
+  "misc/extract-20.sql": "SELECT EXTRACT('multi\nline' FROM d), EXTRACT('it''s' FROM d), EXTRACT(\"Quoted\" FROM d), EXTRACT(year FROM d), EXTRACT('year' FROM d) FROM t",
   "misc/cascades-1.sql": "DROP TABLE IF EXISTS some_table CASCADE",
   "misc/cascades-2.sql": "DROP VIEW IF EXISTS some_view CASCADE",
   "misc/cascades-3.sql": "DROP MATERIALIZED VIEW IF EXISTS some_mat_view CASCADE",

@@ -21,6 +21,8 @@ it('misc-extract', async () => {
   "misc/extract-15.sql",
   "misc/extract-16.sql",
   "misc/extract-17.sql",
-  "misc/extract-18.sql"
+  "misc/extract-18.sql",
+  "misc/extract-19.sql",
+  "misc/extract-20.sql"
 ]);
 });
