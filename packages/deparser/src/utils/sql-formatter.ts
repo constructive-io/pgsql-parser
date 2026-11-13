@@ -11,7 +11,7 @@ const DOLLAR_TAG = /\$(?:[A-Za-z_\u0080-\uffff][A-Za-z0-9_\u0080-\uffff]*)?\$/y;
  * what the SQL means.
  */
 export function splitSqlLines(text: string, newlineChar: string = '\n'): string[] {
-  if (!text.includes(newlineChar)) {
+  if (!newlineChar || !text.includes(newlineChar)) {
     return [text];
   }
 
