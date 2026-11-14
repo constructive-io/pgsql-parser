@@ -1084,6 +1084,10 @@ export class V15ToV16Transformer {
       result.storage = node.storage;
     }
 
+    if (node.compression !== undefined) {
+      result.compression = node.compression;
+    }
+
     if (node.raw_default !== undefined) {
       result.raw_default = this.transform(node.raw_default as any, context);
     }
@@ -1240,6 +1244,12 @@ export class V15ToV16Transformer {
 
     if (node.fk_del_action !== undefined) {
       result.fk_del_action = node.fk_del_action;
+    }
+
+    if (node.fk_del_set_cols !== undefined) {
+      result.fk_del_set_cols = Array.isArray(node.fk_del_set_cols)
+        ? node.fk_del_set_cols.map((item: any) => this.transform(item as any, context))
+        : this.transform(node.fk_del_set_cols as any, context);
     }
 
     if (node.old_conpfeqop !== undefined) {
@@ -3334,6 +3344,10 @@ export class V15ToV16Transformer {
       result.opt = Array.isArray(nodeAny.opt)
         ? nodeAny.opt.map((item: any) => this.transform(item as any, context))
         : this.transform(nodeAny.opt as any, context);
+    }
+
+    if (node.grantor !== undefined) {
+      result.grantor = node.grantor;
     }
 
     return { GrantRoleStmt: result };
