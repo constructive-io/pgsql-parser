@@ -1,24 +1,24 @@
 {
   "versions": {
     "13": {
-      "libpg-query": "13.6.0",
-      "pgsql-parser": "13.19.1",
-      "pgsql-deparser": "13.19.1",
-      "@pgsql/types": "13.11.1",
+      "libpg-query": "13.8.3",
+      "pgsql-parser": "13.20.0",
+      "pgsql-deparser": "13.20.0",
+      "@pgsql/types": "13.11.2",
       "npmTag": "pg13"
     },
     "14": {
-      "libpg-query": "14.3.0",
-      "pgsql-parser": "14.1.1",
-      "pgsql-deparser": "14.1.1",
-      "@pgsql/types": "14.1.1",
+      "libpg-query": "14.5.3",
+      "pgsql-parser": "14.2.0",
+      "pgsql-deparser": "14.2.0",
+      "@pgsql/types": "14.1.2",
       "npmTag": "pg14"
     },
     "15": {
-      "libpg-query": "15.5.0",
-      "pgsql-parser": "15.1.1",
-      "pgsql-deparser": "15.1.1",
-      "@pgsql/types": "15.1.1",
+      "libpg-query": "15.7.3",
+      "pgsql-parser": "15.2.0",
+      "pgsql-deparser": "15.2.0",
+      "@pgsql/types": "15.1.2",
       "npmTag": "pg15"
     },
     "16": {
