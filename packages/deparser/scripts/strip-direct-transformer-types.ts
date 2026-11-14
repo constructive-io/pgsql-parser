@@ -8,17 +8,18 @@ import * as ts from 'typescript';
  */
 
 const DIRECT_TRANSFORMER_FILES = [
-  '../transform/src/transformers-direct/v13-to-v17/index.ts',
-  '../transform/src/transformers-direct/v14-to-v17/index.ts',
-  '../transform/src/transformers-direct/v15-to-v17/index.ts',
-  '../transform/src/transformers-direct/v16-to-v17/index.ts'
+  '../transform-ast/src/transformers-direct/v13-to-v18/index.ts',
+  '../transform-ast/src/transformers-direct/v14-to-v18/index.ts',
+  '../transform-ast/src/transformers-direct/v15-to-v18/index.ts',
+  '../transform-ast/src/transformers-direct/v16-to-v18/index.ts',
+  '../transform-ast/src/transformers-direct/v17-to-v18/index.ts'
 ];
 
 const OUTPUT_DIR = 'versions/direct';
 
 // Types to strip and replace with 'any'
 const TYPES_TO_STRIP = [
-  'PG13', 'PG14', 'PG15', 'PG16', 'PG17',
+  'PG13', 'PG14', 'PG15', 'PG16', 'PG17', 'PG18',
   'TransformerContext'
 ];
 
@@ -272,6 +273,7 @@ function main() {
       processFile(file);
     } catch (error) {
       console.error(`Error processing ${file}:`, error);
+      process.exitCode = 1;
     }
   }
   

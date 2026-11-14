@@ -41,6 +41,11 @@ function loadConfigs(): { rootConfig: RootConfig; localConfig: LocalConfig } {
   return { rootConfig, localConfig };
 }
 
+// The stripped deparser sources import @pgsql/quotes; pin the workspace's version.
+const quotesVersion: string = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '../../quotes/package.json'), 'utf-8')
+).version;
+
 function generatePackageJson(packageName: string, pgVersion: string, versionInfo: VersionInfo, template: Record<string, any>): any {
   // Start with the template and override only the version-specific fields
   const packageJson: any = {
@@ -48,7 +53,8 @@ function generatePackageJson(packageName: string, pgVersion: string, versionInfo
     name: packageName,
     version: versionInfo['pgsql-deparser'],
     dependencies: {
-      [`@pgsql/types`]: `^${versionInfo['@pgsql/types']}`
+      '@pgsql/quotes': quotesVersion,
+      '@pgsql/types': `^${versionInfo['@pgsql/types']}`
     }
   };
 
@@ -68,6 +74,8 @@ function generateTsConfig(): any {
       forceConsistentCasingInFileNames: true,
       strict: true,
       strictNullChecks: false,
+      // the copied sources have their AST types stripped to `any`
+      noImplicitAny: false,
       skipLibCheck: true,
       sourceMap: false,
       declaration: true,
@@ -115,8 +123,10 @@ function generateVersionPackages(): void {
     
     const versionDir = path.join(VERSIONS_DIR, pgVersion);
     
+    // Only majors with a generated lane get a package; the newest major is the
+    // root workspace package and is published from there.
     if (!fs.existsSync(versionDir)) {
-      console.error(`  ✗ Version directory ${versionDir} does not exist!`);
+      console.log(`  Skipping PG${pgVersion} - no generated lane in ${versionDir}\n`);
       continue;
     }
     

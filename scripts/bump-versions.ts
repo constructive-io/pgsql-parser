@@ -94,7 +94,7 @@ async function fetchTaggedVersions(tags: string[]): Promise<TaggedVersions> {
     taggedVersions[tag] = {};
     console.log(`  Tag: ${tag}`);
     
-    for (const pkg of BUMPABLE_PACKAGES) {
+    for (const pkg of PACKAGES) {
       process.stdout.write(`    ${pkg}... `);
       const version = await fetchLatestVersion(pkg, tag);
       if (version) {
@@ -300,9 +300,9 @@ async function processVersionBumps(
   // Display current vs latest
   for (const pkg of PACKAGES) {
     const current = pkg === 'pgsql-deparser' ? currentVersions[pkg] : currentVersions[pkg as keyof typeof currentVersions];
-    // For bumpable packages, prefer tag-specific version if available
+    // Prefer the version on this major's dist-tag
     let latest: string | null = null;
-    if (BUMPABLE_PACKAGES.includes(pkg as any) && taggedVersions[currentVersions.npmTag]) {
+    if (taggedVersions[currentVersions.npmTag]) {
       latest = taggedVersions[currentVersions.npmTag][pkg as keyof PackageVersions] || null;
     }
     // Fall back to global latest if no tag-specific version
@@ -318,9 +318,9 @@ async function processVersionBumps(
   for (const pkg of PACKAGES) {
     const current = pkg === 'pgsql-deparser' ? currentVersions[pkg] : currentVersions[pkg as keyof typeof currentVersions];
     
-    // For bumpable packages, prefer tag-specific version if available
+    // Prefer the version on this major's dist-tag
     let latest: string | null = null;
-    if (BUMPABLE_PACKAGES.includes(pkg as any) && taggedVersions[currentVersions.npmTag]) {
+    if (taggedVersions[currentVersions.npmTag]) {
       latest = taggedVersions[currentVersions.npmTag][pkg as keyof PackageVersions] || null;
     }
     // Fall back to global latest if no tag-specific version
@@ -328,9 +328,15 @@ async function processVersionBumps(
       latest = latestVersions[pkg as keyof PackageVersions] || null;
     }
     
-    // Skip read-only packages
+    // Read-only packages are published elsewhere: pin whatever this major's dist-tag points at
     if (READ_ONLY_PACKAGES.includes(pkg as any)) {
-      console.log(`\n📦 ${pkg}: ${current || 'null'} [read-only - no changes allowed]`);
+      const tagged = taggedVersions[currentVersions.npmTag]?.[pkg as keyof PackageVersions];
+      if (tagged && tagged !== current) {
+        (updatedVersions as any)[pkg] = tagged;
+        console.log(`\n📦 ${pkg}: ${current || 'null'} → ${tagged} [follows the ${currentVersions.npmTag} dist-tag]`);
+      } else {
+        console.log(`\n📦 ${pkg}: ${current || 'null'} [follows the ${currentVersions.npmTag} dist-tag - unchanged]`);
+      }
       continue;
     }
     

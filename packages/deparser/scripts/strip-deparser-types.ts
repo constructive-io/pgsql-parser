@@ -9,7 +9,7 @@ import * as ts from 'typescript';
 
 const DEPARSER_SRC_DIR = 'src';
 const VERSIONS_DIR = 'versions';
-const VERSIONS = [13, 14, 15, 16];
+const VERSIONS = [13, 14, 15, 16, 17];
 
 // Types to strip
 const TYPES_TO_STRIP = ['Node', '@pgsql/types'];
@@ -229,6 +229,7 @@ function copyDeparserToVersions(): void {
   
   if (!fs.existsSync(deparserSrcPath)) {
     console.error(`Deparser source directory not found: ${deparserSrcPath}`);
+    process.exitCode = 1;
     return;
   }
   
