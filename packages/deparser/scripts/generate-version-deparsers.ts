@@ -78,8 +78,11 @@ const GRANT_ROLE_ADMIN_OPTION = `
     const arg = opts[0]?.arg;
     const off = arg?.Boolean ? arg.Boolean.boolval !== true : arg?.String?.sval === 'false';
     if (!node.is_grant || opts.length !== 1 || opts[0]?.defname !== 'admin' || off) return sql;
-    const at = sql.lastIndexOf(' WITH ADMIN TRUE');
-    return at < 0 ? sql : sql.slice(0, at) + ' WITH ADMIN OPTION' + sql.slice(at + ' WITH ADMIN TRUE'.length);
+    // locate the option by what the statement prints without GRANTED BY, so a role name can never match
+    const head = node.grantor ? super.GrantRoleStmt({ ...node, grantor: undefined }, context) : sql;
+    const option = ' WITH ADMIN TRUE';
+    if (!head.endsWith(option) || !sql.startsWith(head)) return sql;
+    return head.slice(0, -option.length) + ' WITH ADMIN OPTION' + sql.slice(head.length);
   }
 `;
 
