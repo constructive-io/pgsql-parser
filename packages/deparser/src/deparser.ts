@@ -8835,7 +8835,10 @@ export class Deparser implements DeparserVisitor {
       output.push(grantees);
     }
 
-    if (node.is_grant && options.length > 0) {
+    if (node.is_grant && options.length === 1 && options[0].defname === 'admin' && optionValue(options[0])) {
+      // the one spelling every PostgreSQL major accepts
+      output.push('WITH ADMIN OPTION');
+    } else if (node.is_grant && options.length > 0) {
       const withOptions = options.map(opt =>
         `${opt.defname.toUpperCase()} ${optionValue(opt) ? 'TRUE' : 'FALSE'}`
       );
