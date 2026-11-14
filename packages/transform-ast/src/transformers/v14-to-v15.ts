@@ -1001,8 +1001,21 @@ export class V14ToV15Transformer {
     return { StatsElem: result };
   }
 
+  // PG15 replaced the publication's list of tables with a list of PublicationObjSpec
+  private publicationTablesToObjects(result: any): void {
+    if (result.tables === undefined) return;
+    result.pubobjects = (Array.isArray(result.tables) ? result.tables : [result.tables]).map((table: any) => ({
+      PublicationObjSpec: {
+        pubobjtype: 'PUBLICATIONOBJ_TABLE',
+        pubtable: { relation: table.RangeVar ?? table }
+      }
+    }));
+    delete result.tables;
+  }
+
   CreatePublicationStmt(node: PG14.CreatePublicationStmt, context: TransformerContext): { CreatePublicationStmt: PG15.CreatePublicationStmt } {
     const result = this.transformGenericNode(node, context);
+    this.publicationTablesToObjects(result);
     return { CreatePublicationStmt: result };
   }
 
@@ -1013,11 +1026,31 @@ export class V14ToV15Transformer {
 
   AlterPublicationStmt(node: PG14.AlterPublicationStmt, context: TransformerContext): { AlterPublicationStmt: PG15.AlterPublicationStmt } {
     const result = this.transformGenericNode(node, context);
+    this.publicationTablesToObjects(result);
+    if (result.tableAction !== undefined) {
+      const actions: Record<string, string> = {
+        DEFELEM_ADD: 'AP_AddObjects',
+        DEFELEM_DROP: 'AP_DropObjects',
+        DEFELEM_SET: 'AP_SetObjects'
+      };
+      if (actions[result.tableAction]) {
+        result.action = actions[result.tableAction];
+      }
+      delete result.tableAction;
+    }
     return { AlterPublicationStmt: result };
   }
 
   AlterSubscriptionStmt(node: PG14.AlterSubscriptionStmt, context: TransformerContext): { AlterSubscriptionStmt: PG15.AlterSubscriptionStmt } {
     const result = this.transformGenericNode(node, context);
+    // ENABLE / DISABLE carried an Integer before PG15 introduced the Boolean node
+    if (result.kind === 'ALTER_SUBSCRIPTION_ENABLED' && Array.isArray(result.options)) {
+      result.options = result.options.map((option: any) => {
+        const ival = option?.DefElem?.arg?.Integer;
+        if (option?.DefElem?.defname !== 'enabled' || !ival) return option;
+        return { DefElem: { ...option.DefElem, arg: { Boolean: { boolval: ival.ival === 1 } } } };
+      });
+    }
     return { AlterSubscriptionStmt: result };
   }
 

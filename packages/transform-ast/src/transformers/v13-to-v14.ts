@@ -1255,11 +1255,14 @@ export class V13ToV14Transformer {
 
     if (node.func !== undefined) {
       // Handle plain object func (not wrapped in ObjectWithArgs)
-      if (typeof node.func === 'object' && !('ObjectWithArgs' in node.func) && 'objargs' in node.func) {
+      if (typeof node.func === 'object' && !('ObjectWithArgs' in node.func) && ('objargs' in node.func || 'objname' in node.func)) {
         const funcResult: any = {};
 
-        if ((node.func as any).objname !== undefined) {
-          funcResult.objname = this.transform((node.func as any).objname, childContext);
+        const objname = (node.func as any).objname;
+        if (objname !== undefined) {
+          funcResult.objname = Array.isArray(objname)
+            ? objname.map((item: any) => this.transform(item, childContext))
+            : this.transform(objname, childContext);
         }
 
         if ((node.func as any).objargs !== undefined) {
@@ -1268,6 +1271,10 @@ export class V13ToV14Transformer {
           funcResult.objfuncargs = Array.isArray((node.func as any).objargs)
             ? (node.func as any).objargs.map((arg: any, index: number) => this.createFunctionParameterFromTypeName(arg, childContext, index))
             : [this.createFunctionParameterFromTypeName((node.func as any).objargs, childContext, 0)];
+        }
+
+        if ((node.func as any).args_unspecified !== undefined) {
+          funcResult.args_unspecified = (node.func as any).args_unspecified;
         }
 
         result.func = funcResult;
@@ -2898,6 +2905,15 @@ export class V13ToV14Transformer {
     return true;
   }
 
+  AlterSubscriptionStmt(node: PG13.AlterSubscriptionStmt, context: TransformerContext): { AlterSubscriptionStmt: PG14.AlterSubscriptionStmt } {
+    const result: any = this.transformGenericNode(node, context);
+    // PG14 added ADD / DROP PUBLICATION and renamed the existing SET PUBLICATION kind
+    if (result.kind === 'ALTER_SUBSCRIPTION_PUBLICATION') {
+      result.kind = 'ALTER_SUBSCRIPTION_SET_PUBLICATION';
+    }
+    return { AlterSubscriptionStmt: result };
+  }
+
   AlterSeqStmt(node: any, context: TransformerContext): { AlterSeqStmt: PG14.AlterSeqStmt } {
     const result: any = {};
 
@@ -3400,6 +3416,18 @@ export class V13ToV14Transformer {
       result.params = params;
     } else if (nodeAny.params !== undefined) {
       result.params = this.transform(nodeAny.params, context);
+    }
+
+    if (nodeAny.concurrent === true) {
+      result.params = [
+        ...(result.params || []),
+        {
+          DefElem: {
+            defname: 'concurrently',
+            defaction: 'DEFELEM_UNSPEC'
+          }
+        }
+      ];
     }
 
     return { ReindexStmt: result };

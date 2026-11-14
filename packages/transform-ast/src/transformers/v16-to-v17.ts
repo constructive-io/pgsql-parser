@@ -752,6 +752,12 @@ export class V16ToV17Transformer {
     if (node.storage !== undefined) {
       result.storage = node.storage;
     }
+    if (node.storage_name !== undefined) {
+      result.storage_name = node.storage_name;
+    }
+    if (node.compression !== undefined) {
+      result.compression = node.compression;
+    }
     if (node.raw_default !== undefined) {
       result.raw_default = this.transform(node.raw_default as any, context);
     }
