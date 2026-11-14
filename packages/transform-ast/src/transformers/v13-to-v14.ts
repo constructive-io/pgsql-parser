@@ -1273,6 +1273,10 @@ export class V13ToV14Transformer {
             : [this.createFunctionParameterFromTypeName((node.func as any).objargs, childContext, 0)];
         }
 
+        if ((node.func as any).args_unspecified !== undefined) {
+          funcResult.args_unspecified = (node.func as any).args_unspecified;
+        }
+
         result.func = funcResult;
       } else {
         const funcResult = this.transform(node.func as any, childContext);
