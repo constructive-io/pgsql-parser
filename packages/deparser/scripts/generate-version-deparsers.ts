@@ -14,28 +14,12 @@ interface VersionConfig {
 
 const VERSIONS_DIR = 'versions';
 
-const versionConfigs: VersionConfig[] = [
-  {
-    version: 13,
-    directTransformerClass: 'PG13ToPG17Transformer',
-    directTransformerFile: './v13-to-v17-direct'
-  },
-  {
-    version: 14,
-    directTransformerClass: 'PG14ToPG17Transformer',
-    directTransformerFile: './v14-to-v17-direct'
-  },
-  {
-    version: 15,
-    directTransformerClass: 'PG15ToPG17Transformer',
-    directTransformerFile: './v15-to-v17-direct'
-  },
-  {
-    version: 16,
-    directTransformerClass: 'PG16ToPG17Transformer',
-    directTransformerFile: './v16-to-v17-direct'
-  }
-];
+// The main deparser speaks the PG18 AST, so every older major is upgraded to 18 first.
+const versionConfigs: VersionConfig[] = [13, 14, 15, 16, 17].map(version => ({
+  version,
+  directTransformerClass: `PG${version}ToPG18Transformer`,
+  directTransformerFile: `./v${version}-to-v18-direct`
+}));
 
 function generateDeparserIndex(config: VersionConfig): string {
   return `/**
@@ -44,27 +28,37 @@ function generateDeparserIndex(config: VersionConfig): string {
  */
 
 import { Node, ParseResult } from '@pgsql/types';
-import { 
-  deparse as deparse17, 
-  deparseSync as deparseSync17,
-  DeparserOptions 
-} from './deparser';
+import { Deparser as Deparser18, DeparserOptions } from './deparser';
 import { ${config.directTransformerClass} } from '${config.directTransformerFile}';
 
 const tx = new ${config.directTransformerClass}();
 
-export async function deparse(query: Node | Node[] | ParseResult, opts?: DeparserOptions): Promise<string> {
-  const ast17 = tx.transform(query);
-  return await deparse17(ast17, opts);
+type Query = Node | Node[] | ParseResult;
+
+const toAst18 = (query: Query): any =>
+  Array.isArray(query) ? query.map(node => tx.transform(node)) : tx.transform(query);
+
+export class Deparser extends Deparser18 {
+  constructor(tree: Query, opts: DeparserOptions = {}) {
+    super(toAst18(tree), opts);
+  }
+
+  static deparse(query: Query, opts: DeparserOptions = {}): string {
+    return new Deparser(query, opts).deparseQuery();
+  }
 }
 
-export function deparseSync(query: Node | Node[] | ParseResult, opts?: DeparserOptions): string {
-  const ast17 = tx.transform(query);
-  return deparseSync17(ast17, opts);
+export async function deparse(query: Query, opts?: DeparserOptions): Promise<string> {
+  return Deparser.deparse(query, opts);
 }
 
-// Re-export DeparserOptions for convenience
-export { DeparserOptions } from './deparser';
+export function deparseSync(query: Query, opts?: DeparserOptions): string {
+  return Deparser.deparse(query, opts);
+}
+
+export { DeparserOptions };
+export { splitSqlLines } from './deparser/utils/sql-formatter';
+export { QuoteUtils } from '@pgsql/quotes';
 `;
 }
 
@@ -73,6 +67,7 @@ function updateVersionDirectory(config: VersionConfig): void {
   
   if (!fs.existsSync(versionDir)) {
     console.error(`Version directory ${versionDir} does not exist!`);
+    process.exitCode = 1;
     return;
   }
 
@@ -80,13 +75,6 @@ function updateVersionDirectory(config: VersionConfig): void {
   const srcDir = path.join(versionDir, 'src');
   if (!fs.existsSync(srcDir)) {
     fs.mkdirSync(srcDir, { recursive: true });
-  }
-
-  // Remove old index.js if it exists
-  const oldIndexPath = path.join(srcDir, 'index.js');
-  if (fs.existsSync(oldIndexPath)) {
-    fs.unlinkSync(oldIndexPath);
-    console.log(`  ✓ Removed old index.js`);
   }
 
   // Generate new index.ts in src directory

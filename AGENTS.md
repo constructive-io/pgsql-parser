@@ -16,7 +16,7 @@ A pnpm monorepo for PostgreSQL AST parsing, deparsing, and code generation. All 
 | `@pgsql/types` | (published from proto-parser codegen) | Core TypeScript type definitions for PostgreSQL AST nodes |
 | `@pgsql/utils` | `packages/utils` | Type-safe AST node creation utilities |
 | `@pgsql/traverse` | `packages/traverse` | Visitor-pattern traversal of SQL and PL/pgSQL ASTs: `walk`, `walkSqlAst`, `walkPlpgsqlAst`, `traverse` |
-| `@pgsql/transform-ast` | `packages/transform-ast` | Multi-version AST transformer (PG 13-17) |
+| `@pgsql/transform-ast` | `packages/transform-ast` | Multi-version AST transformer (PG 13-18) |
 | `@pgsql/transform` | `packages/transform` | SQL schema transformation, statement classification (AST facts), qualification, round-trip validation |
 | `@pgsql/quotes` | `packages/quotes` | SQL identifier/string quoting and keyword classification |
 | `@pgsql/cli` | `packages/pgsql-cli` | CLI tool for parse/deparse operations |
@@ -105,7 +105,7 @@ Every package supports these scripts:
 | `parser` | `npm run prepare-versions` | Generate version-specific sub-packages from `config/versions.json` |
 | (root) | `npm run bump-versions` | Interactive CLI to bump `pgsql-parser` / `pgsql-deparser` versions per PG version |
 
-Version configuration lives in `config/versions.json` — maps PG versions (13-17) to their `libpg-query`, `pgsql-parser`, `pgsql-deparser`, and `@pgsql/types` versions plus npm dist-tags.
+Version configuration lives in `config/versions.json` — maps PG versions (13-18) to their `libpg-query`, `pgsql-parser`, `pgsql-deparser`, and `@pgsql/types` versions plus npm dist-tags.
 
 `prepare-versions` writes into `packages/{parser,deparser}/versions/`, which is gitignored and
 **not** part of the root pnpm workspace — each generated tree gets its own `pnpm-workspace.yaml`,

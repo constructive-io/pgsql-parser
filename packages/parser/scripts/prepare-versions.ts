@@ -23,8 +23,12 @@ fs.writeFileSync(
   "packages:\n  - '*'\n"
 );
 
+// The newest major is this workspace package itself, published from the root
+// with lerna; only the older majors get a generated package.
+const workspaceMajor = require('../package.json').version.split('.')[0];
+
 // Generate version-specific packages
-const pgVersions = Object.keys(rootConfig.versions);
+const pgVersions = Object.keys(rootConfig.versions).filter(v => v !== workspaceMajor);
 
 pgVersions.forEach(pgVersion => {
   const versionInfo = rootConfig.versions[pgVersion];

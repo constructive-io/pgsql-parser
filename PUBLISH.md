@@ -1,187 +1,133 @@
 # Publishing Guide
 
-This guide covers the multi-version publishing workflow for the pgsql-parser monorepo, which supports PostgreSQL versions 13-17 with version-specific npm tags.
+`main` tracks PostgreSQL 18. The PostgreSQL 18 packages are the workspace packages themselves and are
+published from the root with `pnpm lerna publish` (dist-tag `latest`).
 
-## Prerequisites
+`pgsql-parser` and `pgsql-deparser` are also published for PostgreSQL 13–17, each under its own npm
+dist-tag (`pg13` … `pg17`). Those packages are generated from `main` on demand; nothing about them is
+committed apart from the version numbers in `config/versions.json`.
 
-Before publishing any packages, you must build the entire monorepo:
+Publishing a generated package must always pass `--tag pgNN`. Without it npm moves `latest`, which
+has to stay on 18.
 
-```bash
-pnpm install && pnpm build
+## How a generated package is built
+
+### `pgsql-deparser` for major N (13–17)
+
+There is one deparser: the PostgreSQL 18 one in `packages/deparser/src`. The package for major N is
+that deparser plus the AST transformers from `packages/transform-ast` that upgrade an N tree to an
+18 tree:
+
+```
+PG N AST  ──  PGNToPG18Transformer  ──▶  PG 18 AST  ──  Deparser (18)  ──▶  SQL
 ```
 
-This installs all dependencies and builds all packages in the correct order using Lerna.
+`npm run prepare-versions` in `packages/deparser` runs these scripts in order:
 
-## Multi-Version Publishing Overview
+| Script | What it does |
+|--------|--------------|
+| `strip-transformer-types` | Copies `transform-ast/src/transformers/vN-to-vN+1.ts` (13→14 … 17→18) into `versions/`, replacing the `@pgsql/types` version imports with `any` |
+| `strip-direct-transformer-types` | Same for `transform-ast/src/transformers-direct/vN-to-v18/index.ts`, written to `versions/direct/vN-to-v18.ts` |
+| `strip-deparser-types` | Copies `packages/deparser/src` into `versions/N/src/deparser/` with the `@pgsql/types` imports replaced by `any` |
+| `organize-transformers` | Moves each major's chain (`vN-to-vN+1.ts` … `v17-to-v18.ts`) and its `vN-to-v18-direct.ts` into `versions/N/src/` |
+| `generate-version-deparsers` | Writes `versions/N/src/index.ts`: a `Deparser` that runs `PGNToPG18Transformer` and hands the result to the 18 deparser |
+| `generate-packages` | Writes `versions/N/package.json` (version and `@pgsql/types` range from `config/versions.json`, `@pgsql/quotes` at the workspace version), tsconfigs, README, and `versions/pnpm-workspace.yaml` |
 
-The pgsql-parser project uses a sophisticated multi-version publishing system to support different PostgreSQL versions. Each PostgreSQL version has its own:
+Every step exits non-zero if a source file is missing.
 
-- **Version numbers** for each package (parser, deparser, types)
-- **npm tag** for publishing (pg13, pg14, pg15, pg16, pg17)
-- **libpg-query dependency** version
+### `pgsql-parser` for major N (13–17)
 
-All version mappings are centrally managed in `config/versions.json`:
+`npm run prepare-versions` in `packages/parser` (`scripts/prepare-versions.ts`) writes
+`versions/N/` for every major in `config/versions.json` except the workspace's own (18). Each
+package is a thin re-export of three pinned dependencies taken from `config/versions.json`:
+
+- `libpg-query` — the parser for that major
+- `pgsql-deparser` — the generated deparser for that major (exact version)
+- `@pgsql/types` — the types for that major
+
+Because of the exact `pgsql-deparser` pin, **the deparser for a major must be on npm before the
+parser for that major can be installed, built or published.**
+
+### `versions/` directories
+
+`packages/deparser/versions` and `packages/parser/versions` are gitignored and are their own pnpm
+workspaces (each gets a `pnpm-workspace.yaml`). They are not part of the root workspace, so run
+`pnpm install` inside `versions/` after every `prepare-versions`.
+
+## `config/versions.json`
+
+One entry per major:
 
 ```json
-{
-  "versions": {
-    "13": {
-      "libpg-query": "13.5.7",
-      "pgsql-parser": "13.18.0", 
-      "pgsql-deparser": "13.17.0",
-      "@pgsql/types": "13.11.1",
-      "npmTag": "pg13"
-    },
-    "17": {
-      "libpg-query": "17.5.5",
-      "pgsql-parser": "17.7.5",
-      "pgsql-deparser": "17.8.3", 
-      "@pgsql/types": "17.6.1",
-      "npmTag": "pg17"
-    }
-  }
+"17": {
+  "libpg-query": "17.8.3",
+  "pgsql-parser": "17.10.0",
+  "pgsql-deparser": "17.19.0",
+  "@pgsql/types": "17.6.2",
+  "npmTag": "pg17"
 }
 ```
 
-### 0. Bump the config versions
+- `pgsql-parser` / `pgsql-deparser`: the version the next publish of that major will produce.
+- `libpg-query` / `@pgsql/types`: what the generated packages pin. Both are published from other
+  repositories.
+- The `18` entry is not used for generation; 18 is versioned by lerna.
 
-In the root:
+`pnpm bump-versions` (`scripts/bump-versions.ts`) edits this file interactively. For each major it
+reads the major's dist-tag on npm for all four packages, then:
 
-```
-pnpm bump-versions
-```
+- sets `libpg-query` and `@pgsql/types` to whatever the `pgNN` dist-tag points at (no prompt);
+- prompts for `pgsql-parser` and `pgsql-deparser`: `latest` (when npm is ahead of the file),
+  `patch`, `minor`, `custom`, or `skip`;
+- prints a summary and asks whether to save.
 
-## Package Publishing Workflows
+Choose `skip` for every major you are not publishing, and commit the result.
 
-### 1. Deparser Package (`pgsql-deparser`)
+## Publishing one major
 
-The deparser package uses a template-based approach for multi-version publishing.
+Example for 17; replace `17` / `pg17` for another major.
 
-#### Prepare Versions
-```bash
-cd packages/deparser
-npm run prepare-versions
-```
+1. Build the workspace and set the versions:
 
-This runs a complete preparation pipeline:
-1. `strip-transformer-types` - Clean up transformer types
-2. `strip-direct-transformer-types` - Clean up direct transformer types  
-3. `strip-deparser-types` - Clean up deparser types
-4. `organize-transformers` - Organize transformers by version
-5. `generate-version-deparsers` - Generate version-specific deparsers
-6. `generate-packages` - Generate package.json files for each version
+   ```bash
+   pnpm install
+   pnpm build
+   pnpm bump-versions
+   ```
 
-The `generate-packages` script (`scripts/generate-version-packages.ts`):
-- Uses the template from `config/deparser-versions.json`
-- Creates version-specific packages in `packages/deparser/versions/`
-- Sets up proper dependencies and npm tags for each PostgreSQL version
-- Writes a `pnpm-workspace.yaml` into `versions/`, making the generated tree its
-  own workspace (it is gitignored, so it is deliberately not part of the root one)
+2. Generate, build and publish the deparser:
 
-#### Install Dependencies
-```bash
-# Once per generation — covers every version directory
-cd packages/deparser/versions
-pnpm install
-```
+   ```bash
+   cd packages/deparser
+   npm run prepare-versions
+   cd versions
+   pnpm install
+   cd 17
+   npm run build
+   cd dist
+   npm publish --tag pg17
+   ```
 
-#### Build and Publish Individual Versions
-```bash
-# Navigate to a specific version directory
-cd packages/deparser/versions/13
+3. Generate, build and publish the parser (needs step 2 to be on npm):
 
-# Build the package
-npm run build
+   ```bash
+   cd packages/parser
+   npm run prepare-versions
+   cd versions
+   pnpm install
+   cd 17
+   npm run build
+   cd dist
+   npm publish --tag pg17
+   ```
 
-# dist
-cd dist/
+4. Check that only the `pgNN` tag moved:
 
-# Publish with the correct tag
-npm publish --tag pg13
-```
+   ```bash
+   npm view pgsql-deparser dist-tags
+   npm view pgsql-parser dist-tags
+   ```
 
-**I do 13,14,15,16... since 17 was already publish from the root `pnpm lerna publish`
-
-Now go to run, fetch fresh versions for config again:
-
-```
-pnpm bump-versions
-```
-
-
-#### Publish All Deparser Versions
-```bash
-cd packages/deparser
-
-# Prepare all versions
-npm run prepare-versions
-(cd versions && pnpm install)
-
-# Build and publish each version
-for version in versions/*/; do
-  cd "$version"
-  npm run build
-  cd dist/
-  npm run publish:pkg  # Uses the npmTag from config
-  cd ..
-done
-```
-
-### 2. Parser Package (`pgsql-parser`)
-
-The parser package uses a version preparation script to generate multiple version-specific packages.
-
-#### Prepare Versions
-```bash
-cd packages/parser
-npm run prepare-versions
-```
-
-This script (`scripts/prepare-versions.ts`):
-- Reads version configuration from `config/versions.json`
-- Creates version-specific directories in `packages/parser/versions/`
-- Generates `package.json`, `tsconfig.json`, and source files for each PostgreSQL version
-- Each version gets its own libpg-query dependency and npm tag
-- Writes a `pnpm-workspace.yaml` into `versions/`, making the generated tree its
-  own workspace (it is gitignored, so it is deliberately not part of the root one)
-
-#### Install Dependencies
-```bash
-# Once per generation — covers every version directory
-cd packages/parser/versions
-pnpm install
-```
-
-#### Build and Publish Individual Versions
-```bash
-# Navigate to a specific version directory
-cd packages/parser/versions/13
-
-# Build the package
-npm run build
-
-# cd to dist/
-
-cd dist/
-
-# Publish with the correct tag
-npm publish --tag pg13
-```
-
-#### Publish All Parser Versions
-```bash
-cd packages/parser
-
-# Prepare all versions
-npm run prepare-versions
-(cd versions && pnpm install)
-
-# Build and publish each version
-for version in versions/*/; do
-  cd "$version"
-  npm run build
-  npm run publish:pkg  # Uses the npmTag from config
-  cd ..
-done
-```
-
+`pnpm install` in `packages/parser/versions` resolves every generated major, so each
+`pgsql-deparser` version listed in `config/versions.json` for 13–17 has to exist on npm at that
+point.
