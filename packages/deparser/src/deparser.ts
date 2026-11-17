@@ -7135,9 +7135,8 @@ export class Deparser implements DeparserVisitor {
           } else if (node.objtype === 'OBJECT_OPCLASS' || node.objtype === 'OBJECT_OPFAMILY') {
             // Handle OPERATOR CLASS/FAMILY syntax: don't prefix with schema
             if (objectParts.length >= 2) {
-              const className = objectParts[objectParts.length - 1];
-              const accessMethod = objectParts[objectParts.length - 2];
-              output.push(`${className} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`);
+              const [accessMethod, ...className] = objectParts;
+              output.push(`${className.join('.')} USING ${accessMethod}`);
             } else {
               output.push(objectParts.join(' USING '));
             }

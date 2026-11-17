@@ -51,7 +51,11 @@ describe('access method names in hand-built ASTs', () => {
     'CREATE INDEX i ON t USING "Odd Name" (a)',
     'ALTER TABLE t ADD CONSTRAINT c EXCLUDE USING gist (a WITH =)',
     'CREATE TABLE t (a int) USING heap',
-    'ALTER OPERATOR FAMILY f USING btree RENAME TO g'
+    'ALTER OPERATOR FAMILY f USING btree RENAME TO g',
+    'ALTER OPERATOR FAMILY f USING "Odd Name" RENAME TO g',
+    'DROP OPERATOR CLASS c USING "Odd Name"',
+    'COMMENT ON OPERATOR CLASS c USING "Odd Name" IS \'x\'',
+    'COMMENT ON OPERATOR FAMILY s.f USING "Odd Name" IS \'x\''
   ])('round-trips %s', async (sql) => {
     await expectParseDeparse(sql);
   });
