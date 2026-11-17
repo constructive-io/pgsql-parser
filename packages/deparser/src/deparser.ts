@@ -3172,7 +3172,7 @@ export class Deparser implements DeparserVisitor {
       output.push('EXCLUDE');
       if (node.access_method) {
         output.push('USING');
-        output.push(node.access_method);
+        output.push(QuoteUtils.quoteIdentifier(node.access_method));
       }
       if (node.exclusions && node.exclusions.length > 0) {
         const exclusionElements = ListUtils.unwrapList(node.exclusions).map(elem => {
@@ -3861,7 +3861,7 @@ export class Deparser implements DeparserVisitor {
 
     if (node.accessMethod && node.accessMethod !== 'btree') {
       output.push('USING');
-      output.push(node.accessMethod);
+      output.push(QuoteUtils.quoteIdentifier(node.accessMethod));
     }
 
     if (node.indexParams && node.indexParams.length > 0) {
@@ -4744,12 +4744,12 @@ export class Deparser implements DeparserVisitor {
             if (items.length === 2) {
               const accessMethod = items[0];
               const objectName = items[1];
-              return `${QuoteUtils.quoteIdentifier(objectName)} USING ${accessMethod}`;
+              return `${QuoteUtils.quoteIdentifier(objectName)} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`;
             } else if (items.length === 3) {
               const accessMethod = items[0];
               const schemaName = items[1];
               const objectName = items[2];
-              return `${QuoteUtils.quoteQualifiedIdentifier(schemaName, objectName)} USING ${accessMethod}`;
+              return `${QuoteUtils.quoteQualifiedIdentifier(schemaName, objectName)} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`;
             }
             return items.join('.');
           }
@@ -7137,7 +7137,7 @@ export class Deparser implements DeparserVisitor {
             if (objectParts.length >= 2) {
               const className = objectParts[objectParts.length - 1];
               const accessMethod = objectParts[objectParts.length - 2];
-              output.push(`${className} USING ${accessMethod}`);
+              output.push(`${className} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`);
             } else {
               output.push(objectParts.join(' USING '));
             }
@@ -8536,7 +8536,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const accessMethod = items[0].String?.sval || '';
           const objectName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(objectName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(objectName)} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`);
         } else {
           output.push(this.visit(node.object, context));
         }
@@ -8611,7 +8611,7 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const accessMethod = items[0].String?.sval || '';
           const objectName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(objectName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(objectName)} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`);
         } else {
           output.push(this.visit(node.object, context));
         }
@@ -9995,7 +9995,7 @@ export class Deparser implements DeparserVisitor {
 
     if (node.into && node.into.accessMethod) {
       output.push('USING');
-      output.push(node.into.accessMethod);
+      output.push(QuoteUtils.quoteIdentifier(node.into.accessMethod));
     }
 
     if (node.into && node.into.options && node.into.options.length > 0) {
@@ -10630,7 +10630,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.accessMethod) {
-      output.push('USING', node.accessMethod);
+      output.push('USING', QuoteUtils.quoteIdentifier(node.accessMethod));
     }
 
     if (node.options && node.options.length > 0) {
@@ -11814,12 +11814,12 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const accessMethod = items[0].String?.sval || '';
           const opClassName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(opClassName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(opClassName)} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`);
         } else if (items.length === 3) {
           const accessMethod = items[0].String?.sval || '';
           const schemaName = items[1].String?.sval || '';
           const opClassName = items[2].String?.sval || '';
-          output.push(`${QuoteUtils.quoteQualifiedIdentifier(schemaName, opClassName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteQualifiedIdentifier(schemaName, opClassName)} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
@@ -11829,12 +11829,12 @@ export class Deparser implements DeparserVisitor {
         if (items.length === 2) {
           const accessMethod = items[0].String?.sval || '';
           const opFamilyName = items[1].String?.sval || '';
-          output.push(`${QuoteUtils.quoteIdentifier(opFamilyName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteIdentifier(opFamilyName)} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`);
         } else if (items.length === 3) {
           const accessMethod = items[0].String?.sval || '';
           const schemaName = items[1].String?.sval || '';
           const opFamilyName = items[2].String?.sval || '';
-          output.push(`${QuoteUtils.quoteQualifiedIdentifier(schemaName, opFamilyName)} USING ${accessMethod}`);
+          output.push(`${QuoteUtils.quoteQualifiedIdentifier(schemaName, opFamilyName)} USING ${QuoteUtils.quoteIdentifier(accessMethod)}`);
         } else {
           output.push(this.visit(node.object as any, context));
         }
