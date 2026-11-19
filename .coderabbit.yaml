@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+reviews:
+  profile: chill
+  high_level_summary: true
+  review_status: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!pnpm-lock.yaml"
+    - "!**/dist/**"
+    - "!**/__snapshots__/**"
+    - "!__fixtures__/generated/**"
+    - "!__fixtures__/plpgsql-generated/**"
+    - "!__fixtures__/output/**"
+    - "!__fixtures__/proto/**"
+    - "!packages/utils/src/asts.ts"
+    - "!packages/utils/src/wrapped.ts"
+    - "!packages/utils/src/runtime-schema.ts"
+    - "!packages/traverse/src/*/runtime-schema.ts"
+    - "!packages/transform-ast/src/*/types.ts"
+    - "!packages/transform-ast/src/*/enums.ts"
+    - "!packages/pgsql-types/src/types.ts"
+    - "!packages/pgsql-types/src/field-metadata.json"
+    - "!packages/quotes/src/kwlist.ts"
+    - "!packages/proto-parser/test-utils/utils/**"
+    - "!packages/parser/versions/**"
+    - "!packages/deparser/versions/**"
+  path_instructions:
+    - path: "**/*.ts"
+      instructions: >-
+        Follow AGENTS.md and applicable package guidance. Review AST changes for
+        PostgreSQL version compatibility and parse/deparse round-trip correctness.
+        Generated files must be regenerated from their inputs rather than edited
+        by hand; keep generators and SQL fixtures under review.
+chat:
+  art: false
