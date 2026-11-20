@@ -4316,6 +4316,10 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
+    if (node.chain) {
+      output.push('AND CHAIN');
+    }
+
     return output.join(' ');
   }
 

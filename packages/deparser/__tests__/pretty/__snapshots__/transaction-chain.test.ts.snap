@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: misc/transaction-chain-1.sql 1`] = `"COMMIT AND CHAIN"`;
+
+exports[`non-pretty: misc/transaction-chain-2.sql 1`] = `"ROLLBACK AND CHAIN"`;
+
+exports[`non-pretty: misc/transaction-chain-3.sql 1`] = `"COMMIT AND CHAIN"`;
+
+exports[`non-pretty: misc/transaction-chain-4.sql 1`] = `"ROLLBACK AND CHAIN"`;
+
+exports[`non-pretty: misc/transaction-chain-5.sql 1`] = `"COMMIT"`;
+
+exports[`non-pretty: misc/transaction-chain-6.sql 1`] = `"ROLLBACK"`;
+
+exports[`non-pretty: misc/transaction-chain-7.sql 1`] = `"COMMIT"`;
+
+exports[`non-pretty: misc/transaction-chain-8.sql 1`] = `"ROLLBACK"`;
+
+exports[`pretty: misc/transaction-chain-1.sql 1`] = `"COMMIT AND CHAIN"`;
+
+exports[`pretty: misc/transaction-chain-2.sql 1`] = `"ROLLBACK AND CHAIN"`;
+
+exports[`pretty: misc/transaction-chain-3.sql 1`] = `"COMMIT AND CHAIN"`;
+
+exports[`pretty: misc/transaction-chain-4.sql 1`] = `"ROLLBACK AND CHAIN"`;
+
+exports[`pretty: misc/transaction-chain-5.sql 1`] = `"COMMIT"`;
+
+exports[`pretty: misc/transaction-chain-6.sql 1`] = `"ROLLBACK"`;
+
+exports[`pretty: misc/transaction-chain-7.sql 1`] = `"COMMIT"`;
+
+exports[`pretty: misc/transaction-chain-8.sql 1`] = `"ROLLBACK"`;
