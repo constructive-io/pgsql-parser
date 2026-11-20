@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: misc/xml-indent-1.sql 1`] = `"SELECT XMLSERIALIZE ( DOCUMENT '<foo/>' AS text INDENT )"`;
+
+exports[`non-pretty: misc/xml-indent-2.sql 1`] = `"SELECT XMLSERIALIZE ( CONTENT '<foo/>' AS text INDENT )"`;
+
+exports[`non-pretty: misc/xml-indent-3.sql 1`] = `"SELECT XMLSERIALIZE ( CONTENT doc AS varchar INDENT ) FROM xmltest"`;
+
+exports[`non-pretty: misc/xml-indent-4.sql 1`] = `"SELECT XMLSERIALIZE ( DOCUMENT '<foo/>' AS text )"`;
+
+exports[`non-pretty: misc/xml-indent-5.sql 1`] = `"SELECT XMLSERIALIZE ( CONTENT '<foo/>' AS text )"`;
+
+exports[`pretty: misc/xml-indent-1.sql 1`] = `"SELECT XMLSERIALIZE ( DOCUMENT '<foo/>' AS text INDENT )"`;
+
+exports[`pretty: misc/xml-indent-2.sql 1`] = `"SELECT XMLSERIALIZE ( CONTENT '<foo/>' AS text INDENT )"`;
+
+exports[`pretty: misc/xml-indent-3.sql 1`] = `
+"SELECT XMLSERIALIZE ( CONTENT doc AS varchar INDENT )
+FROM xmltest"
+`;
+
+exports[`pretty: misc/xml-indent-4.sql 1`] = `"SELECT XMLSERIALIZE ( DOCUMENT '<foo/>' AS text )"`;
+
+exports[`pretty: misc/xml-indent-5.sql 1`] = `"SELECT XMLSERIALIZE ( CONTENT '<foo/>' AS text )"`;
