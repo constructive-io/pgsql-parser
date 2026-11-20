@@ -908,3 +908,14 @@ BEGIN
       RETURN 'high';
   END CASE;
 END$$;
+
+-- Test 71: internal "char" declarations retain their distinct type
+CREATE FUNCTION test_internal_char() RETURNS "char"
+LANGUAGE plpgsql AS $$
+DECLARE
+  c "char" := 'a';
+  chars "char"[] := ARRAY['a'::"char"];
+  ordinary char := 'b';
+BEGIN
+  RETURN c;
+END$$;

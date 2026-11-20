@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`preserves internal char and char array declarations 1`] = `
+"DECLARE
+  c "char" := 'a';
+  chars "char"[] := ARRAY['a'::"char"];
+  ordinary char := 'b';
+BEGIN
+  RETURN c;
+END"
+`;

@@ -883,8 +883,8 @@ export class PLpgSQLDeparser {
       const isSchemaQualified = this.isSchemaQualifiedType(typname);
       
       if (!isSchemaQualified) {
-        // Simple type - just strip quotes and return as-is
-        return typname.replace(/"/g, '').trim();
+        const trimmed = typname.trim();
+        return /^"char"(\[\d*\])*$/.test(trimmed) ? trimmed : trimmed.replace(/"/g, '');
       }
       
       // Schema-qualified type - apply proper quoting
