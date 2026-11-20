@@ -1,0 +1,37 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: misc/show-quoting-1.sql 1`] = `"SHOW "ALL""`;
+
+exports[`non-pretty: misc/show-quoting-2.sql 1`] = `"SHOW ALL"`;
+
+exports[`non-pretty: misc/show-quoting-3.sql 1`] = `"SHOW "TimeZone""`;
+
+exports[`non-pretty: misc/show-quoting-4.sql 1`] = `"SHOW "Foo"."Bar""`;
+
+exports[`non-pretty: misc/show-quoting-5.sql 1`] = `"SHOW search_path"`;
+
+exports[`non-pretty: misc/show-quoting-6.sql 1`] = `"SHOW plpgsql.extra_warnings"`;
+
+exports[`non-pretty: misc/show-quoting-7.sql 1`] = `"SHOW timezone"`;
+
+exports[`non-pretty: misc/show-quoting-8.sql 1`] = `"SHOW transaction_isolation"`;
+
+exports[`non-pretty: misc/show-quoting-9.sql 1`] = `"SHOW session_authorization"`;
+
+exports[`pretty: misc/show-quoting-1.sql 1`] = `"SHOW "ALL""`;
+
+exports[`pretty: misc/show-quoting-2.sql 1`] = `"SHOW ALL"`;
+
+exports[`pretty: misc/show-quoting-3.sql 1`] = `"SHOW "TimeZone""`;
+
+exports[`pretty: misc/show-quoting-4.sql 1`] = `"SHOW "Foo"."Bar""`;
+
+exports[`pretty: misc/show-quoting-5.sql 1`] = `"SHOW search_path"`;
+
+exports[`pretty: misc/show-quoting-6.sql 1`] = `"SHOW plpgsql.extra_warnings"`;
+
+exports[`pretty: misc/show-quoting-7.sql 1`] = `"SHOW timezone"`;
+
+exports[`pretty: misc/show-quoting-8.sql 1`] = `"SHOW transaction_isolation"`;
+
+exports[`pretty: misc/show-quoting-9.sql 1`] = `"SHOW session_authorization"`;

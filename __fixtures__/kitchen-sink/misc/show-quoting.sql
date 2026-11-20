@@ -1,0 +1,9 @@
+SHOW "ALL";
+SHOW ALL;
+SHOW "TimeZone";
+SHOW "Foo"."Bar";
+SHOW search_path;
+SHOW plpgsql.extra_warnings;
+SHOW TIME ZONE;
+SHOW TRANSACTION ISOLATION LEVEL;
+SHOW SESSION AUTHORIZATION;

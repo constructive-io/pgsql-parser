@@ -4435,10 +4435,10 @@ export class Deparser implements DeparserVisitor {
   }
 
   VariableShowStmt(node: t.VariableShowStmt, context: DeparserContext): string {
-    if (node.name === 'ALL') {
+    if (node.name === 'all') {
       return 'SHOW ALL';
     }
-    return `SHOW ${node.name}`;
+    return `SHOW ${QuoteUtils.quoteDottedName(node.name.split('.'))}`;
   }
 
   CreateSchemaStmt(node: t.CreateSchemaStmt, context: DeparserContext): string {
