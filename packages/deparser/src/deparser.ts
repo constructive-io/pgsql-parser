@@ -8477,6 +8477,9 @@ export class Deparser implements DeparserVisitor {
       break;
     case 'OBJECT_TRIGGER':
       output.push('TRIGGER');
+      if (node.subname) {
+        output.push(QuoteUtils.quoteIdentifier(node.subname));
+      }
       break;
     case 'OBJECT_TSCONFIGURATION':
       output.push('TEXT SEARCH CONFIGURATION');
@@ -8522,8 +8525,8 @@ export class Deparser implements DeparserVisitor {
     } else if (node.relation) {
       const rangeVarContext = context.spawn('RenameStmt', { objtype: node.relationType });
 
-      // Add ON keyword for policy operations
-      if (node.renameType === 'OBJECT_POLICY') {
+      // Add ON keyword for policy and trigger operations
+      if (node.renameType === 'OBJECT_POLICY' || node.renameType === 'OBJECT_TRIGGER') {
         output.push('ON');
       }
 
