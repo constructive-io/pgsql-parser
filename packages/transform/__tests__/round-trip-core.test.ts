@@ -7,6 +7,30 @@ import {
 } from '../src/round-trip-core';
 
 describe('normalizeTree', () => {
+  it('recurses into constructor without invoking inherited handlers', () => {
+    const tree = { constructor: { location: 9, keep: 1 } };
+    expect(normalizeTree(tree, {
+      volatileKeys: new Set(['location']),
+      keyHandlers: {},
+    })).toEqual({ constructor: { keep: 1 } });
+    expect(tree.constructor.location).toBe(9);
+  });
+
+  it('uses an explicitly supplied constructor handler', () => {
+    expect(normalizeTree({ constructor: { keep: 1 } }, {
+      keyHandlers: {
+        constructor: (value: any, recurse: (node: any) => any) => ({ ...recurse(value), handled: true }),
+      },
+    })).toEqual({ constructor: { keep: 1, handled: true } });
+  });
+
+  it('handles empty and null constructor values without inherited handlers', () => {
+    expect(normalizeTree({ constructor: null }, { keyHandlers: {} }))
+      .toEqual({ constructor: null });
+    expect(normalizeTree({ constructor: {} }, { keyHandlers: {} }))
+      .toEqual({ constructor: {} });
+  });
+
   it('drops volatile keys recursively', () => {
     const tree = {
       A: { sval: 'x', location: 5, inner: { location: 9, keep: 1 } },
