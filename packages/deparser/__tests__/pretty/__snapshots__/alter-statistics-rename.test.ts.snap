@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: misc/alter-statistics-rename-1.sql 1`] = `"ALTER STATISTICS s1 RENAME TO s2"`;
+
+exports[`non-pretty: misc/alter-statistics-rename-2.sql 1`] = `"ALTER STATISTICS public.s1 RENAME TO s2"`;
+
+exports[`non-pretty: misc/alter-statistics-rename-3.sql 1`] = `"ALTER STATISTICS "My Schema"."My Stats" RENAME TO "New Stats""`;
+
+exports[`pretty: misc/alter-statistics-rename-1.sql 1`] = `"ALTER STATISTICS s1 RENAME TO s2"`;
+
+exports[`pretty: misc/alter-statistics-rename-2.sql 1`] = `"ALTER STATISTICS public.s1 RENAME TO s2"`;
+
+exports[`pretty: misc/alter-statistics-rename-3.sql 1`] = `"ALTER STATISTICS "My Schema"."My Stats" RENAME TO "New Stats""`;
