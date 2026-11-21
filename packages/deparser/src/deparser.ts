@@ -8534,6 +8534,9 @@ export class Deparser implements DeparserVisitor {
     case 'OBJECT_ROUTINE':
       output.push('ROUTINE');
       break;
+    case 'OBJECT_STATISTIC_EXT':
+      output.push('STATISTICS');
+      break;
     default:
       throw new Error(`Unsupported RenameStmt renameType: ${node.renameType}`);
     }
@@ -8567,7 +8570,7 @@ export class Deparser implements DeparserVisitor {
         } else {
           output.push(this.visit(node.object, context));
         }
-      } else if ((node.renameType === 'OBJECT_TYPE' || node.renameType === 'OBJECT_DOMAIN') && (node.object as any).List) {
+      } else if ((node.renameType === 'OBJECT_TYPE' || node.renameType === 'OBJECT_DOMAIN' || node.renameType === 'OBJECT_STATISTIC_EXT') && (node.object as any).List) {
         // Qualified type names - join List parts with dots
         const items = ListUtils.unwrapList(node.object as any);
         const parts = items
