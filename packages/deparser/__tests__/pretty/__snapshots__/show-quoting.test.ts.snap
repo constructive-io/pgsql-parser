@@ -18,6 +18,14 @@ exports[`non-pretty: misc/show-quoting-8.sql 1`] = `"SHOW transaction_isolation"
 
 exports[`non-pretty: misc/show-quoting-9.sql 1`] = `"SHOW session_authorization"`;
 
+exports[`non-pretty: misc/show-quoting-10.sql 1`] = `"SHOW foo."select""`;
+
+exports[`non-pretty: misc/show-quoting-11.sql 1`] = `"SHOW "foo..bar""`;
+
+exports[`non-pretty: misc/show-quoting-12.sql 1`] = `"SHOW ".foo""`;
+
+exports[`non-pretty: misc/show-quoting-13.sql 1`] = `"SHOW "foo.""`;
+
 exports[`pretty: misc/show-quoting-1.sql 1`] = `"SHOW "ALL""`;
 
 exports[`pretty: misc/show-quoting-2.sql 1`] = `"SHOW ALL"`;
@@ -35,3 +43,11 @@ exports[`pretty: misc/show-quoting-7.sql 1`] = `"SHOW timezone"`;
 exports[`pretty: misc/show-quoting-8.sql 1`] = `"SHOW transaction_isolation"`;
 
 exports[`pretty: misc/show-quoting-9.sql 1`] = `"SHOW session_authorization"`;
+
+exports[`pretty: misc/show-quoting-10.sql 1`] = `"SHOW foo."select""`;
+
+exports[`pretty: misc/show-quoting-11.sql 1`] = `"SHOW "foo..bar""`;
+
+exports[`pretty: misc/show-quoting-12.sql 1`] = `"SHOW ".foo""`;
+
+exports[`pretty: misc/show-quoting-13.sql 1`] = `"SHOW "foo.""`;

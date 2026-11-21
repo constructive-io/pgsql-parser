@@ -4438,7 +4438,11 @@ export class Deparser implements DeparserVisitor {
     if (node.name === 'all') {
       return 'SHOW ALL';
     }
-    return `SHOW ${QuoteUtils.quoteDottedName(node.name.split('.'))}`;
+    const parts = node.name.split('.');
+    const name = parts.some(part => !part)
+      ? QuoteUtils.quoteIdentifier(node.name)
+      : parts.map(part => QuoteUtils.quoteIdentifier(part)).join('.');
+    return `SHOW ${name}`;
   }
 
   CreateSchemaStmt(node: t.CreateSchemaStmt, context: DeparserContext): string {

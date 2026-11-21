@@ -7,3 +7,7 @@ SHOW plpgsql.extra_warnings;
 SHOW TIME ZONE;
 SHOW TRANSACTION ISOLATION LEVEL;
 SHOW SESSION AUTHORIZATION;
+SHOW foo."select";
+SHOW "foo..bar";
+SHOW ".foo";
+SHOW "foo.";
