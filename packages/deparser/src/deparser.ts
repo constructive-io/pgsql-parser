@@ -4316,6 +4316,10 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
+    if (node.chain) {
+      output.push('AND CHAIN');
+    }
+
     return output.join(' ');
   }
 
@@ -7900,8 +7904,9 @@ export class Deparser implements DeparserVisitor {
   FetchStmt(node: t.FetchStmt, context: DeparserContext): string {
     const output: string[] = [node.ismove ? 'MOVE' : 'FETCH'];
 
-    // Check if howMany represents "ALL" (PostgreSQL uses LONG_MAX as sentinel)
-    const isAll = (node.howMany as any) === 9223372036854776000;
+    // PostgreSQL uses LONG_MAX: 32-bit in WASM, 64-bit in native builds.
+    const howMany = node.howMany as any;
+    const isAll = howMany === 2147483647 || howMany === 9223372036854776000;
 
     // Handle direction first, then check for ALL within each direction
     if (node.direction) {
@@ -10049,7 +10054,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.relation) {
-      output.push(this.visit(node.relation as any, context));
+      output.push(this.RangeVar(node.relation, context));
     }
 
     if (node.skipData) {
@@ -11673,7 +11678,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['LIKE'];
 
     if (node.relation) {
-      output.push(this.visit(node.relation as any, context));
+      output.push(this.RangeVar(node.relation, context));
     }
 
     if (node.options && typeof node.options === 'number') {

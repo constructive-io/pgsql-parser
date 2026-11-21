@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: misc/fetch-all-1.sql 1`] = `"FETCH FORWARD ALL c"`;
+
+exports[`non-pretty: misc/fetch-all-2.sql 1`] = `"FETCH BACKWARD ALL c"`;
+
+exports[`non-pretty: misc/fetch-all-3.sql 1`] = `"MOVE FORWARD ALL c"`;
+
+exports[`non-pretty: misc/fetch-all-4.sql 1`] = `"MOVE BACKWARD ALL c"`;
+
+exports[`non-pretty: misc/fetch-all-5.sql 1`] = `"FETCH FORWARD 5 c"`;
+
+exports[`non-pretty: misc/fetch-all-6.sql 1`] = `"MOVE BACKWARD 2 c"`;
+
+exports[`pretty: misc/fetch-all-1.sql 1`] = `"FETCH FORWARD ALL c"`;
+
+exports[`pretty: misc/fetch-all-2.sql 1`] = `"FETCH BACKWARD ALL c"`;
+
+exports[`pretty: misc/fetch-all-3.sql 1`] = `"MOVE FORWARD ALL c"`;
+
+exports[`pretty: misc/fetch-all-4.sql 1`] = `"MOVE BACKWARD ALL c"`;
+
+exports[`pretty: misc/fetch-all-5.sql 1`] = `"FETCH FORWARD 5 c"`;
+
+exports[`pretty: misc/fetch-all-6.sql 1`] = `"MOVE BACKWARD 2 c"`;
