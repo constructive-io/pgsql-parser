@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: misc/alter-trigger-rename-1.sql 1`] = `"ALTER TRIGGER p ON t RENAME TO q"`;
+
+exports[`non-pretty: misc/alter-trigger-rename-2.sql 1`] = `"ALTER TRIGGER "Mixed Trig" ON "My Schema"."My Table" RENAME TO "New Trig""`;
+
+exports[`non-pretty: misc/alter-trigger-rename-3.sql 1`] = `"ALTER TRIGGER old_trigger ON public.t RENAME TO new_trigger"`;
+
+exports[`pretty: misc/alter-trigger-rename-1.sql 1`] = `"ALTER TRIGGER p ON t RENAME TO q"`;
+
+exports[`pretty: misc/alter-trigger-rename-2.sql 1`] = `"ALTER TRIGGER "Mixed Trig" ON "My Schema"."My Table" RENAME TO "New Trig""`;
+
+exports[`pretty: misc/alter-trigger-rename-3.sql 1`] = `"ALTER TRIGGER old_trigger ON public.t RENAME TO new_trigger"`;
