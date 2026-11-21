@@ -31,6 +31,7 @@
     "fixtures:sql": "ts-node scripts/make-fixtures-sql.ts",
     "fixtures": "ts-node scripts/make-fixtures.ts",
     "fixtures:upstream-diff": "ts-node scripts/make-upstream-diff.ts",
+    "fixtures:regress": "ts-node scripts/make-regress-fixtures.ts",
     "lint": "eslint . --fix",
     "test": "jest",
     "test:watch": "jest --watch",
