@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.5.2](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.5.1...pgsql-deparser%4018.5.2) (2026-11-21)
+
+### Bug Fixes
+
+- **deparser:** bound SHOW segment encoding allocations ([779ed48](https://github.com/constructive-io/pgsql-parser/commit/779ed48ed6752d45dc189550930412e93f73953e))
+
 ## [18.5.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.5.0...pgsql-deparser%4018.5.1) (2026-11-21)
 
 ### Bug Fixes
