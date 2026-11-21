@@ -17,7 +17,8 @@ const prettyTest = new PrettyTest([
   'misc/show-quoting-13.sql',
   'misc/show-quoting-14.sql',
   'misc/show-quoting-15.sql',
-  'misc/show-quoting-16.sql'
+  'misc/show-quoting-16.sql',
+  'misc/show-quoting-17.sql'
 ]);
 prettyTest.generateTests();
 

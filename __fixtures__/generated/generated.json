@@ -21249,6 +21249,7 @@
   "misc/show-quoting-14.sql": "SHOW \"foo.\".\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"",
   "misc/show-quoting-15.sql": "SHOW \"foo.\".\"ééééééééééééééééééééééééééééééé\"",
   "misc/show-quoting-16.sql": "SHOW \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.\".\"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\".\".bar\"",
+  "misc/show-quoting-17.sql": "SHOW a.\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.\".ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
   "misc/rename-qualified-and-sequence-privs-1.sql": "ALTER TYPE app.t2 RENAME TO t",
   "misc/rename-qualified-and-sequence-privs-2.sql": "ALTER DOMAIN app.d2 RENAME TO d",
   "misc/rename-qualified-and-sequence-privs-3.sql": "GRANT ALL ON SEQUENCE app.seq TO bob",

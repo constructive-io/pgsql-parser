@@ -4447,21 +4447,29 @@ export class Deparser implements DeparserVisitor {
       return `SHOW ${parts.map(part => QuoteUtils.quoteIdentifier(part)).join('.')}`;
     }
     const encoder = new TextEncoder();
-    const segments: string[] = [];
-    let remaining = node.name;
-    while (encoder.encode(remaining).length > 63) {
-      let boundary = -1;
-      for (let i = 1; i < remaining.length - 1; i++) {
-        if (encoder.encode(remaining.slice(0, i)).length > 63) break;
-        if (remaining[i] === '.') boundary = i;
+    const boundaries = new Map<number, number>();
+    for (let start = node.name.length - 1; start >= 0; start--) {
+      if (start > 0 && node.name[start - 1] !== '.') continue;
+      if (encoder.encode(node.name.slice(start)).length <= 63) {
+        boundaries.set(start, node.name.length);
+        continue;
       }
-      if (boundary === -1) {
-        throw new Error('SHOW name cannot be split into identifiers of at most 63 bytes');
+      for (let end = start + 1; end < node.name.length - 1; end++) {
+        if (encoder.encode(node.name.slice(start, end)).length > 63) break;
+        if (node.name[end] === '.' && boundaries.has(end + 1)) {
+          boundaries.set(start, end);
+        }
       }
-      segments.push(remaining.slice(0, boundary));
-      remaining = remaining.slice(boundary + 1);
     }
-    segments.push(remaining);
+    if (!boundaries.has(0)) {
+      throw new Error('SHOW name cannot be split into identifiers of at most 63 bytes');
+    }
+    const segments: string[] = [];
+    for (let start = 0; start < node.name.length;) {
+      const end = boundaries.get(start)!;
+      segments.push(node.name.slice(start, end));
+      start = end + 1;
+    }
     return `SHOW ${segments.map(part => QuoteUtils.quoteIdentifier(part)).join('.')}`;
   }
 
