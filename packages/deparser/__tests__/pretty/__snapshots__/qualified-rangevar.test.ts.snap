@@ -1,0 +1,49 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`non-pretty: misc/qualified-rangevar-1.sql 1`] = `"CREATE TABLE t (LIKE p)"`;
+
+exports[`non-pretty: misc/qualified-rangevar-2.sql 1`] = `"CREATE TABLE t (LIKE s.p INCLUDING ALL)"`;
+
+exports[`non-pretty: misc/qualified-rangevar-3.sql 1`] = `"CREATE TABLE t (LIKE db.s.p INCLUDING DEFAULTS)"`;
+
+exports[`non-pretty: misc/qualified-rangevar-4.sql 1`] = `"CREATE TABLE t (LIKE "My Schema"."My Table")"`;
+
+exports[`non-pretty: misc/qualified-rangevar-5.sql 1`] = `"REFRESH MATERIALIZED VIEW mv"`;
+
+exports[`non-pretty: misc/qualified-rangevar-6.sql 1`] = `"REFRESH MATERIALIZED VIEW s.mv"`;
+
+exports[`non-pretty: misc/qualified-rangevar-7.sql 1`] = `"REFRESH MATERIALIZED VIEW CONCURRENTLY db.s.mv WITH NO DATA"`;
+
+exports[`non-pretty: misc/qualified-rangevar-8.sql 1`] = `"REFRESH MATERIALIZED VIEW "My Schema"."My View""`;
+
+exports[`pretty: misc/qualified-rangevar-1.sql 1`] = `
+"CREATE TABLE t (
+  LIKE p
+)"
+`;
+
+exports[`pretty: misc/qualified-rangevar-2.sql 1`] = `
+"CREATE TABLE t (
+  LIKE s.p INCLUDING ALL
+)"
+`;
+
+exports[`pretty: misc/qualified-rangevar-3.sql 1`] = `
+"CREATE TABLE t (
+  LIKE db.s.p INCLUDING DEFAULTS
+)"
+`;
+
+exports[`pretty: misc/qualified-rangevar-4.sql 1`] = `
+"CREATE TABLE t (
+  LIKE "My Schema"."My Table"
+)"
+`;
+
+exports[`pretty: misc/qualified-rangevar-5.sql 1`] = `"REFRESH MATERIALIZED VIEW mv"`;
+
+exports[`pretty: misc/qualified-rangevar-6.sql 1`] = `"REFRESH MATERIALIZED VIEW s.mv"`;
+
+exports[`pretty: misc/qualified-rangevar-7.sql 1`] = `"REFRESH MATERIALIZED VIEW CONCURRENTLY db.s.mv WITH NO DATA"`;
+
+exports[`pretty: misc/qualified-rangevar-8.sql 1`] = `"REFRESH MATERIALIZED VIEW "My Schema"."My View""`;
