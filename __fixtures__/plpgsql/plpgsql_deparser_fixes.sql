@@ -908,3 +908,29 @@ BEGIN
       RETURN 'high';
   END CASE;
 END$$;
+
+-- Test 71: internal "char" declarations retain their distinct type
+CREATE FUNCTION test_internal_char() RETURNS "char"
+LANGUAGE plpgsql AS $$
+DECLARE
+  c "char" := 'a';
+  chars "char"[] := ARRAY['a'::"char"];
+  ordinary char := 'b';
+BEGIN
+  RETURN c;
+END$$;
+
+-- Test 72: simple type identifiers retain required quoting
+CREATE FUNCTION test_quoted_types() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  keyword_type "end";
+  spaced_type "has space";
+  mixed_type "MixedCase";
+  escaped_type "has""quote";
+  dotted_type "has.dot";
+  array_type "MixedCase"[][];
+  ordinary_type simple;
+BEGIN
+  NULL;
+END$$;
