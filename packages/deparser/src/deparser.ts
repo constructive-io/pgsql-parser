@@ -4450,12 +4450,12 @@ export class Deparser implements DeparserVisitor {
     const boundaries = new Map<number, number>();
     for (let start = node.name.length - 1; start >= 0; start--) {
       if (start > 0 && node.name[start - 1] !== '.') continue;
-      if (encoder.encode(node.name.slice(start)).length <= 63) {
+      if (node.name.length - start <= 63 && encoder.encode(node.name.slice(start)).length <= 63) {
         boundaries.set(start, node.name.length);
         continue;
       }
       for (let end = start + 1; end < node.name.length - 1; end++) {
-        if (encoder.encode(node.name.slice(start, end)).length > 63) break;
+        if (end - start > 63 || encoder.encode(node.name.slice(start, end)).length > 63) break;
         if (node.name[end] === '.' && boundaries.has(end + 1)) {
           boundaries.set(start, end);
         }
