@@ -11450,6 +11450,9 @@ export class Deparser implements DeparserVisitor {
       output.push(this.visit(node.expr as any, context));
       output.push('AS');
       output.push(this.TypeName(node.typeName, context));
+      if (node.indent) {
+        output.push('INDENT');
+      }
     }
 
     output.push(')');
