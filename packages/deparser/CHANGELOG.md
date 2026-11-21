@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.5.1](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.5.0...pgsql-deparser%4018.5.1) (2026-11-21)
+
+### Bug Fixes
+
+- **deparser:** find valid partitions for dotted SHOW names ([8ed511a](https://github.com/constructive-io/pgsql-parser/commit/8ed511ab523d29a211578afd64391413936bc5f2))
+
 # [18.5.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.5...pgsql-deparser%4018.5.0) (2026-11-21)
 
 ### Bug Fixes
