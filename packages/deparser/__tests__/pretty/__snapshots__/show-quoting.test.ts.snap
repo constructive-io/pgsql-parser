@@ -32,6 +32,8 @@ exports[`non-pretty: misc/show-quoting-15.sql 1`] = `"SHOW "foo."."éééééé�
 
 exports[`non-pretty: misc/show-quoting-16.sql 1`] = `"SHOW "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.".yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy.".bar""`;
 
+exports[`non-pretty: misc/show-quoting-17.sql 1`] = `"SHOW a."bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.".ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"`;
+
 exports[`pretty: misc/show-quoting-1.sql 1`] = `"SHOW "ALL""`;
 
 exports[`pretty: misc/show-quoting-2.sql 1`] = `"SHOW ALL"`;
@@ -63,3 +65,5 @@ exports[`pretty: misc/show-quoting-14.sql 1`] = `"SHOW "foo.".xxxxxxxxxxxxxxxxxx
 exports[`pretty: misc/show-quoting-15.sql 1`] = `"SHOW "foo."."ééééééééééééééééééééééééééééééé""`;
 
 exports[`pretty: misc/show-quoting-16.sql 1`] = `"SHOW "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.".yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy.".bar""`;
+
+exports[`pretty: misc/show-quoting-17.sql 1`] = `"SHOW a."bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.".ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"`;

@@ -14,3 +14,4 @@ SHOW "foo.";
 SHOW "foo."."xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 SHOW "foo."."ééééééééééééééééééééééééééééééé";
 SHOW "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx."."yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy".".bar";
+SHOW a."bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.".ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc;
