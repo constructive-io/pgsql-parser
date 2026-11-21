@@ -26,3 +26,21 @@ it('rejects an overlong SHOW identifier that cannot be split', () => {
   expect(() => Deparser.deparse({ VariableShowStmt: { name: `${'x'.repeat(64)}..` } }))
     .toThrow('SHOW name cannot be split into identifiers of at most 63 bytes');
 });
+
+it('bounds encoding work for a SHOW name with many dot boundaries', () => {
+  const encoder = new TextEncoder();
+  const constructor = jest.spyOn(globalThis, 'TextEncoder').mockImplementation(() => ({
+    encode(segment: string) {
+      if (segment.length > 63) throw new Error('Unbounded SHOW encoding');
+      return encoder.encode(segment);
+    }
+  } as TextEncoder));
+  const name = `${'a.'.repeat(100000)}.z`;
+  const started = Date.now();
+  try {
+    expect(Deparser.deparse({ VariableShowStmt: { name } })).toMatch(/^SHOW /);
+    expect(Date.now() - started).toBeLessThan(10000);
+  } finally {
+    constructor.mockRestore();
+  }
+});
