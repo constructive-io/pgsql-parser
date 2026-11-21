@@ -4443,10 +4443,26 @@ export class Deparser implements DeparserVisitor {
       return 'SHOW ALL';
     }
     const parts = node.name.split('.');
-    const name = parts.some(part => !part)
-      ? QuoteUtils.quoteIdentifier(node.name)
-      : parts.map(part => QuoteUtils.quoteIdentifier(part)).join('.');
-    return `SHOW ${name}`;
+    if (!parts.some(part => !part)) {
+      return `SHOW ${parts.map(part => QuoteUtils.quoteIdentifier(part)).join('.')}`;
+    }
+    const encoder = new TextEncoder();
+    const segments: string[] = [];
+    let remaining = node.name;
+    while (encoder.encode(remaining).length > 63) {
+      let boundary = -1;
+      for (let i = 1; i < remaining.length - 1; i++) {
+        if (encoder.encode(remaining.slice(0, i)).length > 63) break;
+        if (remaining[i] === '.') boundary = i;
+      }
+      if (boundary === -1) {
+        throw new Error('SHOW name cannot be split into identifiers of at most 63 bytes');
+      }
+      segments.push(remaining.slice(0, boundary));
+      remaining = remaining.slice(boundary + 1);
+    }
+    segments.push(remaining);
+    return `SHOW ${segments.map(part => QuoteUtils.quoteIdentifier(part)).join('.')}`;
   }
 
   CreateSchemaStmt(node: t.CreateSchemaStmt, context: DeparserContext): string {

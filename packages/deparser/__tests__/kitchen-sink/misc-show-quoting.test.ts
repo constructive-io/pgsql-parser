@@ -16,6 +16,9 @@ it('misc-show-quoting', async () => {
   "misc/show-quoting-10.sql",
   "misc/show-quoting-11.sql",
   "misc/show-quoting-12.sql",
-  "misc/show-quoting-13.sql"
+  "misc/show-quoting-13.sql",
+  "misc/show-quoting-14.sql",
+  "misc/show-quoting-15.sql",
+  "misc/show-quoting-16.sql"
 ]);
 });

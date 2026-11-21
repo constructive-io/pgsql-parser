@@ -11,3 +11,6 @@ SHOW foo."select";
 SHOW "foo..bar";
 SHOW ".foo";
 SHOW "foo.";
+SHOW "foo."."xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+SHOW "foo."."ééééééééééééééééééééééééééééééé";
+SHOW "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx."."yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy".".bar";
