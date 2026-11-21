@@ -28,14 +28,19 @@ it('rejects an overlong SHOW identifier that cannot be split', () => {
 });
 
 it('bounds encoding work for a SHOW name with many dot boundaries', () => {
-  const encode = jest.spyOn(TextEncoder.prototype, 'encode');
+  const encoder = new TextEncoder();
+  const constructor = jest.spyOn(globalThis, 'TextEncoder').mockImplementation(() => ({
+    encode(segment: string) {
+      if (segment.length > 63) throw new Error('Unbounded SHOW encoding');
+      return encoder.encode(segment);
+    }
+  } as TextEncoder));
   const name = `${'a.'.repeat(100000)}.z`;
   const started = Date.now();
   try {
     expect(Deparser.deparse({ VariableShowStmt: { name } })).toMatch(/^SHOW /);
     expect(Date.now() - started).toBeLessThan(10000);
-    expect(encode.mock.calls.every(([segment]) => segment!.length <= 63)).toBe(true);
   } finally {
-    encode.mockRestore();
+    constructor.mockRestore();
   }
 });
