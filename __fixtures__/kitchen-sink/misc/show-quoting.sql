@@ -1,0 +1,16 @@
+SHOW "ALL";
+SHOW ALL;
+SHOW "TimeZone";
+SHOW "Foo"."Bar";
+SHOW search_path;
+SHOW plpgsql.extra_warnings;
+SHOW TIME ZONE;
+SHOW TRANSACTION ISOLATION LEVEL;
+SHOW SESSION AUTHORIZATION;
+SHOW foo."select";
+SHOW "foo..bar";
+SHOW ".foo";
+SHOW "foo.";
+SHOW "foo."."xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+SHOW "foo."."ééééééééééééééééééééééééééééééé";
+SHOW "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx."."yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy".".bar";
