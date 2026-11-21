@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.18.7](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform%4018.18.6...%40pgsql%2Ftransform%4018.18.7) (2026-11-21)
+
+### Bug Fixes
+
+- **transform:** ignore inherited normalizeTree key handlers ([3646329](https://github.com/constructive-io/pgsql-parser/commit/3646329e7d7a3d435b24540519fd2eebd0d4b891))
+
 ## [18.18.6](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform%4018.18.5...%40pgsql%2Ftransform%4018.18.6) (2026-11-13)
 
 ### Bug Fixes

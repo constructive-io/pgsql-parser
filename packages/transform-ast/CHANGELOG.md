@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.5.7](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.5.6...%40pgsql%2Ftransform-ast%4018.5.7) (2026-11-21)
+
+### Bug Fixes
+
+- make the pg13-17 lanes round-trip every statement valid for their major ([a9c9fc0](https://github.com/constructive-io/pgsql-parser/commit/a9c9fc0e2bc27f440371c47a5f0c3aaf9e6a88d8))
+- **transform-ast:** keep args_unspecified on a PG13 ALTER FUNCTION without a signature ([9745051](https://github.com/constructive-io/pgsql-parser/commit/9745051d38fd90fafc300a68c265c789c3a32933))
+
 ## [18.5.6](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.5.5...%40pgsql%2Ftransform-ast%4018.5.6) (2026-11-13)
 
 **Note:** Version bump only for package @pgsql/transform-ast

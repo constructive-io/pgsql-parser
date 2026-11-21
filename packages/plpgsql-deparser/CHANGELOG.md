@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.6](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser%4018.3.5...plpgsql-deparser%4018.3.6) (2026-11-21)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** preserve internal char declaration quotes ([543cbd4](https://github.com/constructive-io/pgsql-parser/commit/543cbd49df7a598b600df78f12b76ff153f9578c))
+- **plpgsql-deparser:** preserve required simple type quoting ([0f3ca11](https://github.com/constructive-io/pgsql-parser/commit/0f3ca118f3a159ae768d2129f844612fab1ec7bb))
+
 ## [18.3.5](https://github.com/constructive-io/pgsql-parser/compare/plpgsql-deparser%4018.3.4...plpgsql-deparser%4018.3.5) (2026-11-13)
 
 ### Bug Fixes

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.5.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.5...pgsql-deparser%4018.5.0) (2026-11-21)
+
+### Bug Fixes
+
+- **deparser:** preserve FETCH and MOVE ALL from WASM ASTs ([007d4e4](https://github.com/constructive-io/pgsql-parser/commit/007d4e4dfc53b5b9bd02407871df69e0f0440220))
+- **deparser:** preserve qualified LIKE and materialized view relations ([25499d3](https://github.com/constructive-io/pgsql-parser/commit/25499d36b506a3fe8ca45bda1b4868b1ea5ebf90))
+- **deparser:** preserve SHOW identifier quoting ([bb654fb](https://github.com/constructive-io/pgsql-parser/commit/bb654fb6c09cac06338bb90e083974e6b4d84494))
+- **deparser:** preserve transaction AND CHAIN ([5327b0e](https://github.com/constructive-io/pgsql-parser/commit/5327b0e51aa0eabe22dd4a14b5903cb7d3e9e355))
+- **deparser:** preserve trigger names in ALTER TRIGGER RENAME ([659de04](https://github.com/constructive-io/pgsql-parser/commit/659de041ca99a92de5646012569c8356d19643e0))
+- **deparser:** preserve XMLSERIALIZE INDENT ([39fa829](https://github.com/constructive-io/pgsql-parser/commit/39fa82980bfbb875136fd1578305bd5fc4ed2771))
+- **deparser:** quote access method names ([#382](https://github.com/constructive-io/pgsql-parser/issues/382)) ([786e1a9](https://github.com/constructive-io/pgsql-parser/commit/786e1a93e80b437375132b7d94a36e94e698e3a8))
+- **deparser:** quote every SHOW name component ([27f377c](https://github.com/constructive-io/pgsql-parser/commit/27f377c52428086349fa98557d889aab8489dd5d))
+- **deparser:** split long SHOW names at identifier boundaries ([ebbcdbe](https://github.com/constructive-io/pgsql-parser/commit/ebbcdbe7c6972cc6b9ce50f4255dc0254f1d9715))
+- **deparser:** support ALTER STATISTICS RENAME ([4ddf1b4](https://github.com/constructive-io/pgsql-parser/commit/4ddf1b418f338f7439a3681e1700eb9932a2c4d8))
+- find the pg13-15 ADMIN OPTION by statement shape, not by text search ([0137863](https://github.com/constructive-io/pgsql-parser/commit/0137863c0c206de6e4b78dec57d4eead6e07577d))
+- make the pg13-17 lanes round-trip every statement valid for their major ([a9c9fc0](https://github.com/constructive-io/pgsql-parser/commit/a9c9fc0e2bc27f440371c47a5f0c3aaf9e6a88d8))
+
+### Features
+
+- generate pg13-17 parser/deparser packages from the PG18 main ([e66e98e](https://github.com/constructive-io/pgsql-parser/commit/e66e98e85abf320a68a25b679c544137e21646a8))
+
 ## [18.4.5](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.4.4...pgsql-deparser%4018.4.5) (2026-11-13)
 
 ### Bug Fixes

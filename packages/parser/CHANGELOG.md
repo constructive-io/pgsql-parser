@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [18.4.0](https://github.com/constructive-io/pgsql-parser/compare/pgsql-parser%4018.3.5...pgsql-parser%4018.4.0) (2026-11-21)
+
+### Features
+
+- generate pg13-17 parser/deparser packages from the PG18 main ([e66e98e](https://github.com/constructive-io/pgsql-parser/commit/e66e98e85abf320a68a25b679c544137e21646a8))
+
 ## [18.3.5](https://github.com/constructive-io/pgsql-parser/compare/pgsql-parser%4018.3.4...pgsql-parser%4018.3.5) (2026-11-13)
 
 **Note:** Version bump only for package pgsql-parser
