@@ -9,3 +9,17 @@ BEGIN
   RETURN c;
 END"
 `;
+
+exports[`preserves required quoting in simple type declarations 1`] = `
+"DECLARE
+  keyword_type "end";
+  spaced_type "has space";
+  mixed_type "MixedCase";
+  escaped_type "has""quote";
+  dotted_type "has.dot";
+  array_type "MixedCase"[][];
+  ordinary_type simple;
+BEGIN
+  RETURN;
+END"
+`;

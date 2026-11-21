@@ -919,3 +919,18 @@ DECLARE
 BEGIN
   RETURN c;
 END$$;
+
+-- Test 72: simple type identifiers retain required quoting
+CREATE FUNCTION test_quoted_types() RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  keyword_type "end";
+  spaced_type "has space";
+  mixed_type "MixedCase";
+  escaped_type "has""quote";
+  dotted_type "has.dot";
+  array_type "MixedCase"[][];
+  ordinary_type simple;
+BEGIN
+  NULL;
+END$$;
