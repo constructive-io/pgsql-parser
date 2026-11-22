@@ -54,6 +54,10 @@ export interface PLpgSQL_rec {
   refname: string;
   dno?: number;
   lineno?: number;
+  datatype?: PLpgSQLTypeNode;
+  default_val?: PLpgSQLExprNode;
+  isconst?: boolean;
+  notnull?: boolean;
 }
 
 export interface PLpgSQL_row {
