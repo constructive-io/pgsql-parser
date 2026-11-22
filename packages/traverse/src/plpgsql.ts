@@ -231,6 +231,16 @@ export function walkPlpgsqlAst(
       break;
     }
       
+    case 'PLpgSQL_rec': {
+      if (nodeData.datatype) {
+        walkPlpgsqlAst(nodeData.datatype, cb, opts, parentPath, [...parentPath.keyPath, 'datatype']);
+      }
+      if (nodeData.default_val) {
+        walkPlpgsqlAst(nodeData.default_val, cb, opts, parentPath, [...parentPath.keyPath, 'default_val']);
+      }
+      break;
+    }
+
     case 'PLpgSQL_var': {
       if (nodeData.datatype) {
         walkPlpgsqlAst(nodeData.datatype, cb, opts, parentPath, [...parentPath.keyPath, 'datatype']);
@@ -611,7 +621,6 @@ export function walkPlpgsqlAst(
     }
       
     // Nodes with no children to traverse
-    case 'PLpgSQL_rec':
     case 'PLpgSQL_row':
     case 'PLpgSQL_recfield':
     case 'PLpgSQL_type':

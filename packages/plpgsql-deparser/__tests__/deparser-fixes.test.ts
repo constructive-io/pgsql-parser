@@ -1322,6 +1322,49 @@ END$$`;
     });
   });
 
+  describe('record-typed declarations', () => {
+    // PG18 libpg_query serializes record datums (record, composite and unresolved
+    // custom types) with isconst/notnull/default_val like scalar variables.
+    const buildRec = (rec: Record<string, unknown>): PLpgSQLParseResult => ({
+      plpgsql_funcs: [
+        {
+          PLpgSQL_function: {
+            datums: [{ PLpgSQL_rec: { refname: 'x', dno: 0, lineno: 2, ...rec } } as any],
+            action: { PLpgSQL_stmt_block: { body: [] } },
+          },
+        },
+      ],
+    });
+
+    it('should keep the default value of a record declaration', () => {
+      const deparsed = deparseSync(
+        buildRec({
+          datatype: { PLpgSQL_type: { typname: 'record' } },
+          default_val: { PLpgSQL_expr: { query: 'row(1,2,3)', parseMode: 2 } },
+        })
+      );
+
+      expect(deparsed).toContain('x record := row(1,2,3);');
+    });
+
+    it('should keep CONSTANT and NOT NULL on a custom-typed record declaration', () => {
+      const deparsed = deparseSync(
+        buildRec({
+          isconst: true,
+          notnull: true,
+          datatype: { PLpgSQL_type: { typname: 'int_nn' } },
+          default_val: { PLpgSQL_expr: { query: '42', parseMode: 2 } },
+        })
+      );
+
+      expect(deparsed).toContain('x CONSTANT int_nn NOT NULL := 42;');
+    });
+
+    it('should fall back to RECORD when no datatype is present', () => {
+      expect(deparseSync(buildRec({}))).toContain('x RECORD;');
+    });
+  });
+
   describe('uppercase %ROWTYPE/%TYPE references', () => {
     it('should not quote uppercase %ROWTYPE and %TYPE references', async () => {
       const sql = `CREATE FUNCTION test_rowtype_case() RETURNS void

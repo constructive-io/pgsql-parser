@@ -833,11 +833,30 @@ export class PLpgSQLDeparser {
    * Deparse a record declaration
    */
   private deparseRec(rec: PLpgSQL_rec, context: PLpgSQLDeparserContext): string {
-    const datatype = (rec as { datatype?: PLpgSQLTypeNode }).datatype;
-    if (datatype && 'PLpgSQL_type' in datatype && datatype.PLpgSQL_type.typname) {
-      return `${rec.refname} ${this.deparseType(datatype)}`;
+    const kw = this.keyword;
+    const parts: string[] = [rec.refname];
+
+    if (rec.isconst) {
+      parts.push(kw('CONSTANT'));
     }
-    return `${rec.refname} ${this.keyword('RECORD')}`;
+
+    const datatype = rec.datatype;
+    if (datatype && 'PLpgSQL_type' in datatype && datatype.PLpgSQL_type.typname) {
+      parts.push(this.deparseType(datatype));
+    } else {
+      parts.push(kw('RECORD'));
+    }
+
+    if (rec.notnull) {
+      parts.push(kw('NOT NULL'));
+    }
+
+    if (rec.default_val) {
+      parts.push(':=');
+      parts.push(this.deparseExpr(rec.default_val));
+    }
+
+    return parts.join(' ');
   }
 
   /**
