@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.8.10](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftraverse%4018.8.9...%40pgsql%2Ftraverse%4018.8.10) (2026-11-22)
+
+### Bug Fixes
+
+- **plpgsql-deparser:** keep CONSTANT, NOT NULL and defaults on record declarations ([725b65a](https://github.com/constructive-io/pgsql-parser/commit/725b65a268db00dc7d81ae89842b4a841509e5dd))
+
 ## [18.8.9](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftraverse%4018.8.8...%40pgsql%2Ftraverse%4018.8.9) (2026-11-21)
 
 **Note:** Version bump only for package @pgsql/traverse
