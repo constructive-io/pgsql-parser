@@ -108,6 +108,7 @@ export const CLEAN_TREE_VOLATILE_KEYS: ReadonlySet<string> = new Set([
   'arg_location',
   'payload_location',
   'conninfo_location',
+  'name_location',
   'rexpr_list_start',
   'rexpr_list_end',
   'list_start',
