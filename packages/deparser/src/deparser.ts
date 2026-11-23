@@ -2784,11 +2784,19 @@ export class Deparser implements DeparserVisitor {
     return output.join(' ');
   }
 
+  private quoteTypedIdentifier(name: string, typeName: t.TypeName | undefined): string {
+    // PostgreSQL's lexer treats these keywords differently before certain type names.
+    if (typeName && (name === 'without' || name === 'nulls' || name === 'format')) {
+      return `"${name}"`;
+    }
+    return QuoteUtils.quoteIdentifier(name);
+  }
+
   ColumnDef(node: t.ColumnDef, context: DeparserContext): string {
     const output: string[] = [];
 
     if (node.colname) {
-      output.push(QuoteUtils.quoteIdentifier(node.colname));
+      output.push(this.quoteTypedIdentifier(node.colname, node.typeName));
     }
 
     if (node.typeName) {
@@ -5054,7 +5062,7 @@ export class Deparser implements DeparserVisitor {
             const indentedParts: string[] = [];
               
             if (colDefData.colname) {
-              parts.push(QuoteUtils.quoteIdentifier(colDefData.colname));
+              parts.push(this.quoteTypedIdentifier(colDefData.colname, colDefData.typeName));
             }
 
             if (colDefData.typeName) {
@@ -5118,7 +5126,7 @@ export class Deparser implements DeparserVisitor {
             const parts: string[] = [];
 
             if (colDefData.colname) {
-              parts.push(QuoteUtils.quoteIdentifier(colDefData.colname));
+              parts.push(this.quoteTypedIdentifier(colDefData.colname, colDefData.typeName));
             }
 
             if (colDefData.typeName) {
@@ -5832,7 +5840,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.name) {
-      output.push(QuoteUtils.quoteIdentifier(node.name));
+      output.push(this.quoteTypedIdentifier(node.name, node.argType));
     }
 
     if (node.argType) {
@@ -10920,7 +10928,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.colname) {
-      output.push(QuoteUtils.quoteIdentifier(node.colname));
+      output.push(this.quoteTypedIdentifier(node.colname, node.typeName));
     }
 
     if (node.for_ordinality) {
