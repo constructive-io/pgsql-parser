@@ -23,6 +23,10 @@ it('misc-pg18-copy', async () => {
   "misc/pg18-copy-17.sql",
   "misc/pg18-copy-18.sql",
   "misc/pg18-copy-19.sql",
-  "misc/pg18-copy-20.sql"
+  "misc/pg18-copy-20.sql",
+  "misc/pg18-copy-21.sql",
+  "misc/pg18-copy-22.sql",
+  "misc/pg18-copy-23.sql",
+  "misc/pg18-copy-24.sql"
 ]);
 });

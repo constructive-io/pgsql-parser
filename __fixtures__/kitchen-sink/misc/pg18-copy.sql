@@ -19,3 +19,7 @@ COPY t TO PROGRAM 'gzip > file.gz';
 COPY t FROM 'it''s.csv';
 COPY t FROM STDIN WHERE a > 0;
 COPY t FROM STDIN WITH NULL AS 'I''m null';
+COPY t FROM STDIN WITH (FORMAT "CSV");
+COPY t FROM STDIN WITH (FORMAT 'it''s a custom format', HEADER off);
+COPY t FROM STDIN WITH (FORMAT 'select');
+COPY t FROM STDIN WITH (FORMAT '');

@@ -2559,7 +2559,8 @@
         "A_Const",
         "A_Expr",
         "CaseExpr",
-        "FuncCall"
+        "FuncCall",
+        "ParamRef"
       ],
       "isArray": false
     },

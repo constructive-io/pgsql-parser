@@ -64,34 +64,6 @@
   "postgres_regress/groupingsets.sql": [
     "postgres_regress/groupingsets-188.sql"
   ],
-  "postgres_regress/index_including_gist.sql": [
-    "postgres_regress/index_including_gist-46.sql"
-  ],
-  "postgres_regress/index_including.sql": [
-    "postgres_regress/index_including-10.sql",
-    "postgres_regress/index_including-15.sql",
-    "postgres_regress/index_including-18.sql",
-    "postgres_regress/index_including-27.sql",
-    "postgres_regress/index_including-28.sql",
-    "postgres_regress/index_including-33.sql",
-    "postgres_regress/index_including-46.sql",
-    "postgres_regress/index_including-51.sql",
-    "postgres_regress/index_including-58.sql",
-    "postgres_regress/index_including-76.sql",
-    "postgres_regress/index_including-90.sql",
-    "postgres_regress/index_including-95.sql",
-    "postgres_regress/index_including-122.sql"
-  ],
-  "postgres_regress/limit.sql": [
-    "postgres_regress/limit-41.sql",
-    "postgres_regress/limit-69.sql",
-    "postgres_regress/limit-70.sql",
-    "postgres_regress/limit-71.sql",
-    "postgres_regress/limit-75.sql",
-    "postgres_regress/limit-77.sql",
-    "postgres_regress/limit-78.sql",
-    "postgres_regress/limit-79.sql"
-  ],
   "postgres_regress/misc.sql": [
     "postgres_regress/misc-30.sql"
   ],
@@ -157,9 +129,6 @@
     "postgres_regress/tablespace-2.sql",
     "postgres_regress/tablespace-4.sql",
     "postgres_regress/tablespace-5.sql",
-    "postgres_regress/tablespace-9.sql",
-    "postgres_regress/tablespace-10.sql",
-    "postgres_regress/tablespace-11.sql",
     "postgres_regress/tablespace-13.sql",
     "postgres_regress/tablespace-14.sql",
     "postgres_regress/tablespace-15.sql",
@@ -176,22 +145,7 @@
     "postgres_regress/tablespace-30.sql",
     "postgres_regress/tablespace-40.sql",
     "postgres_regress/tablespace-61.sql",
-    "postgres_regress/tablespace-65.sql",
-    "postgres_regress/tablespace-87.sql",
-    "postgres_regress/tablespace-91.sql",
-    "postgres_regress/tablespace-102.sql",
-    "postgres_regress/tablespace-103.sql",
-    "postgres_regress/tablespace-105.sql",
-    "postgres_regress/tablespace-106.sql",
-    "postgres_regress/tablespace-107.sql",
-    "postgres_regress/tablespace-111.sql",
-    "postgres_regress/tablespace-116.sql",
-    "postgres_regress/tablespace-126.sql",
-    "postgres_regress/tablespace-132.sql",
-    "postgres_regress/tablespace-142.sql",
-    "postgres_regress/tablespace-173.sql",
     "postgres_regress/tablespace-178.sql",
-    "postgres_regress/tablespace-188.sql",
     "postgres_regress/tablespace-190.sql",
     "postgres_regress/tablespace-191.sql",
     "postgres_regress/tablespace-193.sql",

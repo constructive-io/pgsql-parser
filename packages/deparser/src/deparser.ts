@@ -697,7 +697,17 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    if (node.limitCount) {
+    if (node.limitOption === 'LIMIT_OPTION_WITH_TIES') {
+      const count = node.limitCount;
+      if (count) {
+        const countSql = this.visit(count, context);
+        // FETCH accepts literals and parameters directly, but full expressions need parentheses.
+        const fetchCount = 'A_Const' in count || 'ParamRef' in count ? countSql : context.parens(countSql);
+        output.push(`FETCH FIRST ${fetchCount} ROWS WITH TIES`);
+      } else {
+        output.push('FETCH FIRST ROWS WITH TIES');
+      }
+    } else if (node.limitCount) {
       output.push('LIMIT ' + this.visit(node.limitCount as Node, context));
     }
 
@@ -2740,6 +2750,19 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
+    if (node.accessMethod) {
+      output.push('USING', QuoteUtils.quoteIdentifier(node.accessMethod));
+    }
+
+    // Handle table options like WITH (fillfactor=10)
+    if (node.options && node.options.length > 0) {
+      const createStmtContext = context.spawn('CreateStmt');
+      const optionStrs = node.options.map((option: any) => {
+        return this.deparse(option, createStmtContext);
+      });
+      output.push('WITH', `(${optionStrs.join(', ')})`);
+    }
+
     if (node.oncommit && node.oncommit !== 'ONCOMMIT_NOOP') {
       output.push('ON COMMIT');
       switch (node.oncommit) {
@@ -2755,19 +2778,8 @@ export class Deparser implements DeparserVisitor {
       }
     }
 
-    // Handle table options like WITH (fillfactor=10)
-    if (node.options && node.options.length > 0) {
-      const createStmtContext = context.spawn('CreateStmt');
-      const optionStrs = node.options.map((option: any) => {
-        return this.deparse(option, createStmtContext);
-      });
-      output.push('WITH', `(${optionStrs.join(', ')})`);
-    }
-
-    // Handle access method (USING clause)
-    if (node.accessMethod) {
-      output.push('USING');
-      output.push(this.quoteIfNeeded(node.accessMethod));
+    if (node.tablespacename) {
+      output.push('TABLESPACE', QuoteUtils.quoteIdentifier(node.tablespacename));
     }
 
     return output.join(' ');
@@ -2982,10 +2994,7 @@ export class Deparser implements DeparserVisitor {
         }
         output.push(`(${keyItems.join(', ')})`);
       }
-      if (node.indexname) {
-        output.push('USING INDEX');
-        output.push(node.indexname);
-      }
+      this.appendIndexConstraintOptions(node, output, context);
       break;
     case 'CONSTR_UNIQUE':
       if (context.isPretty() && !context.isColumnConstraint) {
@@ -3004,10 +3013,7 @@ export class Deparser implements DeparserVisitor {
         }
         output.push(`(${keyItems.join(', ')})`);
       }
-      if (node.indexname) {
-        output.push('USING INDEX');
-        output.push(node.indexname);
-      }
+      this.appendIndexConstraintOptions(node, output, context);
       break;
     case 'CONSTR_FOREIGN':
       // Only add "FOREIGN KEY" for table-level constraints, not column-level constraints
@@ -3191,6 +3197,7 @@ export class Deparser implements DeparserVisitor {
         });
         output.push(`(${exclusionElements.join(', ')})`);
       }
+      this.appendIndexConstraintOptions(node, output, context);
       if (node.where_clause) {
         output.push('WHERE');
         output.push(context.parens(this.visit(node.where_clause as any, context)));
@@ -3242,6 +3249,23 @@ export class Deparser implements DeparserVisitor {
       return result;
     }
     return output.join(' ');
+  }
+
+  private appendIndexConstraintOptions(node: t.Constraint, output: string[], context: DeparserContext): void {
+    if (node.indexname) {
+      output.push('USING INDEX', QuoteUtils.quoteIdentifier(node.indexname));
+      return;
+    }
+    if (node.including?.length) {
+      const cols = ListUtils.unwrapList(node.including).map(col => this.visit(col, context));
+      output.push('INCLUDE', context.parens(cols.join(', ')));
+    }
+    if (node.options?.length) {
+      output.push('WITH', this.deparseRelOptions(node.options, context));
+    }
+    if (node.indexspace) {
+      output.push('USING INDEX TABLESPACE', QuoteUtils.quoteIdentifier(node.indexspace));
+    }
   }
 
   SubLink(node: t.SubLink, context: DeparserContext): string {
@@ -6190,10 +6214,6 @@ export class Deparser implements DeparserVisitor {
         return `${node.defname.toUpperCase()} ${argValue}`;
       }
 
-      if (context.parentNodeTypes.includes('CreateTableSpaceStmt') || context.parentNodeTypes.includes('AlterTableSpaceOptionsStmt')) {
-        return `${node.defname.toUpperCase()} ${argValue}`;
-      }
-
       if (context.parentNodeTypes.includes('ExplainStmt')) {
         if (argValue) {
           return `${node.defname.toUpperCase()} ${argValue.toUpperCase()}`;
@@ -6400,7 +6420,7 @@ export class Deparser implements DeparserVisitor {
         return `${node.defname} = ${quotedValue}`;
       }
 
-      // Handle CopyStmt WITH clause options - uppercase format without quotes
+      // Handle CopyStmt WITH clause options
       if (context.parentNodeTypes.includes('CopyStmt')) {
         const optName = node.defname.toUpperCase();
         if (!node.arg) {
@@ -6418,7 +6438,11 @@ export class Deparser implements DeparserVisitor {
         if (copyArgType === 'String') {
           const sval: string = this.getNodeData(node.arg).sval;
           if (node.defname === 'format') {
-            return `${optName} ${sval}`;
+            // COPY accepts nonreserved words (including binary) or string literals.
+            const value = sval && QuoteUtils.quoteIdentifierTypeName(sval) === sval
+              ? sval
+              : QuoteUtils.formatEString(sval);
+            return `${optName} ${value}`;
           }
           return `${optName} ${QuoteUtils.escape(sval)}`;
         }
@@ -6531,11 +6555,29 @@ export class Deparser implements DeparserVisitor {
     return node.defname.toUpperCase();
   }
 
+  private deparseRelOptions(options: Node[], context: DeparserContext): string {
+    const entries = ListUtils.unwrapList(options).map(option => {
+      if (!option.DefElem) {
+        return this.visit(option, context);
+      }
+      const { defnamespace, defname, arg } = option.DefElem as t.DefElem;
+      const name = QuoteUtils.quoteQualifiedIdentifier(defnamespace, defname ?? '');
+      if (!arg) {
+        return name;
+      }
+      const value = 'String' in arg
+        ? QuoteUtils.formatEString(arg.String.sval ?? '')
+        : this.visit(arg, context.spawn('DefElem'));
+      return `${name} = ${value}`;
+    });
+    return context.parens(entries.join(', '));
+  }
+
   CreateTableSpaceStmt(node: t.CreateTableSpaceStmt, context: DeparserContext): string {
     const output: string[] = ['CREATE', 'TABLESPACE'];
 
     if (node.tablespacename) {
-      output.push(node.tablespacename);
+      output.push(QuoteUtils.quoteIdentifier(node.tablespacename));
     }
 
     if (node.owner) {
@@ -6548,13 +6590,8 @@ export class Deparser implements DeparserVisitor {
       output.push(QuoteUtils.escape(node.location));
     }
 
-    if (node.options && node.options.length > 0) {
-      output.push('WITH');
-      const tsContext = context.spawn('CreateTableSpaceStmt');
-      const options = ListUtils.unwrapList(node.options)
-        .map(option => this.visit(option, tsContext))
-        .join(', ');
-      output.push(`(${options})`);
+    if (node.options?.length) {
+      output.push('WITH', this.deparseRelOptions(node.options, context));
     }
 
     return output.join(' ');
@@ -6568,7 +6605,7 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.tablespacename) {
-      output.push(node.tablespacename);
+      output.push(QuoteUtils.quoteIdentifier(node.tablespacename));
     }
 
     return output.join(' ');
@@ -6578,7 +6615,7 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = ['ALTER', 'TABLESPACE'];
 
     if (node.tablespacename) {
-      output.push(node.tablespacename);
+      output.push(QuoteUtils.quoteIdentifier(node.tablespacename));
     }
 
     if (node.isReset) {
@@ -6587,12 +6624,8 @@ export class Deparser implements DeparserVisitor {
       output.push('SET');
     }
 
-    if (node.options && node.options.length > 0) {
-      const tablespaceContext = context.spawn('AlterTableSpaceOptionsStmt');
-      const options = ListUtils.unwrapList(node.options)
-        .map(option => this.visit(option, tablespaceContext))
-        .join(', ');
-      output.push(`(${options})`);
+    if (node.options?.length) {
+      output.push(this.deparseRelOptions(node.options, context));
     }
 
     return output.join(' ');
