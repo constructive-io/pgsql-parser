@@ -255,5 +255,9 @@
   "plpgsql_array-18.sql": "do $$ declare a int[];\nbegin a := f1 from onecol; raise notice 'a = %', a; end$$",
   "plpgsql_array-19.sql": "do $$ declare a int[];\nbegin a := f1 from onecol limit 1; raise notice 'a = %', a; end$$",
   "plpgsql_array-20.sql": "do $$ declare a real;\nbegin a[1] := 2; raise notice 'a = %', a; end$$",
-  "plpgsql_array-21.sql": "do $$ declare a complex;\nbegin a.r[1] := 2; raise notice 'a = %', a; end$$"
+  "plpgsql_array-21.sql": "do $$ declare a complex;\nbegin a.r[1] := 2; raise notice 'a = %', a; end$$",
+  "plpgsql_array-22.sql": "do $$\ndeclare\n  v int;\n  v1 v%type;\n  v2 v%type[];\n  v3 v%type[1];\n  v4 v%type[][];\n  v5 v%type[1][3];\n  v6 v%type array;\n  v7 v%type array[];\n  v8 v%type array[1];\n  v9 v%type array[1][1];\n  v10 pg_catalog.pg_class%rowtype[];\nbegin\n  raise notice '%', pg_typeof(v1);\n  raise notice '%', pg_typeof(v2);\n  raise notice '%', pg_typeof(v3);\n  raise notice '%', pg_typeof(v4);\n  raise notice '%', pg_typeof(v5);\n  raise notice '%', pg_typeof(v6);\n  raise notice '%', pg_typeof(v7);\n  raise notice '%', pg_typeof(v8);\n  raise notice '%', pg_typeof(v9);\n  raise notice '%', pg_typeof(v10);\nend;\n$$",
+  "plpgsql_array-23.sql": "do $$\ndeclare\n  v pg_node_tree;\n  v1 v%type[];\nbegin\nend;\n$$",
+  "plpgsql_array-24.sql": "do $$\ndeclare\n  v1 int;\n  v2 varchar;\n  a1 v1%type[];\n  a2 v2%type[];\nbegin\n  v1 := 10;\n  v2 := 'Hi';\n  a1 := array[v1,v1];\n  a2 := array[v2,v2];\n  raise notice '% %', a1, a2;\nend;\n$$",
+  "plpgsql_array-25.sql": "do $$\ndeclare tg array_test_table%rowtype[];\nbegin\n  tg := array(select array_test_table from array_test_table);\n  raise notice '%', tg;\n  tg := array(select row(a,b) from array_test_table);\n  raise notice '%', tg;\nend;\n$$"
 }
