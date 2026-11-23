@@ -2446,40 +2446,35 @@ export class Deparser implements DeparserVisitor {
     return `COALESCE(${argStrs.join(', ')})`;
   }
 
+  private isNegativeConstant(node: t.A_Const): boolean {
+    const constant = node as any;
+    const integer = constant.ival?.ival ?? constant.ival ?? constant.val?.Integer?.ival ??
+      constant.Integer?.ival ?? constant.Integer;
+    const numeric = constant.fval?.fval ?? constant.fval ?? constant.val?.Float?.fval ??
+      constant.Float?.fval ?? constant.Float;
+    // PG stores floats and oversized integers as lexemes, including the sign of -0.0.
+    return String(integer ?? numeric ?? '').startsWith('-');
+  }
+
   TypeCast(node: t.TypeCast, context: DeparserContext): string {
     const arg = this.visit(node.arg, context);
     const typeName = this.TypeName(node.typeName, context);
 
-    // Check if this is a bpchar typecast that should preserve original syntax for AST consistency
-    if (typeName === 'bpchar' || typeName === 'pg_catalog.bpchar') {
-      const names = node.typeName?.names;
-      const isQualifiedBpchar = names && names.length === 2 &&
-                               (names[0] as any)?.String?.sval === 'pg_catalog' &&
-                               (names[1] as any)?.String?.sval === 'bpchar';
-
-      if (isQualifiedBpchar) {
-        return `CAST(${arg} AS ${typeName})`;
-      }
+    const names = node.typeName?.names;
+    if (names?.length === 2 &&
+        'String' in names[0] && names[0].String.sval === 'pg_catalog' &&
+        'String' in names[1] && names[1].String.sval === 'bpchar') {
+      return `CAST(${arg} AS ${typeName})`;
     }
 
     if (this.isPgCatalogType(typeName)) {
-      const argType = this.getNodeType(node.arg);
-
-      const isSimpleArgument = argType === 'A_Const' || argType === 'ColumnRef';
-      const isFunctionCall = argType === 'FuncCall';
-
-      if (isSimpleArgument || isFunctionCall) {
-        // For simple arguments, avoid :: syntax if they have complex structure
-        const shouldUseCastSyntax = isSimpleArgument && (arg.includes('(') || arg.startsWith('-'));
-        
-        if (!shouldUseCastSyntax) {
-          const cleanTypeName = typeName.replace('pg_catalog.', '');
-          // Wrap FuncCall arguments in parentheses to prevent operator precedence issues
-          if (isFunctionCall) {
-            return `${context.parens(arg)}::${cleanTypeName}`;
-          }
-          return `${arg}::${cleanTypeName}`;
-        }
+      const cleanTypeName = typeName.replace(/^pg_catalog\./, '');
+      if ('FuncCall' in node.arg) {
+        return `${context.parens(arg)}::${cleanTypeName}`;
+      }
+      // A bare minus binds outside a postfix cast, not inside its argument.
+      if ('ColumnRef' in node.arg || ('A_Const' in node.arg && !this.isNegativeConstant(node.arg.A_Const))) {
+        return `${arg}::${cleanTypeName}`;
       }
     }
 
