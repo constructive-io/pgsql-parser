@@ -42,6 +42,17 @@ describe('Direct Transformers', () => {
       expect(transformedNode).toBeDefined();
       expect((transformedNode as any).SelectStmt).toBeDefined();
     });
+
+    it.each([0, 42, -1])('should preserve ALTER STATISTICS target %i', async (target) => {
+      const sql = `ALTER STATISTICS IF EXISTS s SET STATISTICS ${target}`;
+      const pg16Parser = new Parser({ version: 16 });
+      const pg17Parser = new Parser({ version: 17 });
+      const pg16Ast = await pg16Parser.parse(sql);
+      const pg17Ast = await pg17Parser.parse(sql);
+      const transformer = new PG16ToPG17Transformer();
+
+      expect(transformer.transform(pg16Ast).stmts).toEqual(pg17Ast.stmts);
+    });
   });
 
   describe('PG15ToPG17Transformer', () => {

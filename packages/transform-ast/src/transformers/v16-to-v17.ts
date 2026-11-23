@@ -1217,7 +1217,15 @@ export class V16ToV17Transformer {
   }
 
   AlterStatsStmt(node: PG16.AlterStatsStmt, context: TransformerContext): { AlterStatsStmt: PG17.AlterStatsStmt } {
-    return { AlterStatsStmt: node as any };
+    const { defnames, stxstattarget, ...fields } = node;
+    const target = stxstattarget ?? 0;
+    return {
+      AlterStatsStmt: {
+        ...fields,
+        ...(defnames && { defnames: defnames.map(name => this.transform(name, context)) }),
+        stxstattarget: { Integer: target === 0 ? {} : { ival: target } }
+      }
+    };
   }
 
   ObjectWithArgs(node: PG16.ObjectWithArgs, context: TransformerContext): { ObjectWithArgs: PG17.ObjectWithArgs } {
