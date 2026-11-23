@@ -1123,6 +1123,15 @@ $$ LANGUAGE plpgsql;`,
     expect(content).toMatch(/SQLSTATE '22012'/);
   });
 
+  it('JSON_TABLE named paths pass round-trip validation when the path name moves', () => {
+    const { content } = transformSql(
+      `CREATE VIEW "my-schema".v AS SELECT * FROM JSON_TABLE(jsonb '[1]', '$[*]' AS root COLUMNS (a int PATH '$'));`,
+      DEFAULT_MAPPING,
+      { roundTrip: true }
+    );
+    expect(content).toMatch(/AS root COLUMNS/);
+  });
+
   // Fixed upstream: libpg-query 18.1.2 serializes ALIAS declarations as an
   // `aliases` array on PLpgSQL_function ({name, varno, lineno}) and
   // plpgsql-deparser 18.1.2 re-emits `arg ALIAS FOR $1;` from that metadata.

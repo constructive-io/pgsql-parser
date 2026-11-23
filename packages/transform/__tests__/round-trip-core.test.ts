@@ -108,6 +108,7 @@ describe('cleanTree preset (upstream-compatible)', () => {
       'list_end',
       'list_start',
       'location',
+      'name_location',
       'payload_location',
       'rexpr_list_end',
       'rexpr_list_start',
