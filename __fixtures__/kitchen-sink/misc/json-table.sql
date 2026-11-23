@@ -9,3 +9,4 @@ SELECT * FROM JSON_TABLE(jsonb '{"a": [{"b": 1}]}', '$' COLUMNS (id FOR ORDINALI
 SELECT jt.* FROM t, LATERAL JSON_TABLE(t.js, '$[*]' COLUMNS (a text PATH '$.a')) AS jt;
 SELECT jt.* FROM t CROSS JOIN JSON_TABLE(t.js FORMAT JSON, '$[*]' COLUMNS (a text)) jt;
 CREATE VIEW json_table_view AS SELECT * FROM JSON_TABLE(jsonb 'null', 'lax $[*]' PASSING 1 + 2 AS a, json '"foo"' AS "b c" COLUMNS (id FOR ORDINALITY, "int" int PATH '$', js json PATH '$', jsb jsonb PATH '$', exists1 bool EXISTS PATH '$.aaa', NESTED PATH '$[1]' AS p1 COLUMNS (a1 int, NESTED PATH '$[*]' AS "p1 1" COLUMNS (a11 text)))) jt;
+SELECT * FROM JSON_TABLE(jsonb '1', '$' COLUMNS ("nested" path PATH '$', "without" time PATH '$', "nulls" first PATH '$', "format" json PATH '$')) jt;

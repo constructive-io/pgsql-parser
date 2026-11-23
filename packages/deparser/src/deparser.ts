@@ -11255,13 +11255,22 @@ export class Deparser implements DeparserVisitor {
     return `COLUMNS (${cols.join(', ')})`;
   }
 
+  // Unreserved keywords that, unquoted before the column type, read as
+  // NESTED PATH, WITHOUT TIME, NULLS FIRST/LAST or FORMAT JSON instead.
+  formatJsonTableColumnName(name: string): string {
+    if (['nested', 'without', 'nulls', 'format'].includes(name)) {
+      return `"${name}"`;
+    }
+    return QuoteUtils.quoteIdentifier(name);
+  }
+
   JsonTableColumn(node: t.JsonTableColumn, context: DeparserContext): string {
     if (node.coltype === 'JTC_NESTED') {
       const path = node.pathspec ? this.JsonTablePathSpec(node.pathspec, context) : '';
       return `NESTED PATH ${path} ${this.formatJsonTableColumns(node.columns, context)}`;
     }
 
-    const parts: string[] = [QuoteUtils.quoteIdentifier(node.name)];
+    const parts: string[] = [this.formatJsonTableColumnName(node.name)];
 
     if (node.coltype === 'JTC_FOR_ORDINALITY') {
       parts.push('FOR ORDINALITY');

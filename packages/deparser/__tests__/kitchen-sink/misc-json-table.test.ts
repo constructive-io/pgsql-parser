@@ -14,6 +14,7 @@ it('misc-json-table', async () => {
   "misc/json-table-8.sql",
   "misc/json-table-9.sql",
   "misc/json-table-10.sql",
-  "misc/json-table-11.sql"
+  "misc/json-table-11.sql",
+  "misc/json-table-12.sql"
 ]);
 });
