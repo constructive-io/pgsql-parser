@@ -1,0 +1,11 @@
+SELECT * FROM JSON_TABLE(jsonb '[1, 2]', '$[*]' COLUMNS (a int PATH '$'));
+SELECT * FROM JSON_TABLE(jsonb '[1, 2]', '$[*]' COLUMNS (id FOR ORDINALITY, a int)) jt;
+SELECT * FROM JSON_TABLE(jsonb '[1, 2]', '$[*]' AS root COLUMNS (a int PATH '$')) AS jt (x);
+SELECT * FROM JSON_TABLE(jsonb '{"a": [1]}', '$' PASSING 1 AS x, 'y' AS "Y" COLUMNS (a int PATH '$.a[*] ? (@ > $x)' DEFAULT -1 ON EMPTY ERROR ON ERROR) ERROR ON ERROR) jt;
+SELECT * FROM JSON_TABLE(jsonb '{"a": 1}', '$' COLUMNS (e bool EXISTS PATH '$.a', e2 int EXISTS PATH '$.b' TRUE ON ERROR)) jt;
+SELECT * FROM JSON_TABLE(jsonb '{"a": "x"}', '$' COLUMNS (js jsonb FORMAT JSON PATH '$.a' WITH CONDITIONAL WRAPPER OMIT QUOTES, js2 text FORMAT JSON ENCODING UTF8 PATH '$' WITHOUT WRAPPER KEEP QUOTES EMPTY OBJECT ON ERROR)) jt;
+SELECT * FROM JSON_TABLE(jsonb '{"a": "x"}', '$' COLUMNS (q jsonb PATH '$.a' WITH WRAPPER EMPTY ARRAY ON EMPTY, "Mixed Col" text PATH '$.a' NULL ON ERROR)) jt;
+SELECT * FROM JSON_TABLE(jsonb '{"a": [{"b": 1}]}', '$' COLUMNS (id FOR ORDINALITY, NESTED PATH '$.a[*]' COLUMNS (b int PATH '$.b', NESTED PATH '$.c[*]' AS c_path COLUMNS (c text)), NESTED '$.d' AS d COLUMNS (d int))) jt;
+SELECT jt.* FROM t, LATERAL JSON_TABLE(t.js, '$[*]' COLUMNS (a text PATH '$.a')) AS jt;
+SELECT jt.* FROM t CROSS JOIN JSON_TABLE(t.js FORMAT JSON, '$[*]' COLUMNS (a text)) jt;
+CREATE VIEW json_table_view AS SELECT * FROM JSON_TABLE(jsonb 'null', 'lax $[*]' PASSING 1 + 2 AS a, json '"foo"' AS "b c" COLUMNS (id FOR ORDINALITY, "int" int PATH '$', js json PATH '$', jsb jsonb PATH '$', exists1 bool EXISTS PATH '$.aaa', NESTED PATH '$[1]' AS p1 COLUMNS (a1 int, NESTED PATH '$[*]' AS "p1 1" COLUMNS (a11 text)))) jt;
