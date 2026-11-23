@@ -2783,7 +2783,9 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.colname) {
-      output.push(QuoteUtils.quoteIdentifier(node.colname));
+      output.push(node.typeName
+        ? QuoteUtils.quoteIdentifierBeforeType(node.colname)
+        : QuoteUtils.quoteIdentifier(node.colname));
     }
 
     if (node.typeName) {
@@ -5049,7 +5051,9 @@ export class Deparser implements DeparserVisitor {
             const indentedParts: string[] = [];
               
             if (colDefData.colname) {
-              parts.push(QuoteUtils.quoteIdentifier(colDefData.colname));
+              parts.push(colDefData.typeName
+                ? QuoteUtils.quoteIdentifierBeforeType(colDefData.colname)
+                : QuoteUtils.quoteIdentifier(colDefData.colname));
             }
 
             if (colDefData.typeName) {
@@ -5113,7 +5117,9 @@ export class Deparser implements DeparserVisitor {
             const parts: string[] = [];
 
             if (colDefData.colname) {
-              parts.push(QuoteUtils.quoteIdentifier(colDefData.colname));
+              parts.push(colDefData.typeName
+                ? QuoteUtils.quoteIdentifierBeforeType(colDefData.colname)
+                : QuoteUtils.quoteIdentifier(colDefData.colname));
             }
 
             if (colDefData.typeName) {
@@ -5827,7 +5833,9 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.name) {
-      output.push(QuoteUtils.quoteIdentifier(node.name));
+      output.push(node.argType
+        ? QuoteUtils.quoteIdentifierBeforeType(node.name)
+        : QuoteUtils.quoteIdentifier(node.name));
     }
 
     if (node.argType) {
@@ -10915,7 +10923,9 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.colname) {
-      output.push(QuoteUtils.quoteIdentifier(node.colname));
+      output.push(node.typeName
+        ? QuoteUtils.quoteIdentifierBeforeType(node.colname)
+        : QuoteUtils.quoteIdentifier(node.colname));
     }
 
     if (node.for_ordinality) {
