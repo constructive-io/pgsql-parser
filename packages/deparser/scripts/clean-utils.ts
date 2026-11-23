@@ -67,6 +67,7 @@ export const cleanTree = (tree: any) => {
     arg_location: noop,
     payload_location: noop,
     conninfo_location: noop,
+    name_location: noop,
     rexpr_list_start: noop,
     rexpr_list_end: noop,
     list_start: noop,
