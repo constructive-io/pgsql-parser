@@ -118,6 +118,27 @@ describe('QuoteUtils.quoteIdentifier', () => {
   });
 });
 
+describe('QuoteUtils.quoteIdentifierBeforeType', () => {
+  it.each([
+    ['without', '"without"'],
+    ['nulls', '"nulls"'],
+    ['format', '"format"'],
+  ])('quotes the lookahead keyword %s only in the typed position', (ident, quoted) => {
+    expect(QuoteUtils.quoteIdentifierBeforeType(ident)).toBe(quoted);
+    expect(QuoteUtils.quoteIdentifier(ident)).toBe(ident);
+  });
+
+  it.each([
+    ['my_col', 'my_col'],
+    ['schema', 'schema'],
+    ['select', '"select"'],
+    ['Without', '"Without"'],
+    ['a"b', '"a""b"'],
+  ])('applies regular identifier quoting to %s', (ident, quoted) => {
+    expect(QuoteUtils.quoteIdentifierBeforeType(ident)).toBe(quoted);
+  });
+});
+
 describe('QuoteUtils.quoteIdentifierAfterDot', () => {
   it('should not quote simple lowercase identifiers', () => {
     expect(QuoteUtils.quoteIdentifierAfterDot('my_col')).toBe('my_col');

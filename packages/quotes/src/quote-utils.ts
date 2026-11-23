@@ -86,6 +86,18 @@ export class QuoteUtils {
       return ident; // no change needed
     }
 
+    return QuoteUtils.quoteIdentifierAlways(ident);
+  }
+
+  static quoteIdentifierBeforeType(ident: string): string {
+    // These unreserved keywords can become lookahead tokens before a type name.
+    if (ident === 'without' || ident === 'nulls' || ident === 'format') {
+      return QuoteUtils.quoteIdentifierAlways(ident);
+    }
+    return QuoteUtils.quoteIdentifier(ident);
+  }
+
+  private static quoteIdentifierAlways(ident: string): string {
     // Build quoted identifier with escaped embedded quotes
     let result = '"';
     for (let i = 0; i < ident.length; i++) {

@@ -2779,19 +2779,13 @@ export class Deparser implements DeparserVisitor {
     return output.join(' ');
   }
 
-  private quoteTypedIdentifier(name: string, typeName: t.TypeName | undefined): string {
-    // PostgreSQL's lexer treats these keywords differently before certain type names.
-    if (typeName && (name === 'without' || name === 'nulls' || name === 'format')) {
-      return `"${name}"`;
-    }
-    return QuoteUtils.quoteIdentifier(name);
-  }
-
   ColumnDef(node: t.ColumnDef, context: DeparserContext): string {
     const output: string[] = [];
 
     if (node.colname) {
-      output.push(this.quoteTypedIdentifier(node.colname, node.typeName));
+      output.push(node.typeName
+        ? QuoteUtils.quoteIdentifierBeforeType(node.colname)
+        : QuoteUtils.quoteIdentifier(node.colname));
     }
 
     if (node.typeName) {
@@ -5057,7 +5051,9 @@ export class Deparser implements DeparserVisitor {
             const indentedParts: string[] = [];
               
             if (colDefData.colname) {
-              parts.push(this.quoteTypedIdentifier(colDefData.colname, colDefData.typeName));
+              parts.push(colDefData.typeName
+                ? QuoteUtils.quoteIdentifierBeforeType(colDefData.colname)
+                : QuoteUtils.quoteIdentifier(colDefData.colname));
             }
 
             if (colDefData.typeName) {
@@ -5121,7 +5117,9 @@ export class Deparser implements DeparserVisitor {
             const parts: string[] = [];
 
             if (colDefData.colname) {
-              parts.push(this.quoteTypedIdentifier(colDefData.colname, colDefData.typeName));
+              parts.push(colDefData.typeName
+                ? QuoteUtils.quoteIdentifierBeforeType(colDefData.colname)
+                : QuoteUtils.quoteIdentifier(colDefData.colname));
             }
 
             if (colDefData.typeName) {
@@ -5835,7 +5833,9 @@ export class Deparser implements DeparserVisitor {
     }
 
     if (node.name) {
-      output.push(this.quoteTypedIdentifier(node.name, node.argType));
+      output.push(node.argType
+        ? QuoteUtils.quoteIdentifierBeforeType(node.name)
+        : QuoteUtils.quoteIdentifier(node.name));
     }
 
     if (node.argType) {
@@ -10923,7 +10923,9 @@ export class Deparser implements DeparserVisitor {
     const output: string[] = [];
 
     if (node.colname) {
-      output.push(this.quoteTypedIdentifier(node.colname, node.typeName));
+      output.push(node.typeName
+        ? QuoteUtils.quoteIdentifierBeforeType(node.colname)
+        : QuoteUtils.quoteIdentifier(node.colname));
     }
 
     if (node.for_ordinality) {
