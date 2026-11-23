@@ -370,7 +370,7 @@
       "isArray": true
     },
     "stxstattarget": {
-      "nullable": false,
+      "nullable": true,
       "tags": [
         "Integer"
       ],
