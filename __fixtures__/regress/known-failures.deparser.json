@@ -1,7 +1,4 @@
 {
-  "deparse-depesz/08-selects.d/11-weird-operator.psql.sql": [
-    "deparse-depesz/08-selects.d/11-weird-operator.psql-1.sql"
-  ],
   "postgres_regress/alter_generic.sql": [
     "postgres_regress/alter_generic-237.sql",
     "postgres_regress/alter_generic-238.sql",
@@ -151,8 +148,7 @@
     "postgres_regress/sequence-154.sql"
   ],
   "postgres_regress/stats_ext.sql": [
-    "postgres_regress/stats_ext-41.sql",
-    "postgres_regress/stats_ext-81.sql"
+    "postgres_regress/stats_ext-41.sql"
   ],
   "postgres_regress/stats.sql": [
     "postgres_regress/stats-371.sql"
