@@ -64,5 +64,6 @@
   "postgres_regress/stats_ext-743.sql",
   "postgres_regress/transactions-239.sql",
   "postgres_regress/transactions-244.sql",
+  "postgres_regress/triggers-49.sql",
   "postgres_regress/triggers-261.sql"
 ]

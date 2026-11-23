@@ -57,6 +57,37 @@ function splitWithScanner(sql: string): string[] {
   return out;
 }
 
+// psql meta-commands (\set, \gset, ...) and COPY FROM stdin data end up in the same piece as
+// the next statement; drop them so that statement is kept.
+function stripPsql(piece: string): string {
+  let lines = piece.split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (/^\\\.\s*$/.test(lines[i])) {
+      lines = lines.slice(i + 1);
+      break;
+    }
+  }
+  return lines.filter((line) => !/^\s*\\/.test(line)).join('\n');
+}
+
+function parses(sql: string): boolean | null {
+  try {
+    return !!parseSync(sql).stmts?.length;
+  } catch {
+    return null;
+  }
+}
+
+// Upstream files are UTF-8 except collate.windows.win1252.sql
+function readSql(file: string): string {
+  const buf = fs.readFileSync(file);
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+  } catch {
+    return new TextDecoder('windows-1252').decode(buf);
+  }
+}
+
 function splitStatements(sql: string): string[] {
   let pieces: string[];
   try {
@@ -82,16 +113,18 @@ async function main() {
   const statements: Record<string, string> = {};
   let skipped = 0;
   for (const rel of files) {
-    const relKey = rel.replace(/^test\/(sql\/)?/, '').replace(/\.psql$/, '.sql');
-    splitStatements(fs.readFileSync(path.join(root, rel), 'utf8')).forEach((sql, i) => {
-      if (seen.has(sql)) return;
-      seen.add(sql);
-      try {
-        if (!parseSync(sql).stmts?.length) return;
-      } catch {
-        skipped++;
-        return;
+    // deparse-depesz has foo.psql next to foo.sql; keep their keys distinct
+    const relKey = rel.replace(/^test\/(sql\/)?/, '').replace(/\.psql$/, '.psql.sql');
+    splitStatements(readSql(path.join(root, rel))).forEach((piece, i) => {
+      let sql = piece;
+      let ok = parses(sql);
+      if (ok === null) {
+        sql = stripPsql(piece).replace(/^(\s*--[^\n]*\n|\s+)+/, '').trim();
+        ok = sql ? parses(sql) : false;
       }
+      if (ok === null) skipped++;
+      if (!ok || seen.has(sql)) return;
+      seen.add(sql);
       statements[generateStatementKey(relKey, i)] = sql;
     });
   }

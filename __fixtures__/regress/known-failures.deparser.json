@@ -1,6 +1,6 @@
 {
-  "deparse-depesz/08-selects.d/11-weird-operator.sql": [
-    "deparse-depesz/08-selects.d/11-weird-operator-1.sql"
+  "deparse-depesz/08-selects.d/11-weird-operator.psql.sql": [
+    "deparse-depesz/08-selects.d/11-weird-operator.psql-1.sql"
   ],
   "postgres_regress/alter_generic.sql": [
     "postgres_regress/alter_generic-237.sql",
@@ -40,7 +40,8 @@
     "postgres_regress/compression-17.sql"
   ],
   "postgres_regress/copy.sql": [
-    "postgres_regress/copy-22.sql"
+    "postgres_regress/copy-22.sql",
+    "postgres_regress/copy-23.sql"
   ],
   "postgres_regress/copy2.sql": [
     "postgres_regress/copy2-106.sql"
@@ -100,7 +101,9 @@
     "postgres_regress/limit-70.sql",
     "postgres_regress/limit-71.sql",
     "postgres_regress/limit-75.sql",
-    "postgres_regress/limit-78.sql"
+    "postgres_regress/limit-77.sql",
+    "postgres_regress/limit-78.sql",
+    "postgres_regress/limit-79.sql"
   ],
   "postgres_regress/misc.sql": [
     "postgres_regress/misc-30.sql"
@@ -564,6 +567,7 @@
     "postgres_regress/tablespace-65.sql",
     "postgres_regress/tablespace-87.sql",
     "postgres_regress/tablespace-91.sql",
+    "postgres_regress/tablespace-102.sql",
     "postgres_regress/tablespace-103.sql",
     "postgres_regress/tablespace-105.sql",
     "postgres_regress/tablespace-106.sql",
