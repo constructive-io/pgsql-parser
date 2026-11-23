@@ -955,18 +955,12 @@ export class Deparser implements DeparserVisitor {
       return '';
     }
 
-    const parts = name.map((n: any) => {
-      if (n.String) {
-        return n.String.sval || n.String.str;
-      }
-      return this.visit(n, context);
-    });
-
-    if (parts.length > 1) {
-      return `OPERATOR(${parts.join('.')})`;
+    if (name.length > 1) {
+      return `OPERATOR(${this.qualifiedOperatorName(name)})`;
     }
 
-    return parts.join('.');
+    const [operator] = name as any[];
+    return operator.String ? operator.String.sval || operator.String.str || '' : this.visit(operator, context);
   }
 
   private getOperatorPrecedence(operator: string): number {
@@ -7033,7 +7027,7 @@ export class Deparser implements DeparserVisitor {
 
   /** `schema.op` for an operator name list: schema parts quoted, the operator symbol as is. */
   private qualifiedOperatorName(objname: any): string {
-    const names = ListUtils.unwrapList(objname ?? []).map((n: any) => (n.String ? n.String.sval : 'unknown'));
+    const names = ListUtils.unwrapList(objname ?? []).map((n: any) => (n.String ? n.String.sval || n.String.str : 'unknown'));
     if (names.length === 0) return 'unknown';
     return [...names.slice(0, -1).map((n: string) => QuoteUtils.quoteIdentifier(n)), names[names.length - 1]].join('.');
   }
@@ -8019,6 +8013,10 @@ export class Deparser implements DeparserVisitor {
   AlterStatsStmt(node: t.AlterStatsStmt, context: DeparserContext): string {
     const output: string[] = ['ALTER', 'STATISTICS'];
 
+    if (node.missing_ok) {
+      output.push('IF EXISTS');
+    }
+
     if (node.defnames && node.defnames.length > 0) {
       const names = ListUtils.unwrapList(node.defnames).map(name => this.visit(name, context));
       output.push(names.join('.'));
@@ -8026,9 +8024,7 @@ export class Deparser implements DeparserVisitor {
 
     output.push('SET', 'STATISTICS');
 
-    if (node.stxstattarget) {
-      output.push(this.visit(node.stxstattarget, context));
-    }
+    output.push(node.stxstattarget != null ? this.visit(node.stxstattarget, context) : 'DEFAULT');
 
     return output.join(' ');
   }
