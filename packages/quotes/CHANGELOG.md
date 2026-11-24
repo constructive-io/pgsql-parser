@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.2.6](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Fquotes%4018.2.5...%40pgsql%2Fquotes%4018.2.6) (2026-11-24)
+
+### Bug Fixes
+
+- **deparser:** use QuoteUtils for typed identifiers ([bba99ad](https://github.com/constructive-io/pgsql-parser/commit/bba99ada7e920b7d8919de53f467552d166251a8))
+
 ## [18.2.5](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Fquotes%4018.2.4...%40pgsql%2Fquotes%4018.2.5) (2026-11-23)
 
 **Note:** Version bump only for package @pgsql/quotes

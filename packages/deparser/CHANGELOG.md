@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.5.5](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.5.4...pgsql-deparser%4018.5.5) (2026-11-24)
+
+### Bug Fixes
+
+- **deparser:** preserve ALTER STATISTICS options and quote operator schemas ([0caf67d](https://github.com/constructive-io/pgsql-parser/commit/0caf67db17614a2ef0b08e174cdeea393040fede))
+- **deparser:** quote JSON_TABLE column names that read as NESTED PATH, WITHOUT TIME, NULLS FIRST/LAST or FORMAT JSON ([eabe19d](https://github.com/constructive-io/pgsql-parser/commit/eabe19d184446ab10823fa5409930b3fd21c9233))
+- **deparser:** quote keyword column names before types ([07301aa](https://github.com/constructive-io/pgsql-parser/commit/07301aa437e314776149e2636160d05fecef971e))
+- **deparser:** use QuoteUtils for typed identifiers ([bba99ad](https://github.com/constructive-io/pgsql-parser/commit/bba99ada7e920b7d8919de53f467552d166251a8))
+
+### Features
+
+- **deparser:** support JSON_EXISTS, JSON_VALUE, JSON_QUERY and JSON_TABLE ([a60e01e](https://github.com/constructive-io/pgsql-parser/commit/a60e01ece0cc99db17916e7509b7d3a95b9e22e1))
+
 ## [18.5.4](https://github.com/constructive-io/pgsql-parser/compare/pgsql-deparser%4018.5.3...pgsql-deparser%4018.5.4) (2026-11-23)
 
 **Note:** Version bump only for package pgsql-deparser

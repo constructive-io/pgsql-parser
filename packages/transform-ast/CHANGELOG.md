@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.5.12](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.5.11...%40pgsql%2Ftransform-ast%4018.5.12) (2026-11-24)
+
+### Bug Fixes
+
+- **transform-ast:** preserve legacy statistics targets ([1369ab7](https://github.com/constructive-io/pgsql-parser/commit/1369ab75272e57d11b9226993101728cf7be4641))
+
 ## [18.5.11](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform-ast%4018.5.10...%40pgsql%2Ftransform-ast%4018.5.11) (2026-11-23)
 
 **Note:** Version bump only for package @pgsql/transform-ast
