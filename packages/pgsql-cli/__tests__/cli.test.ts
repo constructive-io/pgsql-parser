@@ -78,33 +78,25 @@ describe('pgsql proto-fetch', () => {
     expect(readFileSync(outFile, 'utf-8')).toContain('$root.google.protobuf.FileDescriptorProto');
   });
 
-  it.each([
-    {
-      description: 'a punctuated JSON alias',
-      definition: 'message Example { optional string label = 1 [json_name = "first-name"]; }',
-      value: { 'first-name': 'Ada' },
-    },
-    {
-      description: 'a qualified extension name',
-      definition: `
-        message Example { extensions 100 to max; }
-        extend Example { optional string extra = 100; }
-      `,
-      value: { '.demo.extra': 'extension' },
-    }
-  ])('round-trips $description', async ({ definition, value }) => {
+  it('round-trips a qualified extension name', async () => {
     const inFile = join(dir, 'example.proto');
     const outFile = join(dir, 'example.js');
-    writeFileSync(inFile, `syntax = "proto2"; package demo; ${definition}`);
+    writeFileSync(inFile, `
+      syntax = "proto2";
+      package demo;
+      message Example { extensions 100 to max; }
+      extend Example { optional string extra = 100; }
+    `);
 
     await generateProtoJS(inFile, outFile);
     await replaceTextInProtoJS(outFile, 'protobufjs/minimal', require.resolve('protobufjs/minimal'));
 
     const { Example } = require(outFile).demo;
+    const value = { '.demo.extra': 'extension' };
     expect(Example.toObject(Example.decode(Example.encode(value).finish()))).toEqual(value);
   });
 
-  it.each(['__proto__', 'constructor', 'toJSON'])('rejects a shadowing alias (%s)', async name => {
+  it.each(['first-name', 'first    name', '2fa', 'class', '__proto__', 'constructor', 'toJSON'])('rejects an unsupported alias (%s)', async name => {
     const inFile = join(dir, 'example.proto');
     const outFile = join(dir, 'example.js');
     writeFileSync(inFile, `
@@ -112,7 +104,9 @@ describe('pgsql proto-fetch', () => {
       message Example { string label = 1 [json_name = "${name}"]; }
     `);
 
-    await expect(generateProtoJS(inFile, outFile)).rejects.toThrow('Invalid JSON field name');
+    await expect(generateProtoJS(inFile, outFile)).rejects.toThrow(
+      `Invalid JSON field name ${JSON.stringify(name)} on .Example.label`
+    );
   });
 
   it.each([
