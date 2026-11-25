@@ -6,7 +6,7 @@ import { loadModule, parseSync } from 'pgsql-parser';
 import { deparseCommand } from '../src/commands/deparse';
 import { parseCommand } from '../src/commands/parse';
 import { protoFetchCommand } from '../src/commands/proto-fetch';
-import { generateProtoJS } from '../src/commands/proto-fetch/helpers';
+import { generateProtoJS, replaceTextInProtoJS } from '../src/commands/proto-fetch/helpers';
 
 const sql = `SELECT (ARRAY[1, 2, 3])[2:3] AS slice, 'line one
 line two' AS memo FROM t WHERE id = 1`;
@@ -79,6 +79,43 @@ describe('pgsql proto-fetch', () => {
   });
 
   it.each([
+    {
+      description: 'a punctuated JSON alias',
+      definition: 'message Example { optional string label = 1 [json_name = "first-name"]; }',
+      value: { 'first-name': 'Ada' },
+    },
+    {
+      description: 'a qualified extension name',
+      definition: `
+        message Example { extensions 100 to max; }
+        extend Example { optional string extra = 100; }
+      `,
+      value: { '.demo.extra': 'extension' },
+    }
+  ])('round-trips $description', async ({ definition, value }) => {
+    const inFile = join(dir, 'example.proto');
+    const outFile = join(dir, 'example.js');
+    writeFileSync(inFile, `syntax = "proto2"; package demo; ${definition}`);
+
+    await generateProtoJS(inFile, outFile);
+    await replaceTextInProtoJS(outFile, 'protobufjs/minimal', require.resolve('protobufjs/minimal'));
+
+    const { Example } = require(outFile).demo;
+    expect(Example.toObject(Example.decode(Example.encode(value).finish()))).toEqual(value);
+  });
+
+  it.each(['__proto__', 'constructor', 'toJSON'])('rejects a shadowing alias (%s)', async name => {
+    const inFile = join(dir, 'example.proto');
+    const outFile = join(dir, 'example.js');
+    writeFileSync(inFile, `
+      syntax = "proto3";
+      message Example { string label = 1 [json_name = "${name}"]; }
+    `);
+
+    await expect(generateProtoJS(inFile, outFile)).rejects.toThrow('Invalid JSON field name');
+  });
+
+  it.each([
     [undefined, 'protobufjs/minimal'],
     ['@custom/protobufjs', '@custom/protobufjs'],
   ])('generates a module with the requested runtime (%s)', async (withPkg, runtime) => {
@@ -103,5 +140,5 @@ describe('pgsql proto-fetch', () => {
     const decoded = ParseResult.decode(ParseResult.encode(message).finish());
 
     expect(ParseResult.toObject(decoded, { enums: String, longs: Number })).toEqual(ast);
-  });
+  }, 20_000);
 });

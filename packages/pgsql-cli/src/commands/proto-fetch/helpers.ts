@@ -36,8 +36,10 @@ export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<v
 const applyJsonFieldNames = (namespace: Namespace): void => {
   if (namespace instanceof Type) {
     const fields = namespace.fieldsArray.map(field => {
-      const name = field.options?.json_name ?? field.name;
-      if (typeof name !== 'string' || !/^[a-zA-Z_][a-zA-Z_0-9]*$/.test(name) || name === '__proto__') {
+      const name = field.declaringField ? field.name : field.options?.json_name ?? field.name;
+      if (name === '__proto__' || (name !== field.name && (
+        typeof name !== 'string' || Object.hasOwn(Object.prototype, name) || name === 'prototype' || name === 'toJSON'
+      ))) {
         throw new Error(`Invalid JSON field name on ${field.fullName}`);
       }
       return { field, name };
