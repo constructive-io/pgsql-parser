@@ -1,8 +1,8 @@
 import fs from 'fs';
 import https from 'https';
 import { sync as mkdirp } from 'mkdirp';
-import { dirname } from 'path';
-import { Field, Namespace, OneOf, Root, Type } from 'protobufjs';
+import { dirname, resolve } from 'path';
+import { Field, Namespace, OneOf, Root, Type, util } from 'protobufjs';
 import staticModule from 'protobufjs-cli/targets/static-module';
 
 // Download .proto file if URL
@@ -65,7 +65,16 @@ const applyJsonFieldNames = (namespace: Namespace): void => {
 };
 
 export const generateProtoJS = async (inFile: string, outFile: string): Promise<void> => {
-  const root = new Root().loadSync(inFile, { keepCase: true });
+  const root = new Root();
+  const includeDir = dirname(require.resolve('protobufjs/package.json'));
+  root.resolvePath = (origin, target) => {
+    const local = util.path.resolve(origin, target);
+    if (fs.existsSync(local)) return local;
+
+    const bundled = resolve(includeDir, target);
+    return fs.existsSync(bundled) ? bundled : local;
+  };
+  root.loadSync(inFile, { keepCase: true });
   applyJsonFieldNames(root);
   root.resolveAll();
   const output = await new Promise<string>((resolve, reject) => {

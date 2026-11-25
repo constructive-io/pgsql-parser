@@ -6,6 +6,7 @@ import { loadModule, parseSync } from 'pgsql-parser';
 import { deparseCommand } from '../src/commands/deparse';
 import { parseCommand } from '../src/commands/parse';
 import { protoFetchCommand } from '../src/commands/proto-fetch';
+import { generateProtoJS } from '../src/commands/proto-fetch/helpers';
 
 const sql = `SELECT (ARRAY[1, 2, 3])[2:3] AS slice, 'line one
 line two' AS memo FROM t WHERE id = 1`;
@@ -61,6 +62,22 @@ describe('pgsql deparse', () => {
 });
 
 describe('pgsql proto-fetch', () => {
+  it('resolves standard protobuf imports from the installed runtime', async () => {
+    const inFile = join(dir, 'descriptor-user.proto');
+    const outFile = join(dir, 'descriptor-user.js');
+    writeFileSync(inFile, `
+      syntax = "proto2";
+      import "google/protobuf/descriptor.proto";
+      message Example {
+        optional google.protobuf.FileDescriptorProto descriptor = 1;
+      }
+    `);
+
+    await generateProtoJS(inFile, outFile);
+
+    expect(readFileSync(outFile, 'utf-8')).toContain('$root.google.protobuf.FileDescriptorProto');
+  });
+
   it.each([
     [undefined, 'protobufjs/minimal'],
     ['@custom/protobufjs', '@custom/protobufjs'],
