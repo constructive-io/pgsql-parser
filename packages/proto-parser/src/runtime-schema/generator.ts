@@ -1,6 +1,5 @@
-import { Field, Namespace,Type } from 'protobufjs';
+import { Field, Namespace,Type } from '@launchql/protobufjs';
 
-import { getFieldName } from '../utils/utils';
 import { FieldSpec,NodeSpec } from './types';
 
 export class RuntimeSchemaGenerator {
@@ -61,7 +60,7 @@ export class RuntimeSchemaGenerator {
   }
 
   private createFieldSpec(field: Field): FieldSpec | null {
-    const fieldName = getFieldName(field, field.name);
+    const fieldName = field.name;
     const isArray = field.repeated || false;
     const optional = !field.required;
     const fieldType = field.type;

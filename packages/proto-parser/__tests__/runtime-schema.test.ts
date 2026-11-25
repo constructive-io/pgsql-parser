@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { parse } from 'protobufjs';
+import { parse } from '@launchql/protobufjs';
 
 import { ProtoStore } from '../src/store';
 import { getFieldName } from '../src/utils';
@@ -8,7 +8,8 @@ import { getStore, getTestProtoPath, parseAndSnap } from '../test-utils';
 describe('runtime-schema', () => {
   it('preserves PG18 JSON names and the JsonAggConstructor fields', () => {
     const { root } = parse(readFileSync(getTestProtoPath('18-latest.proto'), 'utf8'));
-    const selectStmt = root.lookupType('pg_query.Node').fields.selectStmt;
+    const selectStmt = root.lookupType('pg_query.Node').fields.SelectStmt;
+    expect(selectStmt?.name).toBe('SelectStmt');
     expect(getFieldName(selectStmt, selectStmt.name)).toBe('SelectStmt');
 
     const schema = new ProtoStore(root).getRuntimeSchema();

@@ -1,9 +1,8 @@
 import fs from 'fs';
 import https from 'https';
 import { sync as mkdirp } from 'mkdirp';
-import { dirname, resolve } from 'path';
-import { Field, Namespace, OneOf, Root, Type, util } from 'protobufjs';
-import staticModule from 'protobufjs-cli/targets/static-module';
+import { dirname } from 'path';
+import { main as pbjs } from '@launchql/protobufjs-cli/pbjs';
 
 // Download .proto file if URL
 export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<void> => {
@@ -33,77 +32,21 @@ export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<v
   });
 };
 
-const applyJsonFieldNames = (namespace: Namespace): void => {
-  if (namespace instanceof Type) {
-    const fields = namespace.fieldsArray.map(field => {
-      const name = field.declaringField ? field.name : field.options?.json_name ?? field.name;
-      if (name === '__proto__' || (name !== field.name && (
-        typeof name !== 'string' || !/^[A-Za-z_$][\w$]*$/.test(name) || util.isReserved(name) ||
-        Object.hasOwn(Object.prototype, name) || name === 'prototype' || name === 'toJSON'
-      ))) {
-        throw new Error(`Invalid JSON field name ${JSON.stringify(name)} on ${field.fullName}`);
-      }
-      return { field, name };
-    });
-    if (fields.some(({ field, name }) => field.name !== name)) {
-      const oneofs = new Map<OneOf, Field[]>(
-        namespace.oneofsArray.map(oneof => [oneof, [...oneof.fieldsArray]])
-      );
-      for (const [oneof, members] of oneofs) {
-        members.forEach(field => oneof.remove(field));
-      }
-      fields.forEach(({ field }) => namespace.remove(field));
-      fields.forEach(({ field, name }) => {
-        field.name = name;
-        namespace.add(field);
-      });
-      for (const [oneof, members] of oneofs) {
-        members.forEach(field => oneof.add(field));
-      }
-    }
-  }
-  for (const child of namespace.nestedArray) {
-    if (child instanceof Namespace) applyJsonFieldNames(child);
-  }
-};
-
-export const generateProtoJS = async (inFile: string, outFile: string): Promise<void> => {
+// Generate JavaScript from proto file using pbjs
+export const generateProtoJS = (inFile: string, outFile: string): Promise<void> => new Promise((resolve, reject) => {
   fs.accessSync(inFile, fs.constants.R_OK);
-  const root = new Root();
-  const includeDir = dirname(require.resolve('protobufjs/package.json'));
-  root.resolvePath = (origin, target) => {
-    const local = util.path.resolve(origin, target);
-    const normalizedTarget = util.path.normalize(target);
-    if (!origin || !normalizedTarget.startsWith('google/') || fs.existsSync(local)) return local;
-
-    const bundled = resolve(includeDir, normalizedTarget);
-    return fs.existsSync(bundled) ? bundled : local;
-  };
-  root.loadSync(inFile, { keepCase: true });
-  applyJsonFieldNames(root);
-  root.resolveAll();
-  const output = await new Promise<string>((resolve, reject) => {
-    staticModule(root, {
-      beautify: true,
-      comments: true,
-      convert: true,
-      create: true,
-      decode: true,
-      delimited: true,
-      encode: true,
-      lint: 'eslint-disable block-scoped-var, id-length, no-control-regex, no-magic-numbers, no-prototype-builtins, no-redeclare, no-shadow, no-var, sort-vars',
-      service: true,
-      typeurl: true,
-      verify: true,
-    }, (error, result) => {
-      if (error) reject(error);
-      else resolve(result);
-    });
-  });
   mkdirp(dirname(outFile));
-  await fs.promises.writeFile(outFile, output, 'utf8');
-  console.log('Generated proto.js from proto file.');
-};
+
+  pbjs(['--keep-case', '-t', 'static-module', '-o', outFile, '--', inFile], (error) => {
+    if (error) {
+      console.error(`Error during code generation: ${error.message}`);
+      reject(error);
+      return;
+    }
+    console.log('Generated proto.js from proto file.');
+    resolve();
+  });
+});
 
 // Replace text in generated JS file
 export const replaceTextInProtoJS = (filePath: string, originalPackage: string, newPackage: string): Promise<void> => new Promise((resolve, reject) => {

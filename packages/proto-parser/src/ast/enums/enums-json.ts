@@ -1,4 +1,4 @@
-import { Enum } from 'protobufjs';
+import { Enum } from '@launchql/protobufjs';
 
 type EnumValueToName = Record<string, Record<number, string>>;
 type EnumNameToValue = Record<string, Record<string, number>>;

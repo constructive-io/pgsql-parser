@@ -1,4 +1,4 @@
-import { Enum, Field, ReflectionObject } from 'protobufjs';
+import { Enum, Field, ReflectionObject } from '@launchql/protobufjs';
 import { writeFileSync } from 'fs';
 import { basename,extname } from 'path';
 
