@@ -115,7 +115,7 @@ describe('pgsql proto-fetch', () => {
     `);
 
     await generateProtoJS(inFile, outFile);
-    await replaceTextInProtoJS(outFile, 'protobufjs/minimal', require.resolve('@launchql/protobufjs/minimal'));
+    await replaceTextInProtoJS(outFile, 'protobufjs/minimal', require.resolve('@constructive-io/protobufjs/minimal'));
 
     const { Example } = require(outFile).demo;
     const value = { '.demo.extra': 'extension' };
@@ -136,7 +136,7 @@ describe('pgsql proto-fetch', () => {
   });
 
   it.each([
-    [undefined, '@launchql/protobufjs/minimal'],
+    [undefined, '@constructive-io/protobufjs/minimal'],
     ['@custom/protobufjs', '@custom/protobufjs'],
   ])('generates a module with the requested runtime (%s)', async (withPkg, runtime) => {
     const inFile = join(dir, 'test input.proto');
@@ -151,7 +151,7 @@ describe('pgsql proto-fetch', () => {
   it('round-trips a PostgreSQL AST using its JSON field names', async () => {
     const inFile = resolve(__dirname, '../../../__fixtures__/proto/18-latest.proto');
     const outFile = join(dir, 'pg-query.js');
-    await protoFetchCommand({ inFile, outFile, 'with-pkg': require.resolve('@launchql/protobufjs/minimal') });
+    await protoFetchCommand({ inFile, outFile, 'with-pkg': require.resolve('@constructive-io/protobufjs/minimal') });
 
     const { ParseResult } = require(outFile).pg_query;
     await loadModule();

@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { parse } from '@launchql/protobufjs';
+import { parse } from '@constructive-io/protobufjs';
 
 import { ProtoStore } from '../src/store';
 import { getFieldName } from '../src/utils';

@@ -2,7 +2,7 @@ import fs from 'fs';
 import https from 'https';
 import { sync as mkdirp } from 'mkdirp';
 import { dirname } from 'path';
-import { main as pbjs } from '@launchql/protobufjs-cli/pbjs';
+import { main as pbjs } from '@constructive-io/protobufjs-cli/pbjs';
 
 // Download .proto file if URL
 export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<void> => {

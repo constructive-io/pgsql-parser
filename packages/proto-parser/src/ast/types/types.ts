@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { Field,Type } from '@launchql/protobufjs';
+import { Field,Type } from '@constructive-io/protobufjs';
 
 import { NODE_TYPE } from '../../constants';
 import { PgProtoParserOptions } from '../../options';

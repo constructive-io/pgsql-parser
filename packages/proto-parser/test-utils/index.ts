@@ -6,7 +6,7 @@ import { sync as glob } from 'glob'
 import { getOptionsWithDefaults, PgProtoParserOptions } from '../src/options';
 import { prettyPrint } from 'recast';
 import { ProtoStore } from '../src/store';
-import { parse } from '@launchql/protobufjs';
+import { parse } from '@constructive-io/protobufjs';
 
 export const printAst = (ast: any) => {
     const results = generate(ast);

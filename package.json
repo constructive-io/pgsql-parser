@@ -25,11 +25,6 @@
     "policy": "pnpm-policy generate",
     "policy:check": "pnpm-policy check"
   },
-  "pnpm": {
-    "overrides": {
-      "@launchql/protobufjs": "github:constructive-io/protobuf.js#b55d8b595a8dbc3de872d0bcc511e19aaa7688bf"
-    }
-  },
   "devDependencies": {
     "@constructive-io/eslint-config": "^0.2.0",
     "@constructive-io/pnpm-policy": "0.2.1",

@@ -13,7 +13,7 @@ export async function protoFetchCommand(argv: any) {
   const inFile = argv.inFile;
   const outFile = argv.outFile;
   const replacePkg = argv['replace-pkg'] || 'protobufjs/minimal';
-  const withPkg = argv['with-pkg'] || '@launchql/protobufjs/minimal';
+  const withPkg = argv['with-pkg'] || '@constructive-io/protobufjs/minimal';
 
   if (!inFile || !outFile) {
     console.error(chalk.red('Error: --inFile and --outFile are required'));

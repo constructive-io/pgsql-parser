@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { Enum, Field, Namespace, ReflectionObject,Service, Type } from '@launchql/protobufjs';
+import { Enum, Field, Namespace, ReflectionObject,Service, Type } from '@constructive-io/protobufjs';
 import { mkdirSync } from 'fs';
 import { dirname,join } from 'path';
 import { jsStringify } from 'strfy-js';

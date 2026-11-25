@@ -162,7 +162,7 @@ ${chalk.yellow('Options:')}
   --inFile <file>        Where to save the proto file
   --outFile <file>       Generated JS output file
   --replace-pkg <old>    Original package name to replace
-  --with-pkg <new>       New package name (default: @launchql/protobufjs/minimal)
+  --with-pkg <new>       New package name (default: @constructive-io/protobufjs/minimal)
   -h, --help            Show help
 
 ${chalk.yellow('Examples:')}
