@@ -162,15 +162,13 @@ ${chalk.yellow('Options:')}
   --inFile <file>        Where to save the proto file
   --outFile <file>       Generated JS output file
   --replace-pkg <old>    Original package name to replace
-  --with-pkg <new>       New package name
+  --with-pkg <new>       New package name (default: @constructive-io/protobufjs/minimal)
   -h, --help            Show help
 
 ${chalk.yellow('Examples:')}
   pgsql proto-fetch --url https://raw.githubusercontent.com/pganalyze/libpg_query/16-latest/protobuf/pg_query.proto \\
                     --inFile pg_query.proto \\
-                    --outFile pg_query.js \\
-                    --replace-pkg "protobufjs/minimal" \\
-                    --with-pkg "@launchql/protobufjs/minimal"
+                    --outFile pg_query.js
 `);
 }
 

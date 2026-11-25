@@ -1,4 +1,4 @@
-import { Field, Namespace,Type } from '@launchql/protobufjs';
+import { Field, Namespace,Type } from '@constructive-io/protobufjs';
 
 import { FieldSpec,NodeSpec } from './types';
 

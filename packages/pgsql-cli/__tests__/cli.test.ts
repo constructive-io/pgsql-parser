@@ -1,9 +1,12 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { join, resolve } from 'path';
+import { loadModule, parseSync } from 'pgsql-parser';
 
 import { deparseCommand } from '../src/commands/deparse';
 import { parseCommand } from '../src/commands/parse';
+import { protoFetchCommand } from '../src/commands/proto-fetch';
+import { generateProtoJS, replaceTextInProtoJS } from '../src/commands/proto-fetch/helpers';
 
 const sql = `SELECT (ARRAY[1, 2, 3])[2:3] AS slice, 'line one
 line two' AS memo FROM t WHERE id = 1`;
@@ -56,4 +59,106 @@ describe('pgsql deparse', () => {
     expect(withoutLocations(JSON.parse(readFileSync(reparsedFile, 'utf-8'))))
       .toEqual(withoutLocations(JSON.parse(readFileSync(astFile, 'utf-8'))));
   });
+});
+
+describe('pgsql proto-fetch', () => {
+  it('resolves standard protobuf imports from the installed runtime', async () => {
+    const inFile = join(dir, 'descriptor-user.proto');
+    const outFile = join(dir, 'descriptor-user.js');
+    writeFileSync(inFile, `
+      syntax = "proto2";
+      import "google/protobuf/descriptor.proto";
+      message Example {
+        optional google.protobuf.FileDescriptorProto descriptor = 1;
+      }
+    `);
+
+    await generateProtoJS(inFile, outFile);
+
+    expect(readFileSync(outFile, 'utf-8')).toContain('$root.google.protobuf.FileDescriptorProto');
+  });
+
+  it('resolves bundled Google API imports from the installed runtime', async () => {
+    const inFile = join(dir, 'annotations-user.proto');
+    const outFile = join(dir, 'annotations-user.js');
+    writeFileSync(inFile, `
+      syntax = "proto3";
+      import "google/api/annotations.proto";
+      message Example { google.api.HttpRule rule = 1; }
+    `);
+
+    await generateProtoJS(inFile, outFile);
+
+    const output = readFileSync(outFile, 'utf-8');
+    expect(output).toContain('$root.google.api.HttpRule');
+    expect(output).toContain('$root.google.protobuf.MethodOptions');
+  });
+
+  it.each([
+    'google/protobuf/descriptor.proto',
+    'google/protobuf/timestamp.proto',
+    'google/api/annotations.proto',
+  ])('does not substitute a bundled proto for a missing input (%s)', async inFile => {
+    const outFile = join(dir, 'missing.js');
+
+    await expect(generateProtoJS(inFile, outFile)).rejects.toMatchObject({ code: 'ENOENT', path: inFile });
+  });
+
+  it('round-trips a qualified extension name', async () => {
+    const inFile = join(dir, 'example.proto');
+    const outFile = join(dir, 'example.js');
+    writeFileSync(inFile, `
+      syntax = "proto2";
+      package demo;
+      message Example { extensions 100 to max; }
+      extend Example { optional string extra = 100; }
+    `);
+
+    await generateProtoJS(inFile, outFile);
+    await replaceTextInProtoJS(outFile, 'protobufjs/minimal', require.resolve('@constructive-io/protobufjs/minimal'));
+
+    const { Example } = require(outFile).demo;
+    const value = { '.demo.extra': 'extension' };
+    expect(Example.toObject(Example.decode(Example.encode(value).finish()))).toEqual(value);
+  });
+
+  it.each(['first-name', 'first    name', '2fa', 'class', '__proto__', 'constructor', 'toJSON'])('rejects an unsupported alias (%s)', async name => {
+    const inFile = join(dir, 'example.proto');
+    const outFile = join(dir, 'example.js');
+    writeFileSync(inFile, `
+      syntax = "proto3";
+      message Example { string label = 1 [json_name = "${name}"]; }
+    `);
+
+    await expect(generateProtoJS(inFile, outFile)).rejects.toThrow(
+      `Invalid JSON field name ${JSON.stringify(name)} on label`
+    );
+  });
+
+  it.each([
+    [undefined, '@constructive-io/protobufjs/minimal'],
+    ['@custom/protobufjs', '@custom/protobufjs'],
+  ])('generates a module with the requested runtime (%s)', async (withPkg, runtime) => {
+    const inFile = join(dir, 'test input.proto');
+    const outFile = join(dir, 'test output.js');
+    writeFileSync(inFile, 'syntax = "proto3"; message Example { string text = 1; }');
+
+    await protoFetchCommand({ inFile, outFile, 'with-pkg': withPkg });
+
+    expect(readFileSync(outFile, 'utf-8')).toContain(`require("${runtime}")`);
+  });
+
+  it('round-trips a PostgreSQL AST using its JSON field names', async () => {
+    const inFile = resolve(__dirname, '../../../__fixtures__/proto/18-latest.proto');
+    const outFile = join(dir, 'pg-query.js');
+    await protoFetchCommand({ inFile, outFile, 'with-pkg': require.resolve('@constructive-io/protobufjs/minimal') });
+
+    const { ParseResult } = require(outFile).pg_query;
+    await loadModule();
+    const ast = parseSync('SELECT 42');
+    const message = ParseResult.fromObject(ast);
+    const decoded = ParseResult.decode(ParseResult.encode(message).finish());
+
+    expect(ParseResult.toObject(decoded, { enums: String, longs: Number })).toEqual(ast);
+  }, 20_000);
 });
