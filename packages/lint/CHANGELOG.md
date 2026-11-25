@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.15](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Flint%4018.3.14...%40pgsql%2Flint%4018.3.15) (2026-11-25)
+
+**Note:** Version bump only for package @pgsql/lint
+
 ## [18.3.14](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Flint%4018.3.13...%40pgsql%2Flint%4018.3.14) (2026-11-24)
 
 **Note:** Version bump only for package @pgsql/lint

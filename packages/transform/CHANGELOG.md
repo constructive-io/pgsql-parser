@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.18.13](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform%4018.18.12...%40pgsql%2Ftransform%4018.18.13) (2026-11-25)
+
+**Note:** Version bump only for package @pgsql/transform
+
 ## [18.18.12](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Ftransform%4018.18.11...%40pgsql%2Ftransform%4018.18.12) (2026-11-24)
 
 ### Bug Fixes

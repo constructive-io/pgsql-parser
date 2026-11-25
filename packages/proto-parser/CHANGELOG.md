@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.32.10](https://github.com/constructive-io/pgsql-parser/compare/pg-proto-parser%401.32.8...pg-proto-parser%401.32.10) (2026-11-25)
+
+**Note:** Version bump only for package pg-proto-parser
+
 ## [1.32.8](https://github.com/constructive-io/pgsql-parser/compare/pg-proto-parser%401.32.7...pg-proto-parser%401.32.8) (2026-11-23)
 
 **Note:** Version bump only for package pg-proto-parser
