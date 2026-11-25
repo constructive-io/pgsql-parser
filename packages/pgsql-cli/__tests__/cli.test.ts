@@ -78,8 +78,27 @@ describe('pgsql proto-fetch', () => {
     expect(readFileSync(outFile, 'utf-8')).toContain('$root.google.protobuf.FileDescriptorProto');
   });
 
-  it.each(['descriptor.proto', 'timestamp.proto'])('does not substitute a bundled proto for a missing input (%s)', async name => {
-    const inFile = `google/protobuf/${name}`;
+  it('resolves bundled Google API imports from the installed runtime', async () => {
+    const inFile = join(dir, 'annotations-user.proto');
+    const outFile = join(dir, 'annotations-user.js');
+    writeFileSync(inFile, `
+      syntax = "proto3";
+      import "google/api/annotations.proto";
+      message Example { google.api.HttpRule rule = 1; }
+    `);
+
+    await generateProtoJS(inFile, outFile);
+
+    const output = readFileSync(outFile, 'utf-8');
+    expect(output).toContain('$root.google.api.HttpRule');
+    expect(output).toContain('$root.google.protobuf.MethodOptions');
+  });
+
+  it.each([
+    'google/protobuf/descriptor.proto',
+    'google/protobuf/timestamp.proto',
+    'google/api/annotations.proto',
+  ])('does not substitute a bundled proto for a missing input (%s)', async inFile => {
     const outFile = join(dir, 'missing.js');
 
     await expect(generateProtoJS(inFile, outFile)).rejects.toMatchObject({ code: 'ENOENT', path: inFile });

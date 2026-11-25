@@ -74,7 +74,7 @@ export const generateProtoJS = async (inFile: string, outFile: string): Promise<
   root.resolvePath = (origin, target) => {
     const local = util.path.resolve(origin, target);
     const normalizedTarget = util.path.normalize(target);
-    if (!origin || !normalizedTarget.startsWith('google/protobuf/') || fs.existsSync(local)) return local;
+    if (!origin || !normalizedTarget.startsWith('google/') || fs.existsSync(local)) return local;
 
     const bundled = resolve(includeDir, normalizedTarget);
     return fs.existsSync(bundled) ? bundled : local;
