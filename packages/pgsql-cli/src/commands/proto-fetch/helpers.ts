@@ -2,7 +2,8 @@ import fs from 'fs';
 import https from 'https';
 import { sync as mkdirp } from 'mkdirp';
 import { dirname } from 'path';
-import { main as pbjs } from 'protobufjs-cli/pbjs';
+import { Field, Namespace, OneOf, Root, Type } from 'protobufjs';
+import staticModule from 'protobufjs-cli/targets/static-module';
 
 // Download .proto file if URL
 export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<void> => {
@@ -32,20 +33,63 @@ export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<v
   });
 };
 
-// Generate JavaScript from proto file using pbjs
-export const generateProtoJS = (inFile: string, outFile: string): Promise<void> => new Promise((resolve, reject) => {
-  mkdirp(dirname(outFile));
-
-  pbjs(['--keep-case', '-t', 'static-module', '-o', outFile, '--', inFile], (error) => {
-    if (error) {
-      console.error(`Error during code generation: ${error.message}`);
-      reject(error);
-      return;
+const applyJsonFieldNames = (namespace: Namespace): void => {
+  if (namespace instanceof Type) {
+    const fields = namespace.fieldsArray.map(field => {
+      const name = field.options?.json_name ?? field.name;
+      if (typeof name !== 'string' || !/^[a-zA-Z_][a-zA-Z_0-9]*$/.test(name) || name === '__proto__') {
+        throw new Error(`Invalid JSON field name on ${field.fullName}`);
+      }
+      return { field, name };
+    });
+    if (fields.some(({ field, name }) => field.name !== name)) {
+      const oneofs = new Map<OneOf, Field[]>(
+        namespace.oneofsArray.map(oneof => [oneof, [...oneof.fieldsArray]])
+      );
+      for (const [oneof, members] of oneofs) {
+        members.forEach(field => oneof.remove(field));
+      }
+      fields.forEach(({ field }) => namespace.remove(field));
+      fields.forEach(({ field, name }) => {
+        field.name = name;
+        namespace.add(field);
+      });
+      for (const [oneof, members] of oneofs) {
+        members.forEach(field => oneof.add(field));
+      }
     }
-    console.log('Generated proto.js from proto file.');
-    resolve();
+  }
+  for (const child of namespace.nestedArray) {
+    if (child instanceof Namespace) applyJsonFieldNames(child);
+  }
+};
+
+export const generateProtoJS = async (inFile: string, outFile: string): Promise<void> => {
+  const root = new Root().loadSync(inFile, { keepCase: true });
+  applyJsonFieldNames(root);
+  root.resolveAll();
+  const output = await new Promise<string>((resolve, reject) => {
+    staticModule(root, {
+      beautify: true,
+      comments: true,
+      convert: true,
+      create: true,
+      decode: true,
+      delimited: true,
+      encode: true,
+      lint: 'eslint-disable block-scoped-var, id-length, no-control-regex, no-magic-numbers, no-prototype-builtins, no-redeclare, no-shadow, no-var, sort-vars',
+      service: true,
+      typeurl: true,
+      verify: true,
+    }, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
   });
-});
+  mkdirp(dirname(outFile));
+  await fs.promises.writeFile(outFile, output, 'utf8');
+  console.log('Generated proto.js from proto file.');
+};
 
 // Replace text in generated JS file
 export const replaceTextInProtoJS = (filePath: string, originalPackage: string, newPackage: string): Promise<void> => new Promise((resolve, reject) => {

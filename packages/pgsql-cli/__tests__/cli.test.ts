@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { join, resolve } from 'path';
+import { loadModule, parseSync } from 'pgsql-parser';
 
 import { deparseCommand } from '../src/commands/deparse';
 import { parseCommand } from '../src/commands/parse';
@@ -71,5 +72,19 @@ describe('pgsql proto-fetch', () => {
     await protoFetchCommand({ inFile, outFile, 'with-pkg': withPkg });
 
     expect(readFileSync(outFile, 'utf-8')).toContain(`require("${runtime}")`);
+  });
+
+  it('round-trips a PostgreSQL AST using its JSON field names', async () => {
+    const inFile = resolve(__dirname, '../../../__fixtures__/proto/18-latest.proto');
+    const outFile = join(dir, 'pg-query.js');
+    await protoFetchCommand({ inFile, outFile, 'with-pkg': require.resolve('protobufjs/minimal') });
+
+    const { ParseResult } = require(outFile).pg_query;
+    await loadModule();
+    const ast = parseSync('SELECT 42');
+    const message = ParseResult.fromObject(ast);
+    const decoded = ParseResult.decode(ParseResult.encode(message).finish());
+
+    expect(ParseResult.toObject(decoded, { enums: String, longs: Number })).toEqual(ast);
   });
 });

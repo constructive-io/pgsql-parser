@@ -1,6 +1,28 @@
-import { getStore, parseAndSnap } from '../test-utils';
+import { readFileSync } from 'fs';
+import { parse } from 'protobufjs';
+
+import { ProtoStore } from '../src/store';
+import { getFieldName } from '../src/utils';
+import { getStore, getTestProtoPath, parseAndSnap } from '../test-utils';
 
 describe('runtime-schema', () => {
+  it('preserves PG18 JSON names and the JsonAggConstructor fields', () => {
+    const { root } = parse(readFileSync(getTestProtoPath('18-latest.proto'), 'utf8'));
+    const selectStmt = root.lookupType('pg_query.Node').fields.selectStmt;
+    expect(getFieldName(selectStmt, selectStmt.name)).toBe('SelectStmt');
+
+    const schema = new ProtoStore(root).getRuntimeSchema();
+    expect(schema.find(node => node.name === 'SelectStmt')).toMatchObject({ isNode: true });
+    expect(schema.find(node => node.name === 'JsonAggConstructor').fields).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'agg_filter', type: 'Node' })])
+    );
+    for (const name of ['JsonObjectAgg', 'JsonArrayAgg']) {
+      expect(schema.find(node => node.name === name).fields).toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: 'constructor', type: 'JsonAggConstructor' })])
+      );
+    }
+  });
+
   it('uses explicit JSON field names rather than protobufjs camelCase names', () => {
     const schema = getStore({}).getRuntimeSchema();
     const jsonObjectAgg = schema.find(node => node.name === 'JsonObjectAgg');
