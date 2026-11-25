@@ -68,13 +68,15 @@ const applyJsonFieldNames = (namespace: Namespace): void => {
 };
 
 export const generateProtoJS = async (inFile: string, outFile: string): Promise<void> => {
+  fs.accessSync(inFile, fs.constants.R_OK);
   const root = new Root();
   const includeDir = dirname(require.resolve('protobufjs/package.json'));
   root.resolvePath = (origin, target) => {
     const local = util.path.resolve(origin, target);
-    if (fs.existsSync(local)) return local;
+    const normalizedTarget = util.path.normalize(target);
+    if (!origin || !normalizedTarget.startsWith('google/protobuf/') || fs.existsSync(local)) return local;
 
-    const bundled = resolve(includeDir, target);
+    const bundled = resolve(includeDir, normalizedTarget);
     return fs.existsSync(bundled) ? bundled : local;
   };
   root.loadSync(inFile, { keepCase: true });

@@ -78,6 +78,13 @@ describe('pgsql proto-fetch', () => {
     expect(readFileSync(outFile, 'utf-8')).toContain('$root.google.protobuf.FileDescriptorProto');
   });
 
+  it.each(['descriptor.proto', 'timestamp.proto'])('does not substitute a bundled proto for a missing input (%s)', async name => {
+    const inFile = `google/protobuf/${name}`;
+    const outFile = join(dir, 'missing.js');
+
+    await expect(generateProtoJS(inFile, outFile)).rejects.toMatchObject({ code: 'ENOENT', path: inFile });
+  });
+
   it('round-trips a qualified extension name', async () => {
     const inFile = join(dir, 'example.proto');
     const outFile = join(dir, 'example.js');
