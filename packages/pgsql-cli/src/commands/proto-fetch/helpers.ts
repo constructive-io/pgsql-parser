@@ -1,8 +1,8 @@
-import { exec } from 'child_process';
 import fs from 'fs';
 import https from 'https';
 import { sync as mkdirp } from 'mkdirp';
 import { dirname } from 'path';
+import { main as pbjs } from 'protobufjs-cli/pbjs';
 
 // Download .proto file if URL
 export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<void> => {
@@ -34,10 +34,9 @@ export const downloadProtoFile = (protoUrl: string, filePath: string): Promise<v
 
 // Generate JavaScript from proto file using pbjs
 export const generateProtoJS = (inFile: string, outFile: string): Promise<void> => new Promise((resolve, reject) => {
-  const command = `pbjs --keep-case -t static-module -o ${outFile} ${inFile}`;
   mkdirp(dirname(outFile));
 
-  exec(command, (error, _stdout, _stderr) => {
+  pbjs(['--keep-case', '-t', 'static-module', '-o', outFile, '--', inFile], (error) => {
     if (error) {
       console.error(`Error during code generation: ${error.message}`);
       reject(error);

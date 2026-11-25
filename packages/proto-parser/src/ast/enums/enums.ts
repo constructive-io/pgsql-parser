@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { Enum } from '@launchql/protobufjs';
+import { Enum } from 'protobufjs';
 
 import { createNamedImport } from '../../utils';
 

@@ -1,6 +1,18 @@
-import { parseAndSnap } from '../test-utils';
+import { getStore, parseAndSnap } from '../test-utils';
 
 describe('runtime-schema', () => {
+  it('uses explicit JSON field names rather than protobufjs camelCase names', () => {
+    const schema = getStore({}).getRuntimeSchema();
+    const jsonObjectAgg = schema.find(node => node.name === 'JsonObjectAgg');
+
+    expect(jsonObjectAgg.fields).toMatchObject([
+      { name: 'absent_on_null' },
+      { name: 'arg' },
+      { name: 'constructor' },
+      { name: 'unique' },
+    ]);
+  });
+
   it('json format enabled', () => {
     parseAndSnap('runtime-schema/json/enabled', {
       runtimeSchema: {

@@ -35,7 +35,6 @@ intersect: true
 allowBuilds:
   nx: "Nx CLI native postinstall step (downloads/links its native project-graph daemon binary)."
   unrs-resolver: "unrs-resolver ships a native (Rust/N-API) module resolver binary that must be built/linked on install."
-  "@launchql/protobufjs": "protobufjs postinstall script (environment/feature detection for the protobuf.js runtime, no native compile)."
 
 # Third-party escape hatches. A reason is required; `until` expires the waiver so
 # `check` makes you re-justify it instead of letting it live forever.

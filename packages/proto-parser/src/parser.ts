@@ -1,4 +1,4 @@
-import { parse } from '@launchql/protobufjs';
+import { parse } from 'protobufjs';
 import { readFileSync } from 'fs';
 
 import {

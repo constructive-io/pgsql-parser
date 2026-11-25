@@ -166,7 +166,7 @@ pgsql proto-fetch [options]
 | `--inFile`          | Where to save the proto file                        | *Required*                     |
 | `--outFile`         | Generated JS output file                             | *Required*                     |
 | `--replace-pkg`     | Original package name to replace                     | `protobufjs/minimal`           |
-| `--with-pkg`        | New package name                                     | `@launchql/protobufjs/minimal` |
+| `--with-pkg`        | New package name                                     | `protobufjs/minimal`           |
 | `-h, --help`        | Show help                                            |                                |
 
 #### Examples

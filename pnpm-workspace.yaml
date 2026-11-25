@@ -34,6 +34,5 @@ blockExoticSubdeps: true
 
 # The only dependencies permitted to run install scripts.
 allowBuilds:
-  "@launchql/protobufjs": true # protobufjs postinstall script (environment/feature detection for the protobuf.js runtime, no native compile).
   nx: true # Nx CLI native postinstall step (downloads/links its native project-graph daemon binary).
   unrs-resolver: true # unrs-resolver ships a native (Rust/N-API) module resolver binary that must be built/linked on install.

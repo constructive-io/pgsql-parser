@@ -4,6 +4,7 @@ import { join } from 'path';
 
 import { deparseCommand } from '../src/commands/deparse';
 import { parseCommand } from '../src/commands/parse';
+import { protoFetchCommand } from '../src/commands/proto-fetch';
 
 const sql = `SELECT (ARRAY[1, 2, 3])[2:3] AS slice, 'line one
 line two' AS memo FROM t WHERE id = 1`;
@@ -55,5 +56,20 @@ describe('pgsql deparse', () => {
 
     expect(withoutLocations(JSON.parse(readFileSync(reparsedFile, 'utf-8'))))
       .toEqual(withoutLocations(JSON.parse(readFileSync(astFile, 'utf-8'))));
+  });
+});
+
+describe('pgsql proto-fetch', () => {
+  it.each([
+    [undefined, 'protobufjs/minimal'],
+    ['@custom/protobufjs', '@custom/protobufjs'],
+  ])('generates a module with the requested runtime (%s)', async (withPkg, runtime) => {
+    const inFile = join(dir, 'test input.proto');
+    const outFile = join(dir, 'test output.js');
+    writeFileSync(inFile, 'syntax = "proto3"; message Example { string text = 1; }');
+
+    await protoFetchCommand({ inFile, outFile, 'with-pkg': withPkg });
+
+    expect(readFileSync(outFile, 'utf-8')).toContain(`require("${runtime}")`);
   });
 });
