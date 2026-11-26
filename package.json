@@ -8,9 +8,6 @@
     "url": "https://github.com/constructive-io/pgsql-parser"
   },
   "license": "MIT",
-  "engines": {
-    "node": ">=22"
-  },
   "publishConfig": {
     "access": "restricted"
   },
