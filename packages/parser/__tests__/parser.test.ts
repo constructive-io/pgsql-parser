@@ -67,6 +67,12 @@ describe('pgsql-parser', () => {
       expect(parseResult.stmts![0]).toHaveProperty('stmt');
     });
 
+    it('should parse an expression with 2000 chained terms synchronously', () => {
+      const sql = 'SELECT ' + Array(2000).fill('1').join(' + ');
+
+      expect(parseSync(sql).stmts).toHaveLength(1);
+    });
+
     it('should deparse an AST back to SQL synchronously', () => {
       const sql = 'SELECT * FROM test_table';
       const parseResult = parseSync(sql);
