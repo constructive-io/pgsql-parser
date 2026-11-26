@@ -42,7 +42,7 @@
   ],
   "dependencies": {
     "@pgsql/types": "^18.0.0",
-    "libpg-query": "18.2.7",
+    "libpg-query": "18.3.0",
     "pgsql-deparser": "workspace:*",
     "pgsql-parse": "workspace:*",
     "plpgsql-deparser": "workspace:*"
