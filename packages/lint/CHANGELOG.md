@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [18.3.17](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Flint%4018.3.16...%40pgsql%2Flint%4018.3.17) (2026-11-26)
+
+### Bug Fixes
+
+- **deps:** bump libpg-query to 18.3.0 ([#410](https://github.com/constructive-io/pgsql-parser/issues/410)) ([4ed0945](https://github.com/constructive-io/pgsql-parser/commit/4ed09453f2081009fc73b271ad50f3edcf09c756))
+
 ## [18.3.16](https://github.com/constructive-io/pgsql-parser/compare/%40pgsql%2Flint%4018.3.15...%40pgsql%2Flint%4018.3.16) (2026-11-26)
 
 ### Bug Fixes
